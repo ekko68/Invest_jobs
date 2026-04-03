@@ -1,0 +1,388 @@
+//common
+@import '../common/mixins.scss';
+@import '../common/variables.scss'; /*footer*/
+/* swiper */
+
+.swiper_wrap {
+  position: relative;
+
+  .swiper-slide {
+    width: 345px;
+    // height: 111.111vw;
+    border-radius: 6px;
+    overflow: hidden;
+    background-position: center;
+    background-size: cover;
+    will-change: transform;
+    background-color: #e8ebe8;
+    @include media(pc) {
+      position: relative;
+      width: 100%;
+      margin: 0 auto;
+      height: 0;
+      padding-bottom: 38.8%;
+      max-width: 1410px;
+      // height: 553px;
+    }
+    .mobile_view & {
+      width: 345px;
+      height: 416px;
+    }
+
+    .img_wrap {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      background-color: #e8ebe8;
+      &:empty {
+        @include noImage;
+      }
+      @include media(pc) {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        object-fit: cover;
+      }
+      source,
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+    }
+  }
+  .only {
+    .swiper-wrapper {
+      transform: translate3d(0, 0, 0) !important;
+    }
+    .swiper-button-disabled {
+      display: none;
+    }
+  }
+
+  .swiper_content {
+    position: absolute;
+    top: 0;
+    bottom: 40px; // VIDEO 삽입시 컨트롤바 제어를 위해 조정
+    left: 0;
+    right: 0;
+    z-index: 1;
+    padding: 0 16px;
+    display: flex;
+    align-items: flex-end;
+    // background-color: rgba(0, 0, 0, 0.04);
+    @include media(pc) {
+      // padding: 0 100px;
+      align-items: center;
+    }
+    .mobile_view & {
+      align-items: flex-end;
+    }
+
+    .content {
+      font-size: 18px;
+      line-height: 1.4;
+      word-spacing: -0.05em;
+      margin-bottom: 24px;
+      color: rgba(#fff, 0.7);
+
+      @include media(pc) {
+        margin-bottom: 32px;
+        font-size: 20px;
+        line-height: 28px;
+        width: 402px;
+      }
+      .mobile_view & {
+        font-size: 18px;
+        line-height: 1.4;
+        margin-bottom: 24px;
+      }
+    }
+
+    .title {
+      font-size: 20px;
+      line-height: 28px;
+      font-weight: $fontBold;
+      letter-spacing: -0.04em;
+      margin-bottom: 10px;
+      max-width: 70%;
+      color: #fff;
+      word-break: keep-all;
+
+      @include media(pc) {
+        font-size: 34px;
+        line-height: 46px;
+        margin-bottom: 22px;
+      }
+      .mobile_view & {
+        font-size: 20px;
+        line-height: 28px;
+        margin-bottom: 10px;
+      }
+    }
+  }
+  .swiper_content_inner {
+    position: relative;
+    z-index: 2;
+    transform: scale(0.7);
+    .mobile_view & {
+      transform: scale(1);
+    }
+  }
+  .swiper_content_buttonArea {
+    a {
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      width: 120px;
+      height: 40px;
+      background: rgba(#fff, 0.2);
+      border-radius: 4px;
+      color: #fff;
+      font-size: 16px;
+      height: 38px;
+      padding: 0 20px;
+      min-width: 106px;
+      @include media(pc) {
+        height: 64px;
+        min-width: 154px;
+        font-size: 20px;
+      }
+      .mobile_view & {
+        height: 40px;
+        min-width: 106px;
+        font-size: 16px;
+      }
+    }
+  }
+
+  .swiper-button-next,
+  .swiper-button-prev {
+    opacity: 0.8;
+    height: 24px;
+    top: auto;
+    bottom: 16px;
+    @include media(pc) {
+      bottom: 20px;
+    }
+    .mobile_view & {
+      bottom: 16px;
+    }
+    &::after {
+      font-size: 14px;
+      color: #fff;
+    }
+  }
+  .swiper-button-prev {
+    left: 44%;
+    transform: translateX(-50%);
+    @include media(pc) {
+      left: 48%;
+    }
+    .mobile_view & {
+      left: 44%;
+    }
+  }
+  .swiper-button-next {
+    left: 56%;
+    transform: translateX(-50%);
+    @include media(pc) {
+      left: 52%;
+    }
+    .mobile_view & {
+      left: 56%;
+    }
+  }
+  .swiper-pagination-fraction {
+    left: 50%;
+    transform: translateX(-50%);
+    margin-left: 99px;
+    bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 62px;
+    height: 30px;
+    font-size: 14px;
+    color: #fff;
+    font-weight: $fontRegular;
+    border-radius: 100px;
+    background: $dimed;
+    letter-spacing: 1px;
+    @include media(pc) {
+      margin-left: 530px;
+      bottom: 40px;
+      width: 64px;
+      height: 32px;
+      font-size: 16px;
+    }
+    .mobile_view & {
+      margin-left: 99px;
+      bottom: 16px;
+      width: 62px;
+      height: 30px;
+      font-size: 14px;
+    }
+  }
+}
+// 상품 상세 업체상품 더보기
+.swiper_productList {
+  .swiper-button-prev,
+  .swiper-button-next {
+    @include swiperWhiteButton;
+  }
+  .swiper-button-prev {
+    left: 0;
+    border-top-right-radius: 4px;
+    border-bottom-right-radius: 4px;
+  }
+  .swiper-button-next {
+    right: 0;
+    border-top-left-radius: 4px;
+    border-bottom-left-radius: 4px;
+  }
+  .swiper-pagination-bullets {
+    bottom: 0;
+  }
+  .swiper-wrapper {
+    padding-bottom: 40px;
+    @include media(pc) {
+    }
+  }
+  .swiper-pagination-bullet-active {
+    background-color: #000;
+  }
+}
+
+// 상품 상세 상단
+.swiper_productDetail {
+  position: relative;
+  .swiper-button-prev,
+  .swiper-button-next {
+    @include swiperWhiteButton;
+    top: 50%;
+    transform: translateY(-50%);
+    @include media(pc-wide) {
+      top: 50%;
+    }
+  }
+  .swiper-button-prev {
+    left: 0;
+    border-top-right-radius: 4px;
+    border-bottom-right-radius: 4px;
+  }
+  .swiper-button-next {
+    right: 0;
+    border-top-left-radius: 4px;
+    border-bottom-left-radius: 4px;
+  }
+  .swiper-pagination-bullets {
+    bottom: 0;
+  }
+
+  .swiper-pagination-bullet-active {
+    background-color: #000;
+  }
+  .img_wrap {
+    position: relative;
+    display: block;
+    padding-bottom: 100%;
+    background-color: #e8ebe8;
+    border-radius: 6px;
+    overflow: hidden;
+    source,
+    img {
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      object-fit: cover;
+    }
+  }
+  .youtube {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    object-fit: cover;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .swiper-slide {
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+  }
+  .swiper-pagination-fraction {
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 28px;
+    font-size: 14px;
+    color: #fff;
+    font-weight: $fontRegular;
+    border-radius: 100px;
+    background: $dimed;
+    letter-spacing: 1px;
+    @include media(pc) {
+      bottom: 28px;
+      width: 64px;
+      height: 32px;
+      font-size: 16px;
+    }
+    .mobile_view & {
+      bottom: 8px;
+      width: 64px;
+      height: 28px;
+      font-size: 14px;
+    }
+  }
+
+  .mySwiper {
+    // height: 650px;
+    width: 100%;
+  }
+  .mySwiper_thumb {
+    margin-top: 30px;
+
+    display: none;
+    @include media(pc) {
+      display: block;
+    }
+    .swiper-slide {
+      position: relative;
+      width: calc(20% - 16px) !important;
+      height: 0;
+      padding-bottom: calc(20% - 16px);
+      opacity: 0.4;
+      cursor: pointer;
+      background-color: #e8ebe8;
+      @include transition;
+      img,
+      .youtube {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        object-fit: cover;
+      }
+    }
+    .swiper-slide-thumb-active {
+      opacity: 1;
+    }
+  }
+}

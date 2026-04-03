@@ -1,0 +1,143 @@
+@charset "UTF-8";
+/* _mixins.scss */
+
+// @include arrow;
+@mixin arrow {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin: 0 6px 0 8px;
+  border-width: 2px 2px 0 0;
+  border-color: $color-gray;
+  transform: rotate(45deg);
+  border-style: solid;
+  vertical-align: middle;
+}
+@mixin blind {
+  position: absolute;
+  overflow: hidden;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  clip: rect(0, 0, 0, 0);
+}
+
+@mixin transition {
+  transition: all 0.2s ease-out;
+}
+
+@mixin skeleton {
+  border-radius: 4px;
+  background-color: $color-gray-pale;
+  background-image: linear-gradient(to right, transparent 0, rgba(255, 255, 255, 0.4) 50%, transparent 100%);
+  background-repeat: no-repeat;
+  background-size: 200px 100%;
+  animation: skeleton-animation 1.5s ease-in-out infinite;
+}
+
+@keyframes skeleton-animation {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: calc(200px + 100%) 0;
+  }
+}
+@mixin tableSkeleton {
+  min-height: 18px;
+  @include skeleton;
+}
+
+@mixin pageSkeleton {
+  min-height: 20px;
+  @include skeleton;
+}
+@mixin word-break {
+  word-break: keep-all;
+  word-wrap: break-word;
+}
+//@include swiperWhiteButton
+@mixin swiperWhiteButton {
+  top: 32%;
+  width: 40px;
+  height: 60px;
+  background-color: rgba(#fff, 0.7);
+  @include media(pc-wide) {
+    top: 37%;
+  }
+  &::after {
+    font-size: 18px;
+    font-weight: $fontBold;
+    color: $color-gray2;
+  }
+}
+@mixin noImage {
+  background-color: #e8ebe8;
+  &::before {
+    content: '등록된 이미지가 없습니다.';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    padding-top: 45px;
+    text-align: center;
+    line-height: 18px;
+    // font-size: 18px;
+    font-size: clamp(0.9rem, 0.5vw, 18px);
+    color: $color-gray;
+    @include word-break;
+  }
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: block;
+    width: 46px;
+    height: 46px;
+    flex-shrink: 0;
+    background-image: url('#{$imageUrl}/noimg_60@2x.png');
+    background-repeat: no-repeat;
+    background-position: 0 0;
+    background-size: 100% auto;
+    margin: auto;
+    transform: translateY(-25px);
+    @include media(pc) {
+      width: 60px;
+      height: 60px;
+    }
+  }
+}
+
+// mixins : media query
+@mixin media($breakpoint, $breakpoints: $G-breakpoints) {
+  // If $breakpoint is a key that exists in
+  // $G-breakpoints, get and use the value
+  @if map-has-key($breakpoints, $breakpoint) {
+    $breakpoint: map-get($breakpoints, $breakpoint);
+  }
+
+  @media screen and (min-width: #{$breakpoint}) {
+    @content;
+  }
+}
+
+@mixin max-media($breakpoint, $breakpoints: $G-breakpoints) {
+  // If $breakpoint is a key that exists in
+  // $G-breakpoints, get and use the value
+  @if map-has-key($breakpoints, $breakpoint) {
+    $breakpoint: map-get($breakpoints, $breakpoint);
+  }
+
+  @media screen and (max-width: #{$breakpoint}) {
+    @content;
+  }
+}

@@ -1,0 +1,26 @@
+/* ============== 최하단 위치 : for_dev */
+.popup_controller_for_dev {
+    position: fixed;
+    top: 150px;
+    left: 0;
+    /*transform: translate(0, -50%);*/
+    z-index: 1000;
+    background: rgba(0,0,0,0.4);
+    padding: 10px;
+}
+
+.popup_controller_for_dev h4 {
+    margin-bottom: 20px;
+    color: white;
+}
+
+.popup_controller_for_dev button {
+    margin-bottom: 10px;
+    display: block;
+    background: rgba(225,225,225,8);
+    padding: 4px 10px;
+}
+
+.popup_controller_for_dev button:last-child {
+    margin-bottom: 0;
+}

@@ -1,0 +1,129 @@
+$minHeightPC: 169px;
+$rowSpace: 26px;
+.purchase_item {
+  &_row_agency {
+    margin-bottom: 4px;
+    font-size: 18px;
+  }
+  &_detail {
+    margin-top: 30px;
+    display: flex;
+    align-items: flex-end;
+    margin-bottom: 8px;
+
+    &_button {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      margin-left: auto;
+      line-height: 32px;
+      font-size: 18px;
+    }
+  }
+  &_row_name {
+    margin-top: 10px;
+    font-size: 20px;
+    font-weight: 800;
+  }
+  &_price_wrap {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: 18px;
+    row-gap: 3px;
+
+    .purchase_item_price {
+      font-size: 20px;
+      color: #333;
+      font-weight: 600;
+      .unit {
+        font-size: 20px;
+        margin-left: 3px;
+      }
+    }
+    .purchase_item_price_origin {
+      flex-shrink: 0;
+      font-size: 18px;
+      font-weight: 400;
+      margin-left: 16px;
+      margin-right: 24px;
+      color: #666;
+      del {
+        position: relative;
+        text-decoration: none;
+        &::before {
+          content: '';
+          display: block;
+          position: absolute;
+          top: 50%;
+          width: 100%;
+          height: 1px;
+          background-color: #666;
+        }
+      }
+      .unit {
+        font-size: 18px;
+
+        margin-left: 3px;
+      }
+    }
+  }
+
+  &_quantity {
+    flex-shrink: 0;
+    font-size: 18px;
+    line-height: 24px;
+    color: #999;
+  }
+
+  &_row {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    padding: 14px;
+    min-height: 138px;
+    border: 1px solid #d8deeb;
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+
+    &_imgWrap {
+      flex-shrink: 0;
+      position: relative;
+      width: 110px;
+      height: 110px;
+      border-radius: 4px;
+      overflow: hidden;
+
+      &:before {
+        content: '';
+        display: block;
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        border: 1px solid #d7d7d7;
+        border-radius: 4px;
+        z-index: 1;
+        opacity: 0.7;
+      }
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+    }
+
+    &_desc {
+      margin-left: 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    &_detail {
+      display: flex;
+      flex-basis: 40%;
+    }
+  }
+}

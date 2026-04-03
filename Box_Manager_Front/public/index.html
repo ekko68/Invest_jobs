@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <base href="/" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <link rel="icon" href="%PUBLIC_URL%/ibk_favicon_Lkk_icon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+    <!--
+      manifest.json provides metadata used when your web app is installed on a
+      user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
+    -->
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <!--
+      Notice the use of %PUBLIC_URL% in the tags above.
+      It will be replaced with the URL of the `public` folder during the build.
+      Only files inside the `public` folder can be referenced from the HTML.
+
+      Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
+      work correctly both with client-side routing and a non-root public URL.
+      Learn how to configure a non-root public URL by running `npm run build`.
+    -->
+    <title>IBK BOX 운영자 포털</title>
+
+    <script>
+      /*토큰에 있는 정보 가져오기*/
+      function parseJwt(token) {
+        if (!token) return {}
+        const base64Url = token.split('.')[1]
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
+        const jsonPayload = decodeURIComponent(
+          atob(base64)
+            .split('')
+            .map(function (c) {
+              return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+            })
+            .join('')
+        )
+        return JSON.parse(jsonPayload)
+      }
+
+      function getSessionData(type) {
+        if (tokenCheck()) {
+          const sessionData = parseJwt(sessionStorage.getItem('SI'))
+          if (type !== undefined && type !== null && type !== '') {
+            return sessionData[type]
+          }
+
+          return sessionData
+        }
+        return null
+      }
+
+      function getCurTimestamp() {
+        return Math.floor(new Date().getTime() / 1000)
+      }
+
+      function setCookie(cookieName, value, exdays) {
+        var exdate = new Date()
+        exdate.setDate(exdate.getDate() + exdays)
+        //	exdate.setMinutes(exdate.getMinutes() + exdays);
+        var cookieValue =
+          escape(value) + (exdays == null ? '' : ';path=/; domain=ibkbox.net; expires=' + exdate.toString()) // exdate.toGMTString()
+        document.cookie = cookieName + '=' + cookieValue
+      }
+
+      function getCookieValue(cookieName) {
+        let cookieValue = null
+        if (document.cookie) {
+          var array = document.cookie.split(escape(cookieName) + '=')
+          if (array.length >= 2) {
+            var arraySub = array[1].split(';')
+            cookieValue = unescape(arraySub[0])
+          }
+        }
+        return cookieValue
+      }
+
+      function deleteCookie(cookieName) {
+        var expireDate = new Date()
+        expireDate.setDate(expireDate.getDate() - 1)
+        document.cookie = cookieName + '= ;path=/; domain=ibkbox.net; expires=' + expireDate.toString() // expireDate.toGMTString()
+      }
+
+      function getBoxName() {
+        const host = location.host
+        let boxName = host.substring(0, host.indexOf('.'))
+        if (boxName.indexOf('local') > -1) {
+          boxName = boxName.replace('local', '')
+        } else if (boxName.indexOf('dev') > -1) {
+          boxName = boxName.replace('dev', '')
+        } else {
+          boxName = ''
+        }
+        return boxName
+      }
+
+      // 토큰 벨리데이션 체크
+      function tokenStringCheck(token) {
+        if (token !== null && token !== undefined && !(token == 'null' || token == 'undefined' || token.trim() == ''))
+          return true
+        else return false
+      }
+
+      // 토큰 존재 체크
+      function tokenCheck() {
+        const auth = getCookieValue('auth')
+        const isAuth = tokenStringCheck(auth)
+
+        const token = sessionStorage.getItem('SI')
+        const isToken = tokenStringCheck(token)
+
+        if (isAuth && isToken) return true
+
+        if (isToken && !isAuth) {
+          deleteCookie('idSave')
+          deleteCookie('auth')
+          deleteCookie('cookieExpires')
+          sessionStorage.clear()
+
+          return false
+        }
+
+        sessionStorage.removeItem('SI')
+        return false
+      }
+    </script>
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+    <!--
+      This HTML file is a template.
+      If you open it directly in the browser, you will see an empty page.
+
+      You can add webfonts, meta tags, or analytics to this file.
+      The build step will place the bundled scripts into the <body> tag.
+
+      To begin the development, run `npm start` or `yarn start`.
+      To create a production bundle, use `npm run build` or `yarn build`.
+    -->
+  </body>
+</html>

@@ -1,0 +1,158 @@
+//common
+@import '../common/variables.scss';
+@import '../common/mixins.scss';
+.menuManager {
+  &_wrap {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 10px;
+    &.col2 {
+      .menuManager_box {
+        width: calc(50% - 5px);
+      }
+    }
+  }
+  &_box {
+    position: relative;
+    border: 1px solid #ededed;
+    width: calc(33.33% - 7px);
+    height: 604px;
+    overflow-y: auto;
+    &::-webkit-scrollbar {
+      width: 10px;
+      height: 7px;
+    }
+    &::-webkit-scrollbar-track {
+      background: #e9ebef;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: #bfc4cc;
+      border-radius: 5px;
+    }
+  }
+  &_box_title {
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    height: 100%;
+    background-color: #f9fafc;
+  }
+  &_list {
+    padding: 8px 0;
+  }
+  &_item {
+    position: relative;
+    padding: 5px 5px 6px;
+    &::before {
+      content: '';
+      display: block;
+      position: absolute;
+      bottom: 0;
+      left: 5px;
+      right: 5px;
+      height: 1px;
+      background-color: #ededed;
+    }
+    .menuManager_link {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      line-height: 1.2;
+      padding: 3px 10px 3px 0;
+      font-size: 15px;
+      border-radius: 4px;
+      &:hover {
+        background-color: #f2f9ff;
+      }
+      &::after {
+        @include arrow;
+        margin-left: 10px;
+        flex-shrink: 0;
+        margin-left: auto;
+      }
+    }
+  }
+  &_setting_group {
+    position: relative;
+    display: flex;
+    align-items: center;
+    line-height: 1.2;
+    padding: 3px 10px 3px 0;
+    font-size: 15px;
+    border-radius: 4px;
+    &:hover {
+      background-color: #f2f9ff;
+    }
+  }
+
+  &_drag_button {
+    position: relative;
+    padding: 10px 12px 10px 10px;
+    z-index: 1;
+    cursor: grab;
+    .menuManager_drag_button_inner {
+      position: relative;
+      display: flex;
+      border-top: 1px solid #bbb;
+      width: 12px;
+      height: 11px;
+
+      &::before {
+        content: '';
+        display: block;
+        position: absolute;
+        top: 4px;
+        left: 0;
+        width: 100%;
+        height: 1px;
+        background-color: #bbb;
+        box-sizing: border-box;
+      }
+      &::after {
+        content: '';
+        display: block;
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        width: 100%;
+        height: 1px;
+        background-color: #bbb;
+      }
+    }
+  }
+  &_modify_button {
+    position: relative;
+    padding: 6px;
+    margin-left: auto;
+    z-index: 1;
+    &::before {
+      content: '';
+      display: block;
+      width: 14px;
+      height: 14px;
+      background: url('#{$imageUrl}/ico_modify@2x.png') no-repeat 0 0;
+      background-size: 100% auto;
+    }
+  }
+  &_setting_button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: 0;
+    right: 0;
+    padding: 0;
+    &::before {
+      content: '';
+      display: block;
+      width: 34px;
+      height: 34px;
+      background: url('#{$imageUrl}/ico_option@2x.png') no-repeat 0 0;
+      background-size: 100% auto;
+    }
+  }
+}

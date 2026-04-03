@@ -1,0 +1,84 @@
+// .is-skeleton {
+// .page_title {
+//   position: relative;
+//   height: 30px;
+//   width: 200px;
+//   &::before {
+//     content: '';
+//     position: absolute;
+//     top: 0;
+//     right: 0;
+//     bottom: 0;
+//     left: 0;
+//     @include skeleton;
+//   }
+// }
+// .maximum_notice {
+//   position: relative;
+//   width: 300px;
+//   height: 16px;
+//   &::before {
+//     content: '';
+//     position: absolute;
+//     top: 0;
+//     right: 0;
+//     bottom: 0;
+//     left: 0;
+//     @include skeleton;
+//   }
+// }
+// .tab_header_item {
+//   width: 120px;
+//   .label {
+//     &::before {
+//       content: '';
+//       height: 16px;
+//       position: absolute;
+//       top: 20px;
+//       right: 20px;
+//       bottom: 0;
+//       left: 20px;
+//       @include skeleton;
+//     }
+//   }
+// }
+// }
+.swiper_wrap {
+  &.is-skeleton {
+    .swiper_inner {
+      position: relative;
+      min-height: 342px;
+      .mobile_view & {
+        min-height: 418px;
+      }
+      &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        @include skeleton;
+      }
+    }
+  }
+}
+.banner_list_wrap {
+  .is-skeleton {
+    td,
+    th {
+      position: relative;
+      height: 55px;
+      $skeletonTableSpace: 12px;
+      &::before {
+        content: '';
+        position: absolute;
+        top: $skeletonTableSpace;
+        left: $skeletonTableSpace;
+        right: $skeletonTableSpace;
+        bottom: $skeletonTableSpace;
+        @include skeleton;
+      }
+    }
+  }
+}

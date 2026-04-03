@@ -1,0 +1,23 @@
+@charset "UTF-8";
+/* variables.scss */
+$imageUrl: '../../images';
+// Colors
+$color-gray-pale: #e8ebe8;
+$color-gray: #8c97a7;
+$color-gray2: #999;
+// bold
+$fontBold: 700;
+$fontMedium: 500;
+$fontRegular: 400;
+$fontLight: 300;
+$fontThin: 100;
+
+$dimed: rgba(0, 0, 0, 0.5);
+// Breakpoints
+$G-breakpoints: (
+  mobile-min: 320px,
+  mobile: 375px,
+  tablet: 768px,
+  pc: 1024px,
+  pc-wide: 1330px
+);
