@@ -1,0 +1,988 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ibk.sb.restapi.biz.service.audit.repo.InvestAuditRepo">
+
+    <!--    SchemaMapper ID-->
+<!--    <sql id="MNBADM"><include refid="com.ibk.sb.restapi.biz.service.common.repo.SchemaRepo.MNBADM"/></sql>-->
+    <sql id="INVEST"><include refid="com.ibk.sb.restapi.biz.service.common.repo.SchemaRepo.INVEST"/></sql>
+
+    <!--    PagingMapper ID-->
+    <sql id="pagingHeader"><include refid="com.ibk.sb.restapi.biz.service.common.repo.PageRepo.pageHeader"/></sql>
+    <sql id="pagingFooter"><include refid="com.ibk.sb.restapi.biz.service.common.repo.PageRepo.pageFooter"/></sql>
+
+    <!--=============================================== 투자심사 조회 ===============================================-->
+    
+    <!--    메인화면 투자심사 리스트 조회-->
+    <select id="selectMainAuditApplyList" parameterType="RequestSearchInvestAuditVO" resultType="ApplySummaryVO">
+        SELECT
+            *
+        FROM (
+            SELECT
+                tbiar.INVM_EXNT_RQST_ID
+                , tbiar.RQST_ENPR_ID
+                , eim.ETNM AS RQST_BPLC_NM
+                , tbias_end.INVM_EXNT_PGSG_CD
+                , tbias_end.INVM_EXNT_PGSG_NM
+                , tbiar.RGSN_TS
+
+            FROM
+                <include refid="INVEST"/>TB_BOX_IVT_EXNT_RQST_M tbiar
+            LEFT JOIN
+                <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_M eim ON eim.UTLINSTT_ID = tbiar.RQST_ENPR_ID
+            LEFT JOIN
+            (
+                SELECT
+                    A.INVM_EXNT_RQST_ID
+                    , A.INVM_EXNT_PGSG_CD
+                    , A.RGSN_TS
+                    , C.COM_CD_NM AS INVM_EXNT_PGSG_NM
+                FROM
+                    <include refid="INVEST"/>TB_BOX_IVT_EXNT_PGSG_R A
+                INNER JOIN
+                (
+                    SELECT
+                    INVM_EXNT_RQST_ID
+                    , MAX(RGSN_TS) AS END_TS
+                FROM
+                    <include refid="INVEST"/>TB_BOX_IVT_EXNT_PGSG_R
+                GROUP BY
+                    INVM_EXNT_RQST_ID
+                ) B ON A.INVM_EXNT_RQST_ID = B.INVM_EXNT_RQST_ID AND A.RGSN_TS = B.END_TS
+                LEFT JOIN
+                    <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D C ON A.INVM_EXNT_PGSG_CD = C.COM_CD_ID
+            ) tbias_end ON tbias_end.INVM_EXNT_RQST_ID = tbiar.INVM_EXNT_RQST_ID
+
+            <!--기업 투자사간 변화에 따른 조회 변동 처리-->
+<!--            LEFT JOIN-->
+<!--                <include refid="INVEST"/>TB_BOX_IVT_VNCM_CPTL_L vcl_vc ON tbiar.INVM_CMP_ID = vcl_vc.UTLINSTT_ID-->
+<!--            LEFT JOIN-->
+<!--                <include refid="INVEST"/>TB_BOX_IVT_VNCM_CPTL_L vcl_com ON tbiar.RQST_ENPR_ID = vcl_com.UTLINSTT_ID-->
+
+
+            WHERE 1=1
+                AND (tbias_end.INVM_EXNT_PGSG_CD = #{AUDIT_EVALUATE_CODE} OR tbias_end.INVM_EXNT_PGSG_CD = #{AUDIT_COMPLETE_CODE})
+
+            <!--기업 투자사간 변화에 따른 조회 변동 처리-->
+            <!-- AND vcl_vc.UTLINSTT_ID IS NOT NULL -->
+            <!-- AND vcl_com.UTLINSTT_ID IS NULL -->
+
+            ORDER BY
+                tbiar.RGSN_TS DESC
+        )
+        WHERE <![CDATA[ ROWNUM < 50 ]]>
+    </select>
+
+    <!--    상태별 투자심사 리스트 조회-->
+    <select id="selectAuditByStatus" parameterType="RequestSearchInvestAuditByStatusVO" resultType="InvestAuditSummaryVO">
+        SELECT
+            tbiar.INVM_EXNT_RQST_ID
+            , tbiar.INVM_CMP_ID
+            , tbiar.RQST_ENPR_ID
+            , eim_vc.ETNM AS INVM_CMP_BPLC_NM
+            , eim_com.ETNM AS RQST_BPLC_NM
+            , tbiar.RGSN_TS AS INVM_STTG_DT
+
+            , tbiar.PRPL_MSG_CON
+            , tbiar.RQST_MSG_CON
+            , tbiar.INVM_PRFR_SCDL_AMT
+
+            , tbias_start.INVM_EXNT_PGSG_CD
+            , tbias_end.INVM_EXNT_PGSG_CD
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_EXNT_RQST_M tbiar
+
+        <!--기업 투자사간 변화에 따른 조회 변동 처리-->
+<!--        LEFT JOIN-->
+<!--            <include refid="INVEST"/>TB_BOX_IVT_VNCM_CPTL_L vcl_vc ON tbiar.INVM_CMP_ID = vcl_vc.UTLINSTT_ID-->
+<!--        LEFT JOIN-->
+<!--            <include refid="INVEST"/>TB_BOX_IVT_VNCM_CPTL_L vcl_com ON tbiar.RQST_ENPR_ID = vcl_com.UTLINSTT_ID-->
+
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_M eim_vc ON eim_vc.UTLINSTT_ID = tbiar.INVM_CMP_ID
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_M eim_com ON eim_com.UTLINSTT_ID = tbiar.RQST_ENPR_ID
+
+        LEFT JOIN
+        (
+            SELECT
+                A.INVM_EXNT_RQST_ID
+                , A.INVM_EXNT_PGSG_CD
+                , A.RGSN_TS
+            FROM
+                <include refid="INVEST"/>TB_BOX_IVT_EXNT_PGSG_R A
+            INNER JOIN
+            (
+                SELECT
+                    INVM_EXNT_RQST_ID
+                    , MAX(RGSN_TS) AS END_TS
+                FROM
+                    <include refid="INVEST"/>TB_BOX_IVT_EXNT_PGSG_R
+                GROUP BY
+                    INVM_EXNT_RQST_ID
+                ) B ON A.INVM_EXNT_RQST_ID = B.INVM_EXNT_RQST_ID AND A.RGSN_TS = B.END_TS
+        ) tbias_end ON tbias_end.INVM_EXNT_RQST_ID = tbiar.INVM_EXNT_RQST_ID
+
+        LEFT JOIN
+        (
+            SELECT
+                A.INVM_EXNT_RQST_ID
+                , A.INVM_EXNT_PGSG_CD
+                , A.RGSN_TS
+            FROM
+                <include refid="INVEST"/>TB_BOX_IVT_EXNT_PGSG_R A
+            INNER JOIN
+            (
+                SELECT
+                    INVM_EXNT_RQST_ID
+                    , MIN(RGSN_TS) AS START_TS
+                FROM
+                    <include refid="INVEST"/>TB_BOX_IVT_EXNT_PGSG_R
+                GROUP BY
+                    INVM_EXNT_RQST_ID
+            ) B ON A.INVM_EXNT_RQST_ID = B.INVM_EXNT_RQST_ID AND A.RGSN_TS = B.START_TS
+        ) tbias_start ON tbias_start.INVM_EXNT_RQST_ID = tbiar.INVM_EXNT_RQST_ID
+
+        WHERE 1=1
+            <if test="comType != null and !comType.equals('') and utlinsttId != null and !utlinsttId.equals('')">
+                <choose>
+                    <when test="comType.equals(COM_TYPE)">
+                        AND tbiar.RQST_ENPR_ID = #{utlinsttId}
+                    </when>
+                    <when test="comType.equals(VC_TYPE)">
+                        <if test="utlinsttId.equals('C0127305')">
+                            AND tbiar.INVM_CMP_ID IN ('C0040865','C0127305')
+                        </if>
+                        <if test="!utlinsttId.equals('C0127305')">
+                            AND tbiar.INVM_CMP_ID = #{utlinsttId}
+                        </if>
+                    </when>
+                </choose>
+            </if>
+            <if test="startStgCdList != null and startStgCdList.size() > 0">
+                AND tbias_start.INVM_EXNT_PGSG_CD IN (
+                    <foreach collection="startStgCdList" item="startStgCd" separator=",">
+                        #{startStgCd}
+                    </foreach>
+                )
+            </if>
+            <if test="endStgCdList != null and endStgCdList.size() > 0">
+                AND tbias_end.INVM_EXNT_PGSG_CD IN (
+                    <foreach collection="endStgCdList" item="endStgCd" separator=",">
+                        #{endStgCd}
+                    </foreach>
+                )
+            </if>
+
+        <!--기업 투자사간 변화에 따른 조회 변동 처리-->
+        <!-- AND vcl_vc.UTLINSTT_ID IS NOT NULL AND vcl_com.UTLINSTT_ID IS NULL -->
+
+        ORDER BY
+            tbiar.RGSN_TS DESC
+    </select>
+
+    <!--    투자심사 진행확인-->
+    <select id="selectOngoingAudit" parameterType="String" resultType="InvestAuditStageVO">
+        SELECT
+            *
+        FROM (
+            SELECT
+                tbias.INVM_EXNT_RQST_ID
+                , tbias.INVM_EXNT_PGSG_CD
+                , tbias.RGSN_USER_ID
+                , tbias.RGSN_TS
+            FROM
+                <include refid="INVEST"/>TB_BOX_IVT_EXNT_PGSG_R tbias
+            LEFT JOIN
+                <include refid="INVEST"/>TB_BOX_IVT_EXNT_RQST_M tbiar ON tbias.INVM_EXNT_RQST_ID = tbiar.INVM_EXNT_RQST_ID
+            WHERE
+                tbiar.INVM_CMP_ID = #{invmCmpId} AND tbiar.RQST_ENPR_ID = #{rqstEnprId}
+            ORDER BY
+                tbias.RGSN_TS DESC
+        )
+        WHERE
+            ROWNUM = 1
+    </select>
+
+    <select id="selectRecentLimitPeriodAudit" parameterType="String" resultType="InvestAuditSummaryVO">
+        SELECT
+            *
+        FROM (
+            SELECT
+                tbiqm.INVM_EXNT_RQST_ID
+                , tbiqm.INVM_CMP_ID
+                , tbiqm.RQST_ENPR_ID
+                , tbiqm.RGSN_TS AS INVM_STTG_DT
+
+                , tbias_start.INVM_EXNT_PGSG_CD
+            FROM
+                <include refid="INVEST"/>TB_BOX_IVT_EXNT_RQST_M tbiqm
+            LEFT JOIN
+            (
+                SELECT
+                    A.INVM_EXNT_RQST_ID
+                    , A.INVM_EXNT_PGSG_CD
+                    , A.RGSN_TS
+                FROM
+                    <include refid="INVEST"/>TB_BOX_IVT_EXNT_PGSG_R A
+                INNER JOIN
+                (
+                    SELECT
+                    INVM_EXNT_RQST_ID
+                    , MIN(RGSN_TS) AS START_TS
+                FROM
+                    <include refid="INVEST"/>TB_BOX_IVT_EXNT_PGSG_R
+                GROUP BY
+                    INVM_EXNT_RQST_ID
+                ) B ON A.INVM_EXNT_RQST_ID = B.INVM_EXNT_RQST_ID AND A.RGSN_TS = B.START_TS
+            ) tbias_start ON tbias_start.INVM_EXNT_RQST_ID = tbiqm.INVM_EXNT_RQST_ID
+            LEFT JOIN
+                <include refid="INVEST"/>TB_BOX_IVT_VNCM_CPTL_L tbivcl ON tbivcl.UTLINSTT_ID = tbiqm.INVM_CMP_ID
+            WHERE
+                tbiqm.RQST_ENPR_ID = #{rqstEnprId}
+                AND tbiqm.INVM_CMP_ID = #{invmCmpId}
+                AND tbias_start.INVM_EXNT_PGSG_CD = #{AUDIT_REQUEST_CODE}
+                <![CDATA[
+                    AND (
+                        CASE
+                            WHEN tbivcl.INVMEXNT_RAP_LMTN_MNCT IS NULL THEN TO_CHAR(ADD_MONTHS(SYSDATE, -12), 'YYYYMMDD')
+                            ELSE TO_CHAR(ADD_MONTHS(SYSDATE, -tbivcl.INVMEXNT_RAP_LMTN_MNCT), 'YYYYMMDD') END
+                        )   < TO_CHAR(tbiqm.RGSN_TS, 'YYYYMMDD')
+                ]]>
+
+            ORDER BY
+                tbiqm.RGSN_TS DESC
+        )
+        WHERE ROWNUM = 1
+    </select>
+
+    <!--    투자심사 제안 | 요청 목록 조회-->
+    <select id="selectInvestAuditList" parameterType="RequestSearchInvestAuditPageVO" resultType="InvestAuditSummaryVO">
+        <include refid="pagingHeader"/>
+        SELECT
+            tbiar.INVM_EXNT_RQST_ID
+            , tbiar.INVM_CMP_ID
+            , tbiar.RQST_ENPR_ID
+            , eim_vc.ETNM AS INVM_CMP_BPLC_NM
+            , eim_vc.BZN AS VC_BZN
+            , eim_vc.INCR_YMD AS VC_INCR_YMD
+            , eim_com.ETNM AS RQST_BPLC_NM
+            , eim_com.BZN AS COM_BZN
+            , eim_com.INCR_YMD AS COM_INCR_YMD
+            , tbiar.RGSN_TS AS INVM_STTG_DT
+			
+            , tbiar.PRPL_MSG_CON
+            , tbiar.RQST_MSG_CON
+
+            , tbias_end.INVM_EXNT_PGSG_CD
+            , tbias_end.INVM_EXNT_PGSG_NM
+
+            , tbias_start.INVM_EXNT_PGSG_CD AS START_INVM_EXNT_PGSG_CD
+
+            , vcl_vc.INVM_CMP_PTRN_CD
+            , ccd_vc.COM_CD_NM AS INVM_CMP_PTRN_NM
+            , eid_com.ENPR_DSNC_CLSF_CD
+            , ccd_com.COM_CD_NM AS ENPR_DSNC_CLSF_NM
+
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_EXNT_RQST_M tbiar
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_D eid_com ON eid_com.UTLINSTT_ID = tbiar.RQST_ENPR_ID
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd_com ON eid_com.ENPR_DSNC_CLSF_CD = ccd_com.COM_CD_ID
+        LEFT JOIN
+        (
+            SELECT
+                A.INVM_EXNT_RQST_ID
+                , A.INVM_EXNT_PGSG_CD
+                , A.RGSN_TS
+                , C.COM_CD_NM AS INVM_EXNT_PGSG_NM
+            FROM
+                <include refid="INVEST"/>TB_BOX_IVT_EXNT_PGSG_R A
+            INNER JOIN
+            (
+                SELECT
+                    INVM_EXNT_RQST_ID
+                    , MAX(RGSN_TS) AS END_TS
+                FROM
+                    <include refid="INVEST"/>TB_BOX_IVT_EXNT_PGSG_R
+                GROUP BY
+                    INVM_EXNT_RQST_ID
+            ) B ON A.INVM_EXNT_RQST_ID = B.INVM_EXNT_RQST_ID AND A.RGSN_TS = B.END_TS
+            LEFT JOIN
+                <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D C ON A.INVM_EXNT_PGSG_CD = C.COM_CD_ID
+        ) tbias_end ON tbias_end.INVM_EXNT_RQST_ID = tbiar.INVM_EXNT_RQST_ID
+
+        LEFT JOIN
+        (
+            SELECT
+                A.INVM_EXNT_RQST_ID
+                , A.INVM_EXNT_PGSG_CD
+                , A.RGSN_TS
+            FROM
+                <include refid="INVEST"/>TB_BOX_IVT_EXNT_PGSG_R A
+            INNER JOIN
+            (
+                SELECT
+                    INVM_EXNT_RQST_ID
+                    , MIN(RGSN_TS) AS START_TS
+                FROM
+                    <include refid="INVEST"/>TB_BOX_IVT_EXNT_PGSG_R
+                GROUP BY
+                    INVM_EXNT_RQST_ID
+            ) B ON A.INVM_EXNT_RQST_ID = B.INVM_EXNT_RQST_ID AND A.RGSN_TS = B.START_TS
+
+        ) tbias_start ON tbias_start.INVM_EXNT_RQST_ID = tbiar.INVM_EXNT_RQST_ID
+
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_M eim_vc ON eim_vc.UTLINSTT_ID = tbiar.INVM_CMP_ID
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_M eim_com ON eim_com.UTLINSTT_ID = tbiar.RQST_ENPR_ID
+
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_VNCM_CPTL_L vcl_vc ON tbiar.INVM_CMP_ID = vcl_vc.UTLINSTT_ID
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd_vc ON vcl_vc.INVM_CMP_PTRN_CD = ccd_vc.COM_CD_ID
+
+        WHERE 1=1
+            <if test="listStartType != null and !listStartType.equals('')">
+                AND tbias_start.INVM_EXNT_PGSG_CD = #{listStartType}
+            </if>
+
+            <if test="comType != null and !comType.equals('')">
+                <choose>
+                    <when test="comType.equals('COM')">
+                        AND tbiar.RQST_ENPR_ID = #{utlinsttId}
+                    </when>
+                    <when test="comType.equals('VC')">
+                        <if test="utlinsttId.equals('C0127305')">
+                            <if test="investRcdt.equals('')">
+                                AND tbiar.INVM_CMP_ID IN ('C0040865','C0127305')
+                            </if>
+                            <if test="investRcdt.equals('01')">
+                                AND tbiar.INVM_CMP_ID = #{utlinsttId}
+                            </if>
+                            <if test="investRcdt.equals('02')">
+                                AND tbiar.INVM_CMP_ID = 'C0040865'
+                            </if>
+                        </if>
+                        <if test="!utlinsttId.equals('C0127305')">
+                            AND tbiar.INVM_CMP_ID = #{utlinsttId}
+                        </if>
+                    </when>
+                </choose>
+            </if>
+            <if test="invmExntPgsgCd != null and !invmExntPgsgCd.equals('')">
+                AND tbias_end.INVM_EXNT_PGSG_CD = #{invmExntPgsgCd}
+            </if>
+
+            <if test="checkLimit">
+                AND tbias_end.INVM_EXNT_PGSG_CD != #{AUDIT_COMPLETE_CODE}
+                AND tbias_end.INVM_EXNT_PGSG_CD != #{AUDIT_EXPIRED_CODE}
+                AND tbias_end.INVM_EXNT_PGSG_CD != #{AUDIT_CANCEL_CODE}
+            </if>
+            <if test="searchComNm != null and !searchComNm.equals('')">
+				AND UPPER(eim_com.ETNM) LIKE '%' || UPPER(#{searchComNm}) || '%'
+			</if>
+			<if test="searchBzn != null and !searchBzn.equals('')">
+				AND UPPER(eim_com.BZN) LIKE '%' || UPPER(#{searchBzn}) || '%'
+			</if>
+			<if test="(searchFromDate != null and !searchFromDate.equals('')) and (searchToDate != null and !searchToDate.equals(''))">
+				AND TO_DATE(TO_CHAR(tbiar.RGSN_TS, 'YYYYMMDD'), 'YYYYMMDD') BETWEEN TO_DATE(#{searchFromDate}, 'YYYYMMDD') AND TO_DATE(#{searchToDate}, 'YYYYMMDD')
+			</if>
+        ORDER BY
+			tbiar.RGSN_TS DESC
+        <include refid="pagingFooter"/>
+    </select>
+
+    <!--    투자심사 진행도 조회-->
+    <select id="selectInvestAuditProgress" parameterType="String" resultType="InvestAuditStageVO">
+        SELECT
+            epr.INVM_EXNT_RQST_ID
+            , epr.INVM_EXNT_PGSG_CD
+            , ccd.COM_CD_NM AS INVM_EXNT_PGSG_NM
+            , epr.RGSN_USER_ID
+            , epr.RGSN_TS
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_EXNT_PGSG_R epr
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd ON epr.INVM_EXNT_PGSG_CD = ccd.COM_CD_ID
+        WHERE
+            epr.INVM_EXNT_RQST_ID = #{invmExntRqstId}
+        ORDER BY
+            epr.RGSN_TS ASC
+    </select>
+
+
+    <!--    투자심사 정보 조회-->
+    <select id="selectInvestAudit" parameterType="RequestSearchInvestAuditVO" resultType="InvestAuditVO">
+        SELECT
+            tbiar.INVM_EXNT_RQST_ID
+
+            , tbiar.INVM_CMP_ID
+            , tbiar.RQST_ENPR_ID
+            , eim_vc.ETNM AS INVM_CMP_BPLC_NM
+            , eim_com.ETNM AS RQST_BPLC_NM
+
+            , eim_vc.BZN AS INVM_CMP_BIZRNO
+            , eim_com.BZN AS RQST_BPLC_BIZRNO
+
+            , tbiar.ANNC_DAT_FILE_ID
+            , tbiar.ADDT_DOC_FILE_ID
+            , annc_file.FILE_NM AS ANNC_DAT_FILE_NM
+            , addt_file.FILE_NM AS ADDT_DOC_FILE_NM
+
+            , tbiar.PBRL_PICT_URL
+            , tbiar.PRPL_MSG_CON
+            , tbiar.RQST_MSG_CON
+            , tbiar.EXNT_MSG_CON
+            , tbiar.INQ_ABL_NDD
+
+            , tbias_end.INVM_EXNT_PGSG_CD
+            , tbias_end.INVM_EXNT_PGSG_NM
+
+            , tbiar.RGSN_USER_ID
+            , tbiar.RGSN_TS
+            , tbiar.AMNN_USER_ID
+            , tbiar.AMNN_TS
+
+            , vcl_vc.INVM_CMP_PTRN_CD
+            , ccd_vc.COM_CD_NM AS INVM_CMP_PTRN_NM
+            , eid_com.ENPR_DSNC_CLSF_CD
+            , ccd_com.COM_CD_NM AS ENPR_DSNC_CLSF_NM
+
+            , tbias_rqst.RGSN_TS AS INVM_RQST_DT
+
+            , tbiar.EXNT_RSLT_CD
+            , ccd_rslt.COM_CD_NM AS EXNT_RSLT_NM
+            , tbiar.EXNT_RSPR_ID
+            , tbiar.INVM_PRFR_SCDL_AMT
+            , tbiar.EXNT_RSLT_RMRK
+            , tbiar.INVMCROF_REPNM
+            
+			, tbiar.BRCD
+            , tbiar.EMN
+            , tbiar.EMM
+            
+            , tbiar.TCB_TCHN_GRD
+            , tbiar.INCF_CD1
+            , tbiar.INCF_CD2
+            , tbiar.INCF_CD3
+
+            , irbsin.EMP_CNT
+            , eid_com.ENPR_INRD_CON
+            , eim_com.INCR_YMD
+            , irbsin.ADR
+            , irbsin.HMPG_URL_ADR
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_EXNT_RQST_M tbiar
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_M eim_vc ON eim_vc.UTLINSTT_ID = tbiar.INVM_CMP_ID
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_M eim_com ON eim_com.UTLINSTT_ID = tbiar.RQST_ENPR_ID
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_IR_B_BSIN_M irbsin ON irbsin.UTLINSTT_ID = tbiar.RQST_ENPR_ID
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_FILE_ATCH_M annc_file ON annc_file.FILE_ID = tbiar.ANNC_DAT_FILE_ID
+
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_FILE_ATCH_M addt_file ON addt_file.FILE_ID = tbiar.ADDT_DOC_FILE_ID
+
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_VNCM_CPTL_L vcl_vc ON tbiar.INVM_CMP_ID = vcl_vc.UTLINSTT_ID AND vcl_vc.UTLINSTT_ID IS NOT NULL
+
+        <!--코드정보 JOIN-->
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd_vc ON vcl_vc.INVM_CMP_PTRN_CD = ccd_vc.COM_CD_ID
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_D eid_com ON eid_com.UTLINSTT_ID = tbiar.RQST_ENPR_ID
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd_com ON eid_com.ENPR_DSNC_CLSF_CD = ccd_com.COM_CD_ID
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd_rslt ON tbiar.EXNT_RSLT_CD = ccd_rslt.COM_CD_ID
+
+        LEFT JOIN
+        (
+            SELECT
+                A.INVM_EXNT_RQST_ID
+                , A.INVM_EXNT_PGSG_CD
+                , A.RGSN_TS
+                , C.COM_CD_NM AS INVM_EXNT_PGSG_NM
+            FROM
+                <include refid="INVEST"/>TB_BOX_IVT_EXNT_PGSG_R A
+            INNER JOIN
+            (
+                SELECT
+                    INVM_EXNT_RQST_ID
+                    , MAX(RGSN_TS) AS END_TS
+                FROM
+                    <include refid="INVEST"/>TB_BOX_IVT_EXNT_PGSG_R
+                GROUP BY
+                    INVM_EXNT_RQST_ID
+            ) B ON A.INVM_EXNT_RQST_ID = B.INVM_EXNT_RQST_ID AND A.RGSN_TS = B.END_TS
+            LEFT JOIN
+                <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D C ON A.INVM_EXNT_PGSG_CD = C.COM_CD_ID
+        ) tbias_end ON tbias_end.INVM_EXNT_RQST_ID = tbiar.INVM_EXNT_RQST_ID
+
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_EXNT_PGSG_R tbias_rqst
+                ON tbiar.INVM_EXNT_RQST_ID = tbias_rqst.INVM_EXNT_RQST_ID AND tbias_rqst.INVM_EXNT_PGSG_CD = #{AUDIT_REQUEST_CODE}
+
+        WHERE
+            tbiar.INVM_EXNT_RQST_ID = #{invmExntRqstId}
+    </select>
+
+    <!--=============================================== 투자심사 제안/요청/심사 ===============================================-->
+
+    <!--    투자심사 제안/요청 등록-->
+    <insert id="insertInvestAudit" parameterType="InvestAuditVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_EXNT_RQST_M
+        (
+            INVM_EXNT_RQST_ID
+            , INVM_CMP_ID
+            , RQST_ENPR_ID
+            , ANNC_DAT_FILE_ID
+            , ADDT_DOC_FILE_ID
+            , PBRL_PICT_URL
+            , PRPL_MSG_CON
+            , RQST_MSG_CON
+            , EXNT_MSG_CON
+            , INQ_ABL_NDD
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+
+            <!-- 추천직원, TCB 관련 추가사항 -->
+            , BRCD
+            , EMN
+            , EMM
+            , TCB_TCHN_GRD
+            , INCF_CD1
+            , INCF_CD2
+            , INCF_CD3
+        )
+        VALUES
+        (
+            #{invmExntRqstId}
+            , #{invmCmpId}
+            , #{rqstEnprId}
+            , #{anncDatFileId}
+            , #{addtDocFileId}
+            , #{pbrlPictUrl}
+            , #{prplMsgCon}
+            , #{rqstMsgCon}
+            , #{exntMsgCon}
+            , #{inqAblNdd}
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+            , #{amnnUserId}
+            , CURRENT_TIMESTAMP
+
+            , #{brcd}
+            , #{emn}
+            , #{emm}
+            , #{tcbTchnGrd}
+            , #{incfCd1}
+            , #{incfCd2}
+            , #{incfCd3}
+        )
+    </insert>
+
+    <!--    투자심사 진행 이력 등록-->
+    <insert id="insertInvestAuditStage" parameterType="InvestAuditStageVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_EXNT_PGSG_R
+        (
+            INVM_EXNT_RQST_ID
+            , INVM_EXNT_PGSG_CD
+            , RGSN_USER_ID
+            , RGSN_TS
+        )
+        VALUES
+        (
+            #{invmExntRqstId}
+            , #{invmExntPgsgCd}
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+        )
+    </insert>
+
+    <!--    투자심사 제안 -> 요청 수정-->
+    <update id="updateInvestAuditRequest" parameterType="InvestAuditVO">
+        UPDATE
+            <include refid="INVEST"/>TB_BOX_IVT_EXNT_RQST_M
+        SET
+            RQST_ENPR_ID     = #{rqstEnprId}
+            , ANNC_DAT_FILE_ID     = #{anncDatFileId}
+            , ADDT_DOC_FILE_ID     = #{addtDocFileId}
+            , PBRL_PICT_URL        = #{pbrlPictUrl}
+            , RQST_MSG_CON         = #{rqstMsgCon}
+            , INQ_ABL_NDD          = #{inqAblNdd}
+
+            , AMNN_USER_ID         = #{amnnUserId}
+            , AMNN_TS              = CURRENT_TIMESTAMP
+
+            <!-- 추천직원, TCB 관련 추가사항 -->
+            , BRCD                 = #{brcd}
+            , EMN                  = #{emn}
+            , EMM                  = #{emm}
+            , TCB_TCHN_GRD         = #{tcbTchnGrd}
+            , INCF_CD1             = #{incfCd1}
+            , INCF_CD2             = #{incfCd2}
+            , INCF_CD3             = #{incfCd3}
+        WHERE
+            INVM_EXNT_RQST_ID = #{invmExntRqstId}
+    </update>
+
+    <!--    투자 심사(심사 총평 업데이트)-->
+    <update id="updateInvestAuditEvaluateMsg" parameterType="InvestAuditVO">
+        UPDATE
+            <include refid="INVEST"/>TB_BOX_IVT_EXNT_RQST_M
+        SET
+            EXNT_MSG_CON         = #{exntMsgCon}
+            , EXNT_RSLT_CD       = #{exntRsltCd}
+            , EXNT_RSPR_ID       = #{exntRsprId}
+            , INVM_PRFR_SCDL_AMT = #{invmPrfrScdlAmt}
+            , EXNT_RSLT_RMRK     = #{exntRsltRmrk}
+            , INVMCROF_REPNM     = #{invmcrofRepnm}
+
+            , AMNN_USER_ID         = #{amnnUserId}
+            , AMNN_TS              = CURRENT_TIMESTAMP
+        WHERE
+            INVM_EXNT_RQST_ID = #{invmExntRqstId}
+    </update>
+	
+	<!-- 엑셀 투자심사 제안 | 요청,제안 목록 조회 -->
+    <select id="selectExcelAuditList" parameterType="RequestSearchInvestAuditPageVO" resultType="InvestAuditExcelVO">
+        SELECT
+            tbiar.INVM_EXNT_RQST_ID
+            , tbiar.INVM_CMP_ID
+            , tbiar.RQST_ENPR_ID
+            , eim_vc.ETNM AS INVM_CMP_BPLC_NM
+            , eim_com.ETNM AS RQST_BPLC_NM
+            , eim_com.BZN AS BZN
+            , eim_com.INCR_YMD
+            , tbiar.RGSN_TS AS INVM_STTG_DT
+			
+            , tbiar.PRPL_MSG_CON
+            , tbiar.RQST_MSG_CON
+
+            , tbias_end.INVM_EXNT_PGSG_CD
+            , tbias_end.INVM_EXNT_PGSG_NM
+
+            , tbias_start.INVM_EXNT_PGSG_CD AS START_INVM_EXNT_PGSG_CD
+
+            , vcl_vc.INVM_CMP_PTRN_CD
+            , ccd_vc.COM_CD_NM AS INVM_CMP_PTRN_NM
+            , eid_com.ENPR_DSNC_CLSF_CD
+            , ccd_com.COM_CD_NM AS ENPR_DSNC_CLSF_NM
+
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_EXNT_RQST_M tbiar
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_D eid_com ON eid_com.UTLINSTT_ID = tbiar.RQST_ENPR_ID
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd_com ON eid_com.ENPR_DSNC_CLSF_CD = ccd_com.COM_CD_ID
+        LEFT JOIN
+        (
+            SELECT
+                A.INVM_EXNT_RQST_ID
+                , A.INVM_EXNT_PGSG_CD
+                , A.RGSN_TS
+                , C.COM_CD_NM AS INVM_EXNT_PGSG_NM
+            FROM
+                <include refid="INVEST"/>TB_BOX_IVT_EXNT_PGSG_R A
+            INNER JOIN
+            (
+                SELECT
+                    INVM_EXNT_RQST_ID
+                    , MAX(RGSN_TS) AS END_TS
+                FROM
+                    <include refid="INVEST"/>TB_BOX_IVT_EXNT_PGSG_R
+                GROUP BY
+                    INVM_EXNT_RQST_ID
+            ) B ON A.INVM_EXNT_RQST_ID = B.INVM_EXNT_RQST_ID AND A.RGSN_TS = B.END_TS
+            LEFT JOIN
+                <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D C ON A.INVM_EXNT_PGSG_CD = C.COM_CD_ID
+        ) tbias_end ON tbias_end.INVM_EXNT_RQST_ID = tbiar.INVM_EXNT_RQST_ID
+
+        LEFT JOIN
+        (
+            SELECT
+                A.INVM_EXNT_RQST_ID
+                , A.INVM_EXNT_PGSG_CD
+                , A.RGSN_TS
+            FROM
+                <include refid="INVEST"/>TB_BOX_IVT_EXNT_PGSG_R A
+            INNER JOIN
+            (
+                SELECT
+                    INVM_EXNT_RQST_ID
+                    , MIN(RGSN_TS) AS START_TS
+                FROM
+                    <include refid="INVEST"/>TB_BOX_IVT_EXNT_PGSG_R
+                GROUP BY
+                    INVM_EXNT_RQST_ID
+            ) B ON A.INVM_EXNT_RQST_ID = B.INVM_EXNT_RQST_ID AND A.RGSN_TS = B.START_TS
+
+        ) tbias_start ON tbias_start.INVM_EXNT_RQST_ID = tbiar.INVM_EXNT_RQST_ID
+
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_M eim_vc ON eim_vc.UTLINSTT_ID = tbiar.INVM_CMP_ID
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_M eim_com ON eim_com.UTLINSTT_ID = tbiar.RQST_ENPR_ID
+
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_VNCM_CPTL_L vcl_vc ON tbiar.INVM_CMP_ID = vcl_vc.UTLINSTT_ID
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd_vc ON vcl_vc.INVM_CMP_PTRN_CD = ccd_vc.COM_CD_ID
+		LEFT JOIN 
+			<include refid="INVEST"/>TB_BOX_IVT_IR_B_BSIN_M bsin ON tbiar.RQST_ENPR_ID = bsin.UTLINSTT_ID
+        WHERE 1=1
+        	AND tbias_end.INVM_EXNT_PGSG_CD IN('EXN00000', 'EXN00001' , 'EXN00002' , 'EXN00003', 'EXN01000', 'EXN01001', 'EXN01002')
+            <if test="listStartType != null and !listStartType.equals('')">
+                AND tbias_start.INVM_EXNT_PGSG_CD = #{listStartType}
+            </if>
+
+            <if test="comType != null and !comType.equals('')">
+                <choose>
+                    <when test="comType.equals('COM')">
+                        AND tbiar.RQST_ENPR_ID = #{utlinsttId}
+                    </when>
+                    <when test="comType.equals('VC')">
+                        <if test="utlinsttId.equals('C0127305')">
+                            AND tbiar.INVM_CMP_ID IN ('C0040865','C0127305')
+                        </if>
+                        <if test="!utlinsttId.equals('C0127305')">
+                            AND tbiar.INVM_CMP_ID = #{utlinsttId}
+                        </if>
+                    </when>
+                </choose>
+            </if>
+            <if test="invmExntPgsgCd != null and !invmExntPgsgCd.equals('')">
+                AND tbias_end.INVM_EXNT_PGSG_CD = #{invmExntPgsgCd}
+            </if>
+
+            <if test="checkLimit">
+                AND tbias_end.INVM_EXNT_PGSG_CD != #{AUDIT_COMPLETE_CODE}
+                AND tbias_end.INVM_EXNT_PGSG_CD != #{AUDIT_EXPIRED_CODE}
+                AND tbias_end.INVM_EXNT_PGSG_CD != #{AUDIT_CANCEL_CODE}
+            </if>
+            <if test="searchComNm != null and !searchComNm.equals('')">
+				AND UPPER(eim_com.ETNM) LIKE '%' || UPPER(#{searchComNm}) || '%'
+			</if>
+			<if test="searchBzn != null and !searchBzn.equals('')">
+				AND UPPER(eim_com.BZN) LIKE '%' || UPPER(#{searchBzn}) || '%'
+			</if>
+			<if test="(searchFromDate != null and !searchFromDate.equals('')) and (searchToDate != null and !searchToDate.equals(''))">
+				AND TO_DATE(TO_CHAR(tbiar.RGSN_TS, 'YYYYMMDD'), 'YYYYMMDD') BETWEEN TO_DATE(#{searchFromDate}, 'YYYYMMDD') AND TO_DATE(#{searchToDate}, 'YYYYMMDD')
+			</if>
+        ORDER BY
+            tbiar.RGSN_TS DESC
+    </select>
+    
+    <!-- 엑셀 투자심사 | 요청,제안 세부내용 조회 -->
+    <select id="selectExcelAuditDetail" parameterType="RequestSearchInvestAuditPageVO" resultType="InvestAuditDetailExcelVO">
+    	SELECT
+            tbiar.INVM_EXNT_RQST_ID
+            , tbiar.INVM_CMP_ID
+            , tbiar.RQST_ENPR_ID
+            , eim_vc.ETNM AS INVM_CMP_BPLC_NM
+            , eim_com.ETNM AS RQST_BPLC_NM
+            , eim_com.BZN AS BZN
+            , tbiar.RGSN_TS AS INVM_STTG_DT
+			, tbiar.BRCD
+            , tbiar.EMN
+            , tbiar.EMM
+			
+            , tbiar.PRPL_MSG_CON
+            , tbiar.RQST_MSG_CON
+
+            , tbias_end.INVM_EXNT_PGSG_CD
+            , tbias_end.INVM_EXNT_PGSG_NM
+
+            , tbias_start.INVM_EXNT_PGSG_CD AS START_INVM_EXNT_PGSG_CD
+            
+            , vcl_vc.INVM_CMP_PTRN_CD
+            , ccd_vc.COM_CD_NM AS INVM_CMP_PTRN_NM
+            , eid_com.ENPR_DSNC_CLSF_CD
+            , ccd_com.COM_CD_NM AS ENPR_DSNC_CLSF_NM
+            
+		    , bsin.ADR 
+		    , bsin.HMPG_URL_ADR
+		    , bsin.TTIS_STCNT
+		    , bsin.EMP_CNT
+		    , bsin.COL 
+		    , bsin.RPRNM 
+		    , bsin.ZPCD 
+		    , bsin.CPFN_AMT
+		    , bsin.PVPR_AMT
+		    , bsin.ETVL_AMT 
+		    
+			, hope.INVM_HOPE_STG_NM
+    		, hope.INVM_HOPE_AMT_NM
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_EXNT_RQST_M tbiar
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_D eid_com ON eid_com.UTLINSTT_ID = tbiar.RQST_ENPR_ID
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd_com ON eid_com.ENPR_DSNC_CLSF_CD = ccd_com.COM_CD_ID
+        LEFT JOIN
+        (
+            SELECT
+                A.INVM_EXNT_RQST_ID
+                , A.INVM_EXNT_PGSG_CD
+                , A.RGSN_TS
+                , C.COM_CD_NM AS INVM_EXNT_PGSG_NM
+            FROM
+                <include refid="INVEST"/>TB_BOX_IVT_EXNT_PGSG_R A
+            INNER JOIN
+            (
+                SELECT
+                    INVM_EXNT_RQST_ID
+                    , MAX(RGSN_TS) AS END_TS
+                FROM
+                    <include refid="INVEST"/>TB_BOX_IVT_EXNT_PGSG_R
+                GROUP BY
+                    INVM_EXNT_RQST_ID
+            ) B ON A.INVM_EXNT_RQST_ID = B.INVM_EXNT_RQST_ID AND A.RGSN_TS = B.END_TS
+            LEFT JOIN
+                <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D C ON A.INVM_EXNT_PGSG_CD = C.COM_CD_ID
+        ) tbias_end ON tbias_end.INVM_EXNT_RQST_ID = tbiar.INVM_EXNT_RQST_ID
+
+        LEFT JOIN
+        (
+            SELECT
+                A.INVM_EXNT_RQST_ID
+                , A.INVM_EXNT_PGSG_CD
+                , A.RGSN_TS
+            FROM
+                <include refid="INVEST"/>TB_BOX_IVT_EXNT_PGSG_R A
+            INNER JOIN
+            (
+                SELECT
+                    INVM_EXNT_RQST_ID
+                    , MIN(RGSN_TS) AS START_TS
+                FROM
+                    <include refid="INVEST"/>TB_BOX_IVT_EXNT_PGSG_R
+                GROUP BY
+                    INVM_EXNT_RQST_ID
+            ) B ON A.INVM_EXNT_RQST_ID = B.INVM_EXNT_RQST_ID AND A.RGSN_TS = B.START_TS
+
+        ) tbias_start ON tbias_start.INVM_EXNT_RQST_ID = tbiar.INVM_EXNT_RQST_ID
+
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_M eim_vc ON eim_vc.UTLINSTT_ID = tbiar.INVM_CMP_ID
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_M eim_com ON eim_com.UTLINSTT_ID = tbiar.RQST_ENPR_ID
+
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_VNCM_CPTL_L vcl_vc ON tbiar.INVM_CMP_ID = vcl_vc.UTLINSTT_ID
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd_vc ON vcl_vc.INVM_CMP_PTRN_CD = ccd_vc.COM_CD_ID
+		LEFT JOIN 
+			<include refid="INVEST"/>TB_BOX_IVT_IR_B_BSIN_M bsin ON tbiar.RQST_ENPR_ID = bsin.UTLINSTT_ID
+		LEFT JOIN 	
+			(
+		    SELECT
+		        hoped.UTLINSTT_ID
+		        , hoped.INVM_STG_CD
+		        , hoped.RGSN_TS
+		        , C.COM_CD_NM AS INVM_HOPE_STG_NM
+		        , CC.COM_CD_NM AS INVM_HOPE_AMT_NM
+		    FROM
+		        <include refid="INVEST"/>TB_BOX_IVT_INVM_HOPE_D hoped
+		    INNER JOIN
+		    (
+		        SELECT
+		            UTLINSTT_ID
+		            , MAX(RGSN_TS) AS END_TS
+		        FROM
+		            <include refid="INVEST"/>TB_BOX_IVT_INVM_HOPE_D
+		        GROUP BY
+		            UTLINSTT_ID
+		    ) B ON hoped.UTLINSTT_ID = B.UTLINSTT_ID AND hoped.RGSN_TS = B.END_TS
+		    LEFT JOIN
+		        <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D C ON hoped.INVM_STG_CD = C.COM_CD_ID
+		    LEFT JOIN
+		        <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D CC ON hoped.INVM_AMT_CD = CC.COM_CD_ID    
+		) hope ON hope.UTLINSTT_ID = tbiar.RQST_ENPR_ID	
+        WHERE 1=1
+        	AND tbias_end.INVM_EXNT_PGSG_CD IN('EXN00000', 'EXN00001' , 'EXN00002' , 'EXN00003', 'EXN01000', 'EXN01001', 'EXN01002')
+            <if test="listStartType != null and !listStartType.equals('')">
+                AND tbias_start.INVM_EXNT_PGSG_CD = #{listStartType}
+            </if>
+
+            <if test="comType != null and !comType.equals('')">
+                <choose>
+                    <when test="comType.equals('COM')">
+                        AND tbiar.RQST_ENPR_ID = #{utlinsttId}
+                    </when>
+                    <when test="comType.equals('VC')">
+                        <if test="utlinsttId.equals('C0127305')">
+                            AND tbiar.INVM_CMP_ID IN ('C0040865','C0127305')
+                        </if>
+                        <if test="!utlinsttId.equals('C0127305')">
+                            AND tbiar.INVM_CMP_ID = #{utlinsttId}
+                        </if>
+                    </when>
+                </choose>
+            </if>
+            <if test="invmExntPgsgCd != null and !invmExntPgsgCd.equals('')">
+                AND tbias_end.INVM_EXNT_PGSG_CD = #{invmExntPgsgCd}
+            </if>
+
+            <if test="checkLimit">
+                AND tbias_end.INVM_EXNT_PGSG_CD != #{AUDIT_COMPLETE_CODE}
+                AND tbias_end.INVM_EXNT_PGSG_CD != #{AUDIT_EXPIRED_CODE}
+                AND tbias_end.INVM_EXNT_PGSG_CD != #{AUDIT_CANCEL_CODE}
+            </if>
+            <if test="searchComNm != null and !searchComNm.equals('')">
+				AND UPPER(eim_com.ETNM) LIKE '%' || UPPER(#{searchComNm}) || '%'
+			</if>
+			<if test="searchBzn != null and !searchBzn.equals('')">
+				AND UPPER(eim_com.BZN) LIKE '%' || UPPER(#{searchBzn}) || '%'
+			</if>
+			<if test="(searchFromDate != null and !searchFromDate.equals('')) and (searchToDate != null and !searchToDate.equals(''))">
+				AND TO_DATE(TO_CHAR(tbiar.RGSN_TS, 'YYYYMMDD'), 'YYYYMMDD') BETWEEN TO_DATE(#{searchFromDate}, 'YYYYMMDD') AND TO_DATE(#{searchToDate}, 'YYYYMMDD')
+			</if>
+        ORDER BY
+        	tbiar.RGSN_TS DESC
+    </select>
+
+    <!--메인화면 ibk 투자한 기업 수 및 금액 조회-->
+    <select id="selectIbkAuditDetail" parameterType="RequestSearchInvestAuditPageVO" resultType="InvestAuditSummaryVO">
+        SELECT
+            tbiar.INVM_EXNT_RQST_ID
+             , tbiar.INVM_CMP_ID
+             , tbiar.RQST_ENPR_ID
+             , tbiar.RGSN_TS AS INVM_STTG_DT
+             , tbiar.PRPL_MSG_CON
+             , tbiar.RQST_MSG_CON
+             , tbiar.INVM_PRFR_SCDL_AMT
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_EXNT_RQST_M tbiar
+                LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_EXNT_PGSG_R rst_cd ON rst_cd.INVM_EXNT_RQST_ID = tbiar.INVM_EXNT_RQST_ID
+                LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D C ON rst_cd.INVM_EXNT_PGSG_CD = C.COM_CD_ID
+        WHERE
+            C.COM_CD_ID IN ('EXN00003')
+            AND tbiar.INVM_CMP_ID = #{utlinsttId}
+        ORDER BY
+            tbiar.RGSN_TS DESC;
+    </select>
+    
+    <!--추천직원 및 영업점 수정-->
+    <update id="updateRecommendAudit" parameterType="InvestAuditVO">
+        UPDATE
+            <include refid="INVEST"/>TB_BOX_IVT_EXNT_RQST_M
+        SET
+            BRCD         		= #{brcd}
+            , EMN       		= #{emn}
+            , EMM       		= #{emm}
+            , AMNN_USER_ID      = #{amnnUserId}
+            , AMNN_TS           = CURRENT_TIMESTAMP
+        WHERE
+            INVM_EXNT_RQST_ID = #{invmExntRqstId}
+    </update>
+</mapper>

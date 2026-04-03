@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ibk.sb.restapi.biz.service.admin.repo.AdminCompanyRepo">
+    <!--    SchemaMapper ID-->
+    <sql id="INVEST"><include refid="com.ibk.sb.restapi.biz.service.common.repo.SchemaRepo.INVEST"/></sql>
+
+    <!--    PagingMapper ID-->
+    <sql id="pagingHeader"><include refid="com.ibk.sb.restapi.biz.service.common.repo.PageRepo.pageHeader"/></sql>
+    <sql id="pagingFooter"><include refid="com.ibk.sb.restapi.biz.service.common.repo.PageRepo.pageFooter"/></sql>
+
+    <!-- 추천기업 수정 -->
+    <update id="mergeCompanyRecommend" parameterType="String">
+        MERGE INTO <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_D tbieid
+            USING DUAL ON (tbieid.UTLINSTT_ID = #{utlinsttId})
+        WHEN MATCHED THEN
+            UPDATE SET
+                RCMD_ENPR_STUP_YN   = #{rcmdEnprStupYn}
+                , AMNN_USER_ID      = #{amnnUserId}
+                , AMNN_TS           = CURRENT_TIMESTAMP
+        WHEN NOT MATCHED THEN
+            INSERT
+            (
+                UTLINSTT_ID
+                , RCMD_ENPR_STUP_YN
+                , RGSN_USER_ID
+                , RGSN_TS
+                , AMNN_USER_ID
+                , AMNN_TS
+            )
+            VALUES
+            (
+                #{utlinsttId}
+                , #{rcmdEnprStupYn}
+                , #{rgsnUserId}
+                , CURRENT_TIMESTAMP
+                , #{amnnUserId}
+                , CURRENT_TIMESTAMP
+            )
+    </update>
+
+
+</mapper>

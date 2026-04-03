@@ -1,0 +1,519 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ibk.sb.restapi.biz.service.message.repo.MessageRepo">
+    <!--    SchemaMapper ID-->
+<!--    <sql id="MNBADM"><include refid="com.ibk.sb.restapi.biz.service.common.repo.SchemaRepo.MNBADM"/></sql>-->
+    <sql id="INVEST"><include refid="com.ibk.sb.restapi.biz.service.common.repo.SchemaRepo.INVEST"/></sql>
+
+    <!--    PagingMapper ID-->
+    <sql id="pagingHeader"><include refid="com.ibk.sb.restapi.biz.service.common.repo.PageRepo.pageHeader"/></sql>
+    <sql id="pagingFooter"><include refid="com.ibk.sb.restapi.biz.service.common.repo.PageRepo.pageFooter"/></sql>
+
+    <!--    읽지 않은 수신메시지 카운트-->
+    <select id="selectUnreadReceiveMessageCount" parameterType="String" resultType="Integer">
+        SELECT
+            CASE WHEN COUNT(0) IS NULL THEN 0 ELSE COUNT(0) END AS LIST_COUNT
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_MSG_INFO_M msg
+
+        <if test="invmExntRqstId != null and !invmExntRqstId.equals('')">
+            LEFT JOIN <include refid="INVEST"/>TB_BOX_IVT_EXNT_MSG_R mapp ON mapp.MSG_ID = msg.MSG_ID
+        </if>
+
+        <!-- 투자사 전환 대응-->
+<!--        LEFT JOIN-->
+<!--            <include refid="INVEST"/>TB_BOX_IVT_VNCM_CPTL_L dsms_vc_chk ON msg.DSMS_INTT_ID = dsms_vc_chk.UTLINSTT_ID-->
+<!--        LEFT JOIN-->
+<!--            <include refid="INVEST"/>TB_BOX_IVT_VNCM_CPTL_L rcv_vc_chk ON msg.RCV_INTT_ID = rcv_vc_chk.UTLINSTT_ID-->
+
+        WHERE
+            msg.RCV_INTT_ID = #{rcvInttId}
+            AND msg.CNFA_YN = 'N'
+            <if test="invmExntRqstId != null and !invmExntRqstId.equals('')">
+                AND mapp.INVM_EXNT_RQST_ID = #{invmExntRqstId}
+            </if>
+
+            <!-- 투자사 전환 대응-->
+<!--            <![CDATA[-->
+<!--                AND (CASE-->
+<!--                WHEN dsms_vc_chk.RGSN_TS IS NULL THEN 'Y'-->
+<!--                WHEN TO_CHAR(dsms_vc_chk.RGSN_TS, 'YYYYMMDDHH24MISS') <= msg.RGSN_TS THEN 'Y'-->
+<!--                ELSE 'N' END) = 'Y'-->
+<!--                AND (CASE-->
+<!--                WHEN rcv_vc_chk.RGSN_TS IS NULL THEN 'Y'-->
+<!--                WHEN TO_CHAR(rcv_vc_chk.RGSN_TS, 'YYYYMMDDHH24MISS') <= msg.RGSN_TS THEN 'Y'-->
+<!--                ELSE 'N' END) = 'Y'-->
+<!--            ]]>-->
+    </select>
+
+<!--    <select id="selectParentMessageList" parameterType="RequestMessageVO" resultType="MessageSummaryVO">-->
+<!--        <include refid="pagingHeader"/>-->
+<!--            SELECT-->
+<!--            main.MSG_ID-->
+<!--            , main.PRNS_MSG_ID-->
+<!--            , 'N' AS REPLY_YN-->
+
+<!--            , main.DSMS_INTT_ID-->
+<!--            , trnt_eim.ETNM AS TRNT_BPLC_NM-->
+<!--            , main.RCV_INTT_ID-->
+<!--            , rcvr_eim.ETNM AS RCVR_BPLC_NM-->
+
+<!--            , main.RGSN_USER_ID-->
+<!--            , main.RGSN_TS-->
+<!--            , main.RGSN_USER_NM-->
+
+<!--            , main.MSG_PTRN_CD-->
+<!--            , ccd.COM_CD_NM AS MSG_PTRN_NM-->
+<!--            , main.MSG_TTL-->
+
+<!--            , CASE WHEN main.RCV_INTT_ID = #{utlinsttId} THEN main.CNFA_YN ELSE NULL END AS CNFA_YN-->
+<!--            , CASE WHEN file_cnt.FILE_COUNT != 0 THEN 'Y' ELSE 'N' END AS FILE_YN-->
+
+<!--            FROM-->
+<!--            <include refid="INVEST"/>TB_BOX_IVT_MSG_INFO_M main-->
+<!--            LEFT JOIN-->
+<!--            <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_M trnt_eim ON trnt_eim.UTLINSTT_ID = main.DSMS_INTT_ID-->
+<!--            LEFT JOIN-->
+<!--            <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_M rcvr_eim ON rcvr_eim.UTLINSTT_ID = main.RCV_INTT_ID-->
+<!--            LEFT JOIN-->
+<!--            <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd ON ccd.COM_CD_ID = main.MSG_PTRN_CD-->
+
+<!--            LEFT JOIN (-->
+<!--            SELECT MSG_ID, NVL(COUNT(0), 0) AS FILE_COUNT-->
+<!--            FROM <include refid="INVEST"/>TB_BOX_IVT_MSG_ATCH_R-->
+<!--            GROUP BY MSG_ID-->
+<!--            ) file_cnt ON file_cnt.MSG_ID = main.MSG_ID-->
+
+<!--            &lt;!&ndash; 투자사 전환 대응&ndash;&gt;-->
+<!--&lt;!&ndash;            LEFT JOIN&ndash;&gt;-->
+<!--&lt;!&ndash;            <include refid="INVEST"/>TB_BOX_IVT_VNCM_CPTL_L dsms_vc_chk ON main.DSMS_INTT_ID = dsms_vc_chk.UTLINSTT_ID&ndash;&gt;-->
+<!--&lt;!&ndash;            LEFT JOIN&ndash;&gt;-->
+<!--&lt;!&ndash;            <include refid="INVEST"/>TB_BOX_IVT_VNCM_CPTL_L rcv_vc_chk ON main.RCV_INTT_ID = rcv_vc_chk.UTLINSTT_ID&ndash;&gt;-->
+
+<!--            WHERE 1=1-->
+<!--            AND main.PRNS_MSG_ID IS NULL-->
+<!--            &lt;!&ndash; 메시지 목록 분리 작업 변경사항 (2023.03) : 최초 메시지 기준 수신 발신 구분 &ndash;&gt;-->
+<!--            <choose>-->
+<!--                <when test="listType != null and listType.equals(RECEIVE_LIST)">-->
+<!--                    AND main.RCV_INTT_ID = #{utlinsttId}-->
+<!--                </when>-->
+<!--                <when test="listType != null and listType.equals(SEND_LIST)">-->
+<!--                    AND main.DSMS_INTT_ID = #{utlinsttId}-->
+<!--                </when>-->
+<!--            </choose>-->
+
+<!--        &lt;!&ndash; 투자사 전환 대응&ndash;&gt;-->
+<!--        &lt;!&ndash;            <![CDATA[&ndash;&gt;-->
+<!--        &lt;!&ndash;                        AND (CASE&ndash;&gt;-->
+<!--        &lt;!&ndash;                        WHEN dsms_vc_chk.RGSN_TS IS NULL THEN 'Y'&ndash;&gt;-->
+<!--        &lt;!&ndash;                        WHEN TO_CHAR(dsms_vc_chk.RGSN_TS, 'YYYYMMDDHH24MISS') <= main.RGSN_TS THEN 'Y'&ndash;&gt;-->
+<!--        &lt;!&ndash;                        ELSE 'N' END) = 'Y'&ndash;&gt;-->
+<!--        &lt;!&ndash;                        AND (CASE&ndash;&gt;-->
+<!--        &lt;!&ndash;                        WHEN rcv_vc_chk.RGSN_TS IS NULL THEN 'Y'&ndash;&gt;-->
+<!--        &lt;!&ndash;                        WHEN TO_CHAR(rcv_vc_chk.RGSN_TS, 'YYYYMMDDHH24MISS') <= main.RGSN_TS THEN 'Y'&ndash;&gt;-->
+<!--        &lt;!&ndash;                        ELSE 'N' END) = 'Y'&ndash;&gt;-->
+<!--        &lt;!&ndash;                    ]]>&ndash;&gt;-->
+
+<!--            ORDER BY-->
+<!--                main.RGSN_TS DESC-->
+<!--        <include refid="pagingFooter"/>-->
+<!--    </select>-->
+
+<!--    <select id="selectChildMessageList" parameterType="String" resultType="MessageSummaryVO">-->
+<!--        SELECT-->
+<!--        main.MSG_ID-->
+<!--        , main.PRNS_MSG_ID-->
+<!--        , 'Y' AS REPLY_YN-->
+
+<!--        , main.DSMS_INTT_ID-->
+<!--        , trnt_eim.ETNM AS TRNT_BPLC_NM-->
+<!--        , main.RCV_INTT_ID-->
+<!--        , rcvr_eim.ETNM AS RCVR_BPLC_NM-->
+
+<!--        , main.RGSN_USER_ID-->
+<!--        , main.RGSN_TS-->
+<!--        , main.RGSN_USER_NM-->
+
+<!--        , main.MSG_PTRN_CD-->
+<!--        , ccd.COM_CD_NM AS MSG_PTRN_NM-->
+<!--        , main.MSG_TTL-->
+
+<!--        , CASE WHEN main.RCV_INTT_ID = #{utlinsttId} THEN main.CNFA_YN ELSE NULL END AS CNFA_YN-->
+<!--        , CASE WHEN file_cnt.FILE_COUNT != 0 THEN 'Y' ELSE 'N' END AS FILE_YN-->
+
+<!--        FROM-->
+<!--        <include refid="INVEST"/>TB_BOX_IVT_MSG_INFO_M main-->
+<!--        LEFT JOIN-->
+<!--        <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_M trnt_eim ON trnt_eim.UTLINSTT_ID = main.DSMS_INTT_ID-->
+<!--        LEFT JOIN-->
+<!--        <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_M rcvr_eim ON rcvr_eim.UTLINSTT_ID = main.RCV_INTT_ID-->
+<!--        LEFT JOIN-->
+<!--        <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd ON ccd.COM_CD_ID = main.MSG_PTRN_CD-->
+
+<!--        LEFT JOIN (-->
+<!--        SELECT MSG_ID, NVL(COUNT(0), 0) AS FILE_COUNT-->
+<!--        FROM <include refid="INVEST"/>TB_BOX_IVT_MSG_ATCH_R-->
+<!--        GROUP BY MSG_ID-->
+<!--        ) file_cnt ON file_cnt.MSG_ID = main.MSG_ID-->
+
+<!--        WHERE 1=1-->
+<!--        AND main.PRNS_MSG_ID = #{prnsMsgId}-->
+<!--        ORDER BY-->
+<!--        main.RGSN_TS ASC-->
+<!--    </select>-->
+
+    <!--    수신 / 발신 메시지 목록 조회 : 메시지 목록 분리 작업3 : 수신 발신만으로 구분-->
+    <select id="selectMessageList" parameterType="RequestMessageVO" resultType="MessageSummaryVO">
+        <include refid="pagingHeader"/>
+            SELECT
+                main.MSG_ID
+                , CASE WHEN main.PRNS_MSG_ID IS NULL THEN 'N' ELSE 'Y' END AS REPLY_YN
+                , main.PRNS_MSG_ID
+
+                , main.DSMS_INTT_ID
+                , trnt_eim.ETNM AS TRNT_BPLC_NM
+                , main.RCV_INTT_ID
+                , rcvr_eim.ETNM AS RCVR_BPLC_NM
+
+                , main.RGSN_USER_ID
+                , main.RGSN_USER_NM
+                , main.RGSN_TS
+                , CASE
+                    WHEN main.DSMS_INTT_ID = #{utlinsttId} THEN 'N'
+                    WHEN main.RGSN_TS IS NULL THEN 'N'
+                    WHEN TO_CHAR(main.RGSN_TS, 'YYYYMMDDHH24MISS') > TO_CHAR(SYSDATE-24/24, 'YYYYMMDDHH24MISS') THEN 'Y'
+                    ELSE 'N' END AS RCV_IN_ONE_DAY_YN
+
+                , main.MSG_PTRN_CD
+                , ccd.COM_CD_NM AS MSG_PTRN_NM
+                , main.MSG_TTL
+
+                , CASE WHEN main.RCV_INTT_ID = #{utlinsttId} THEN main.CNFA_YN ELSE NULL END AS CNFA_YN
+                , CASE WHEN file_cnt.FILE_COUNT != 0 THEN 'Y' ELSE 'N' END AS FILE_YN
+
+            FROM
+                <include refid="INVEST"/>TB_BOX_IVT_MSG_INFO_M main
+            LEFT JOIN
+                <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_M trnt_eim ON trnt_eim.UTLINSTT_ID = main.DSMS_INTT_ID
+            LEFT JOIN
+                <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_M rcvr_eim ON rcvr_eim.UTLINSTT_ID = main.RCV_INTT_ID
+            LEFT JOIN
+                <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd ON ccd.COM_CD_ID = main.MSG_PTRN_CD
+            LEFT JOIN (
+                SELECT MSG_ID, NVL(COUNT(0), 0) AS FILE_COUNT
+                FROM <include refid="INVEST"/>TB_BOX_IVT_MSG_ATCH_R
+                GROUP BY MSG_ID
+            ) file_cnt ON file_cnt.MSG_ID = main.MSG_ID
+
+            WHERE 1=1
+                <choose>
+                    <when test="listType != null and listType.equals(RECEIVE_LIST)">
+                        AND main.RCV_INTT_ID = #{utlinsttId}
+                    </when>
+                    <when test="listType != null and listType.equals(SEND_LIST)">
+                        AND main.DSMS_INTT_ID = #{utlinsttId}
+                    </when>
+                    <otherwise>
+                        AND (main.RCV_INTT_ID = #{utlinsttId} OR main.DSMS_INTT_ID = #{utlinsttId})
+                    </otherwise>
+                </choose>
+                <if test="searchStr != null and !searchStr.equals('')">
+                    AND (
+                        UPPER(main.MSG_TTL) LIKE '%'||UPPER(#{searchStr})||'%'
+
+                        <choose>
+                            <when test="listType != null and listType.equals(RECEIVE_LIST)">
+                                OR UPPER(trnt_eim.ETNM) LIKE '%'||UPPER(#{searchStr})||'%'
+                            </when>
+                            <when test="listType != null and listType.equals(SEND_LIST)">
+                                OR UPPER(rcvr_eim.ETNM) LIKE '%'||UPPER(#{searchStr})||'%'
+                            </when>
+                        </choose>
+                    )
+                </if>
+            ORDER BY
+                main.RGSN_TS DESC
+        <include refid="pagingFooter"/>
+    </select>
+
+
+    <!--    투자심사 메시지 리스트 조회-->
+    <select id="selectAuditMessageList" parameterType="RequestAuditMessageVO" resultType="MessageSummaryVO">
+        <include refid="pagingHeader"/>
+
+            SELECT
+                m2.PARENT_RG
+                , m2.MSG_ID AS PARENT_ID
+                , CASE WHEN PRNS_MSG_ID IS NULL THEN 'N' ELSE 'Y' END AS REPLY_YN
+
+                , m1.MSG_ID
+                , mapp.INVM_EXNT_RQST_ID
+
+                , m1.DSMS_INTT_ID
+                , m1.RCV_INTT_ID
+                , m1.RGSN_USER_ID
+                , m1.RGSN_USER_NM
+                , trnt_eim.ETNM AS TRNT_BPLC_NM
+                , rcvr_eim.ETNM AS RCVR_BPLC_NM
+
+                , m1.MSG_TTL
+                , m1.RGSN_TS
+
+                , m1.MSG_PTRN_CD
+                , ccd_msg.COM_CD_NM AS MSG_PTRN_NM
+
+                , m1.PRNS_MSG_ID
+                , CASE WHEN file_cnt.FILE_COUNT != 0 THEN 'Y' ELSE 'N' END AS FILE_YN
+            FROM
+                <include refid="INVEST"/>TB_BOX_IVT_MSG_INFO_M m1
+            LEFT JOIN
+            (
+                SELECT
+                MSG_ID
+                , RGSN_TS AS PARENT_RG
+                FROM
+                <include refid="INVEST"/>TB_BOX_IVT_MSG_INFO_M m1
+                WHERE
+                PRNS_MSG_ID IS NULL
+            ) m2
+            ON m1.PRNS_MSG_ID = m2.MSG_ID OR m1.MSG_ID = m2.MSG_ID
+
+            LEFT JOIN
+                <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_M trnt_eim ON trnt_eim.UTLINSTT_ID = m1.DSMS_INTT_ID
+            LEFT JOIN
+                <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_M rcvr_eim ON rcvr_eim.UTLINSTT_ID = m1.RCV_INTT_ID
+
+            LEFT JOIN
+                <include refid="INVEST"/>TB_BOX_IVT_EXNT_MSG_R mapp ON mapp.MSG_ID = m1.MSG_ID
+            LEFT JOIN
+                <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd_msg ON ccd_msg.COM_CD_ID = m1.MSG_PTRN_CD
+
+            LEFT JOIN (
+                SELECT MSG_ID, NVL(COUNT(0), 0) AS FILE_COUNT
+                FROM <include refid="INVEST"/>TB_BOX_IVT_MSG_ATCH_R
+                GROUP BY MSG_ID
+            ) file_cnt ON file_cnt.MSG_ID = m1.MSG_ID
+
+            <!-- 투자사 전환 대응-->
+<!--            LEFT JOIN-->
+<!--                <include refid="INVEST"/>TB_BOX_IVT_VNCM_CPTL_L dsms_vc_chk ON m1.DSMS_INTT_ID = dsms_vc_chk.UTLINSTT_ID-->
+<!--            LEFT JOIN-->
+<!--                <include refid="INVEST"/>TB_BOX_IVT_VNCM_CPTL_L rcv_vc_chk ON m1.RCV_INTT_ID = rcv_vc_chk.UTLINSTT_ID-->
+
+            WHERE mapp.INVM_EXNT_RQST_ID = #{invmExntRqstId}
+            <!--    메시지 타입이 투자심사 문의인 경우만 -->
+            AND m1.MSG_PTRN_CD = #{MESSAGE_AUDIT_CODE}
+
+            <!-- 투자사 전환 대응-->
+<!--            <![CDATA[-->
+<!--                AND (CASE-->
+<!--                WHEN dsms_vc_chk.RGSN_TS IS NULL THEN 'Y'-->
+<!--                WHEN TO_CHAR(dsms_vc_chk.RGSN_TS, 'YYYYMMDDHH24MISS') <= m1.RGSN_TS THEN 'Y'-->
+<!--                ELSE 'N' END) = 'Y'-->
+<!--                AND (CASE-->
+<!--                WHEN rcv_vc_chk.RGSN_TS IS NULL THEN 'Y'-->
+<!--                WHEN TO_CHAR(rcv_vc_chk.RGSN_TS, 'YYYYMMDDHH24MISS') <= m1.RGSN_TS THEN 'Y'-->
+<!--                ELSE 'N' END) = 'Y'-->
+<!--            ]]>-->
+
+            ORDER BY
+                m2.PARENT_RG DESC, PARENT_ID DESC, m1.RGSN_TS ASC
+
+        <include refid="pagingFooter"/>
+    </select>
+
+    <!--    메시지 상세 조회-->
+    <select id="selectMessage" parameterType="String" resultType="MessageVO">
+        SELECT
+            tbim.MSG_ID
+            , tbim.DSMS_INTT_ID
+            , tbim.RCV_INTT_ID
+            , tbim.RGSN_USER_ID
+            , tbim.PRNS_MSG_ID
+
+            , tbim.RGSN_USER_NM
+
+            , mapp.INVM_EXNT_RQST_ID
+
+            , trnt_eim.ETNM AS TRNT_BPLC_NM
+            , rcvr_eim.ETNM AS RCVR_BPLC_NM
+
+            , tbim.MSG_PTRN_CD
+            , ccd.COM_CD_NM AS MSG_PTRN_NM
+
+            , tbim.CNFA_YN
+            , tbim.MSG_TTL
+            , tbim.MSG_CON
+            , tbim.RGSN_TS
+
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_MSG_INFO_M tbim
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_EXNT_MSG_R mapp ON mapp.MSG_ID = tbim.MSG_ID
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_M trnt_eim ON trnt_eim.UTLINSTT_ID = tbim.DSMS_INTT_ID
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_M rcvr_eim ON rcvr_eim.UTLINSTT_ID = tbim.RCV_INTT_ID
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd ON ccd.COM_CD_ID = tbim.MSG_PTRN_CD
+
+        WHERE
+            tbim.MSG_ID = #{msgId}
+    </select>
+
+    <!--    메시지 첨부파일 리스트 조회-->
+    <select id="selectMessageFileList" parameterType="String" resultType="MessageFileVO">
+        SELECT
+        tbimfm.MSG_ID
+        , tbimfm.ATCH_ID
+        , tbivf.FILE_ID
+        , tbivf.FILE_NM
+
+        , tbimfm.RGSN_USER_ID
+        , tbimfm.RGSN_TS
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_MSG_ATCH_R tbimfm
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_FILE_ATCH_M tbivf ON tbimfm.ATCH_ID = tbivf.FILE_ID
+        WHERE
+            tbimfm.MSG_ID = #{msgId}
+    </select>
+
+    <!--    메시지 등록-->
+    <insert id="insertMessage" parameterType="MessageVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_MSG_INFO_M
+        (
+            MSG_ID
+            , DSMS_INTT_ID
+            , RCV_INTT_ID
+            , MSG_TTL
+            , MSG_PTRN_CD
+            , MSG_CON
+            , PRNS_MSG_ID
+            , CNFA_YN
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+
+            , RGSN_USER_NM
+        )
+        VALUES
+        (
+            #{msgId}
+            , #{dsmsInttId}
+            , #{rcvInttId}
+            , #{msgTtl}
+            , #{msgPtrnCd}
+            , #{msgCon}
+            , #{prnsMsgId}
+            , 'N'
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+            , #{amnnUserId}
+            , CURRENT_TIMESTAMP
+
+            , #{rgsnUserNm}
+        )
+    </insert>
+
+    <!--    메시지 첨부파일 매핑 등록-->
+    <insert id="insertMessageFileMapping" parameterType="MessageFileVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_MSG_ATCH_R
+        (
+            MSG_ID
+            , ATCH_ID
+            , RGSN_USER_ID
+            , RGSN_TS
+        )
+        VALUES
+        (
+            #{msgId}
+            , #{fileId}
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+        )
+    </insert>
+
+    <!--    투자심사 메시지 매핑 등록-->
+    <insert id="insertAuditMessageMapping" parameterType="String">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_EXNT_MSG_R
+        (
+            INVM_EXNT_RQST_ID
+            , MSG_ID
+            , RGSN_USER_ID
+            , RGSN_TS
+        )
+        VALUES
+        (
+            #{invmExntRqstId}
+            , #{msgId}
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+        )
+    </insert>
+
+    <!--    기업 사업문의 메시지 등록-->
+    <insert id="insertBizAskMessage" parameterType="RequestBizAskMessageVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_BSNS_INQR_M
+        (
+            UTLINSTT_ID
+            , BSNS_INQR_ID
+            , INQR_TTL
+            , INQR_CON
+            , DSMS_MSG_ID
+            , RGSN_USER_ID
+            , RGSN_TS
+            , RGSR_USIS_ID
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{bsnsInqrId}
+            , #{inqrTtl}
+            , #{inqrCon}
+            , #{dsmsMsgId}
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+            , #{rgsrUsisId}
+        )
+    </insert>
+
+    <!--    메시지 읽음 처리-->
+    <update id="updateMessageRead" parameterType="String">
+        UPDATE
+            <include refid="INVEST"/>TB_BOX_IVT_MSG_INFO_M
+        SET
+            CNFA_YN         = 'Y'
+            , AMNN_USER_ID  = #{amnnUserId}
+            , AMNN_TS       = CURRENT_TIMESTAMP
+        WHERE
+            MSG_ID = #{msgId}
+    </update>
+
+    <!--    전체 메시지 읽음 처리-->
+    <update id="updateMessageReadAllSeparateByListType" parameterType="RequestMessageReadAllVO">
+        UPDATE
+            <include refid="INVEST"/>TB_BOX_IVT_MSG_INFO_M
+        SET
+            CNFA_YN         = 'Y'
+            , AMNN_USER_ID  = #{amnnUserId}
+            , AMNN_TS       = CURRENT_TIMESTAMP
+        WHERE
+            MSG_ID IN (
+                SELECT main.MSG_ID
+                FROM <include refid="INVEST"/>TB_BOX_IVT_MSG_INFO_M main
+                LEFT JOIN <include refid="INVEST"/>TB_BOX_IVT_MSG_INFO_M prns ON main.PRNS_MSG_ID = prns.MSG_ID
+                WHERE main.RCV_INTT_ID = #{rcvInttId} AND main.CNFA_YN != 'Y'
+                <choose>
+                    <when test="listType != null and listType.equals(RECEIVE)">
+                        AND (main.PRNS_MSG_ID IS NULL OR prns.RCV_INTT_ID = #{rcvInttId})
+                    </when>
+                    <when test="listType != null and listType.equals(SEND)">
+                        AND prns.DSMS_INTT_ID = #{rcvInttId}
+                    </when>
+                </choose>
+            )
+    </update>
+
+</mapper>

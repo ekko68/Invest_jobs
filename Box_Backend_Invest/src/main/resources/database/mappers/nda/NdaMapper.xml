@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ibk.sb.restapi.biz.service.nda.repo.NdaRepo">
+    <!--    SchemaMapper ID-->
+    <sql id="INVEST"><include refid="com.ibk.sb.restapi.biz.service.common.repo.SchemaRepo.INVEST"/></sql>
+
+    <!--    PagingMapper ID-->
+    <sql id="pagingHeader"><include refid="com.ibk.sb.restapi.biz.service.common.repo.PageRepo.pageHeader"/></sql>
+    <sql id="pagingFooter"><include refid="com.ibk.sb.restapi.biz.service.common.repo.PageRepo.pageFooter"/></sql>
+
+    <!--    NDA 요청 목록 조회-->
+    <select id="selectNdaList" parameterType="RequestSearchNdaVO" resultType="NdaVO">
+        <include refid="pagingHeader"/>
+        SELECT
+            tbincl.NDA_CNTT_ID
+            , tbincl.DSMS_INTT_ID
+            , tbincl.RCV_INTT_ID
+            , tbincl.DSMS_INTT_NM
+            , tbincl.RCV_INTT_NM
+
+            , tbincl.PGRS_STTS_CD
+            , com_cd.COM_CD_NM AS PGRS_STTS_NM
+
+            , tbincl.NDA_RQST_TTL
+            , tbincl.RGSN_USER_ID
+            , tbincl.RGSN_TS
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_NDA_CNTT_L tbincl
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D com_cd ON com_cd.COM_CD_ID = tbincl.PGRS_STTS_CD
+
+        <!-- 투자사 전환 대응-->
+<!--        LEFT JOIN-->
+<!--            <include refid="INVEST"/>TB_BOX_IVT_VNCM_CPTL_L dsms_vc_chk ON tbincl.DSMS_INTT_ID = dsms_vc_chk.UTLINSTT_ID-->
+<!--        LEFT JOIN-->
+<!--            <include refid="INVEST"/>TB_BOX_IVT_VNCM_CPTL_L rcv_vc_chk ON tbincl.RCV_INTT_ID = rcv_vc_chk.UTLINSTT_ID-->
+
+        WHERE 1=1
+            <choose>
+                <when test="searchType != null and searchType.equals(RECEIVE_CODE)">
+                    AND tbincl.RCV_INTT_ID = #{rcvInttId}
+                </when>
+                <when test="searchType != null and searchType.equals(SEND_CODE)">
+                    AND tbincl.DSMS_INTT_ID = #{dsmsInttId}
+                </when>
+            </choose>
+            <if test="pgrsSttsCd != null and !pgrsSttsCd.equals('')">
+                AND tbincl.PGRS_STTS_CD = #{pgrsSttsCd}
+            </if>
+
+        <!-- 투자사 전환 대응-->
+<!--            <![CDATA[-->
+<!--                AND (CASE-->
+<!--                     WHEN dsms_vc_chk.RGSN_TS IS NULL THEN 'Y'-->
+<!--                     WHEN TO_CHAR(dsms_vc_chk.RGSN_TS, 'YYYYMMDDHH24MISS') <= tbincl.RGSN_TS THEN 'Y'-->
+<!--                     ELSE 'N' END) = 'Y'-->
+<!--                AND (CASE-->
+<!--                     WHEN rcv_vc_chk.RGSN_TS IS NULL THEN 'Y'-->
+<!--                     WHEN TO_CHAR(rcv_vc_chk.RGSN_TS, 'YYYYMMDDHH24MISS') <= tbincl.RGSN_TS THEN 'Y'-->
+<!--                     ELSE 'N' END) = 'Y'-->
+<!--            ]]>-->
+
+        ORDER BY
+            tbincl.RGSN_TS DESC
+        <include refid="pagingFooter"/>
+    </select>
+
+    <select id="selectNdaListStatusCnt" parameterType="RequestSearchNdaVO" resultType="Integer">
+        SELECT
+            NVL(COUNT(0), 0)
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_NDA_CNTT_L tbincl
+        <!-- 투자사 전환 대응-->
+<!--        LEFT JOIN-->
+<!--            <include refid="INVEST"/>TB_BOX_IVT_VNCM_CPTL_L dsms_vc_chk ON tbincl.DSMS_INTT_ID = dsms_vc_chk.UTLINSTT_ID-->
+<!--        LEFT JOIN-->
+<!--            <include refid="INVEST"/>TB_BOX_IVT_VNCM_CPTL_L rcv_vc_chk ON tbincl.RCV_INTT_ID = rcv_vc_chk.UTLINSTT_ID-->
+
+        WHERE 1=1
+            <choose>
+                <when test="searchType != null and searchType.equals(RECEIVE_CODE)">
+                    AND tbincl.RCV_INTT_ID = #{rcvInttId}
+                </when>
+                <when test="searchType != null and searchType.equals(SEND_CODE)">
+                    AND tbincl.DSMS_INTT_ID = #{dsmsInttId}
+                </when>
+            </choose>
+            <if test="pgrsSttsCd != null and !pgrsSttsCd.equals('')">
+                AND tbincl.PGRS_STTS_CD = #{pgrsSttsCd}
+            </if>
+
+        <!-- 투자사 전환 대응-->
+<!--            <![CDATA[-->
+<!--                AND (CASE-->
+<!--                     WHEN dsms_vc_chk.RGSN_TS IS NULL THEN 'Y'-->
+<!--                     WHEN TO_CHAR(dsms_vc_chk.RGSN_TS, 'YYYYMMDDHH24MISS') <= tbincl.RGSN_TS THEN 'Y'-->
+<!--                     ELSE 'N' END) = 'Y'-->
+<!--                AND (CASE-->
+<!--                     WHEN rcv_vc_chk.RGSN_TS IS NULL THEN 'Y'-->
+<!--                     WHEN TO_CHAR(rcv_vc_chk.RGSN_TS, 'YYYYMMDDHH24MISS') <= tbincl.RGSN_TS THEN 'Y'-->
+<!--                     ELSE 'N' END) = 'Y'-->
+<!--            ]]>-->
+    </select>
+    
+    <!--    NDA 상세 조회-->
+    <select id="selectNda" parameterType="String" resultType="NdaVO">
+        SELECT
+            tbincl.NDA_CNTT_ID
+            , tbincl.DSMS_INTT_ID
+            , tbincl.RCV_INTT_ID
+            , tbincl.DSMS_INTT_NM
+            , tbincl.RCV_INTT_NM
+
+            , tbincl.PGRS_STTS_CD
+            , com_cd.COM_CD_NM AS PGRS_STTS_NM
+
+            , tbincl.NDA_RQST_TTL
+            , tbincl.NDA_RQST_CON
+            , tbincl.NDA_PTDF_FILE_ID
+            , tbincl.NDA_VALD_NYY
+            , tbincl.NDA_SPCL_ARTC_CON
+
+            , tbincl.DSMS_INTT_SIGN_FILE
+            , tbincl.RCV_INTT_SIGN_FILE
+            , tbincl.DSMS_INTT_SIGNPRSN_NM
+            , tbincl.RCV_INTT_SIGNPRSN_NM
+            , tbincl.DSMS_INTT_ADR
+            , tbincl.RCV_INTT_ADR
+
+            , tbincl.RGSN_USER_ID
+            , tbincl.RGSN_TS
+        FROM
+        <include refid="INVEST"/>TB_BOX_IVT_NDA_CNTT_L tbincl
+        LEFT JOIN
+        <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D com_cd ON com_cd.COM_CD_ID = tbincl.PGRS_STTS_CD
+        WHERE
+        NDA_CNTT_ID = #{ndaCnttId}
+
+    </select>
+
+    <!--    기업 NDA Eform 초기정보 조회-->
+    <select id="selectNdaFormEnprInitData" parameterType="String" resultType="InvestRelationVO">
+        SELECT
+            UTLINSTT_ID
+            , BNNM
+            , RPRNM
+            , ADR
+            , ZPCD
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_IR_B_BSIN_M
+        WHERE
+            UTLINSTT_ID = #{utlinsttId}
+    </select>
+    
+    <!--    NDA 서명 데이터 조회-->
+    <select id="selectNdaSignData" parameterType="String" resultType="NdaVO">
+
+    </select>
+
+    <!--    NDA 요청 서명 제출-->
+    <insert id="insertRequestNdaSign" parameterType="NdaVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_NDA_CNTT_L
+        (
+            NDA_CNTT_ID
+            , DSMS_INTT_ID
+            , RCV_INTT_ID
+            , DSMS_INTT_NM
+            , RCV_INTT_NM
+            , PGRS_STTS_CD
+            , NDA_RQST_TTL
+            , NDA_RQST_CON
+            , NDA_VALD_NYY
+            , NDA_SPCL_ARTC_CON
+            , DSMS_INTT_ADR
+            , DSMS_INTT_SIGNPRSN_NM
+            , DSMS_INTT_SIGN_FILE
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        )
+        VALUES
+        (
+            #{ndaCnttId}
+            , #{dsmsInttId}
+            , #{rcvInttId}
+            , #{dsmsInttNm}
+            , #{rcvInttNm}
+            , #{pgrsSttsCd}
+            , #{ndaRqstTtl}
+            , #{ndaRqstCon}
+            , #{ndaValdNyy}
+            , #{ndaSpclArtcCon}
+            , #{dsmsInttAdr}
+            , #{dsmsInttSignprsnNm}
+            , #{dsmsInttSignFile}
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+            , #{amnnUserId}
+            , CURRENT_TIMESTAMP
+        )
+    </insert>
+
+    <!--    NDA 최종 서명(수락) 제출-->
+    <update id="updateAcceptNdaSign" parameterType="NdaVO">
+        UPDATE
+            <include refid="INVEST"/>TB_BOX_IVT_NDA_CNTT_L
+        SET
+            PGRS_STTS_CD            = #{pgrsSttsCd}
+            , NDA_PTDF_FILE_ID      = #{ndaPtdfFileId}
+            , RCV_INTT_SIGN_FILE    = #{rcvInttSignFile}
+            , RCV_INTT_ADR          = #{rcvInttAdr}
+            , RCV_INTT_SIGNPRSN_NM  = #{rcvInttSignprsnNm}
+            , AMNN_USER_ID          = #{amnnUserId}
+            , AMNN_TS               = CURRENT_TIMESTAMP
+        WHERE
+            NDA_CNTT_ID = #{ndaCnttId}
+    </update>
+
+    <!--    NDA 요청 반려-->
+    <update id="cancelNdaRequest" parameterType="String">
+        UPDATE
+            <include refid="INVEST"/>TB_BOX_IVT_NDA_CNTT_L
+        SET
+            PGRS_STTS_CD       = #{pgrsSttsCd}
+            , AMNN_USER_ID       = #{amnnUserId}
+            , AMNN_TS            = CURRENT_TIMESTAMP
+        WHERE
+            NDA_CNTT_ID = #{ndaCnttId}
+    </update>
+</mapper>

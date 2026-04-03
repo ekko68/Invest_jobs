@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ibk.sb.restapi.biz.service.platform.repo.InvestAlarmRepo">
+    <!--    SchemaMapper ID-->
+    <sql id="INVEST"><include refid="com.ibk.sb.restapi.biz.service.common.repo.SchemaRepo.INVEST"/></sql>
+
+    <!--    PagingMapper ID-->
+    <sql id="pagingHeader"><include refid="com.ibk.sb.restapi.biz.service.common.repo.PageRepo.pageHeader"/></sql>
+    <sql id="pagingFooter"><include refid="com.ibk.sb.restapi.biz.service.common.repo.PageRepo.pageFooter"/></sql>
+
+    <!--    알림 발송 이력 등록-->
+    <insert id="insertInvestAlarmSendHistory" parameterType="InvestAlarmSendHistoryVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_ALRT_SNDG_H
+        (
+            SNDG_ALRT_ID
+            , ALRT_ID
+            , RCVR_DCD
+            , ALRT_TTL_NM
+            , ALRT_CON
+            , ALRT_LRDV_DCD
+            , ALRT_MDDV_CD
+            , ALRT_YN
+            , PUSH_YN
+            , IBKBOX_SVC_DCD
+            , PC_LINK_URL_CON
+            , MBL_LINK_URL_CON
+            , RGSN_USER_ID
+            , RGSN_TS
+        )
+        VALUES
+        (
+            #{sndgAlrtId}
+            , #{alrtId}
+            , #{rcvrDcd}
+            , #{alrtTtlNm}
+            , #{alrtCon}
+            , #{alrtLrdvDcd}
+            , #{alrtMddvCd}
+            , #{alrtYn}
+            , #{pushYn}
+            , #{ibkboxSvcDcd}
+            , #{pcLinkUrlCon}
+            , #{mblLinkUrlCon}
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+        )
+    </insert>
+
+    <!--    알림 수신 대상 등록-->
+    <insert id="insertInvestAlarmTarget" parameterType="InvestAlarmTargetVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_ALRT_RCV_L
+        (
+            SNDG_ALRT_ID
+            , USIS_ID
+            , IDMB_ID
+            , RGSN_USER_ID
+            , RGSN_TS
+        )
+        VALUES
+        (
+            #{sndgAlrtId}
+            , #{usisId}
+            , #{idmbId}
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+        )
+    </insert>
+
+    <!--    알림 송신 결과 등록-->
+    <insert id="insertInvestAlarmSendResult" parameterType="InvestAlarmSendResultVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_ALRT_RSLT_H
+        (
+            SNDG_ALRT_ID
+            , ALRT_SNDG_RSLT
+            , ALRT_SNDG_NO
+            , RGSN_RSLT_MSG
+            , RCV_ALRT_CNT
+            , RCV_RFSL_ALRT_CNT
+            , RGSN_USER_ID
+            , RGSN_TS
+        )
+        VALUES
+        (
+            #{sndgAlrtId}
+            , #{alrtSndgRslt}
+            , #{alrtSndgNo}
+            , #{rgsnRsltMsg}
+            , #{rcvAlrtCnt}
+            , #{rcvRfslAlrtCnt}
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+        )
+    </insert>
+
+</mapper>

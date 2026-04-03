@@ -1,0 +1,1047 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ibk.sb.restapi.biz.service.company.repo.CompanyRepo">
+
+    <!--    SchemaMapper ID-->
+<!--    <sql id="MNBADM"><include refid="com.ibk.sb.restapi.biz.service.common.repo.SchemaRepo.MNBADM"/></sql>-->
+    <sql id="INVEST"><include refid="com.ibk.sb.restapi.biz.service.common.repo.SchemaRepo.INVEST"/></sql>
+
+    <!--    PagingMapper ID-->
+    <sql id="pagingHeader"><include refid="com.ibk.sb.restapi.biz.service.common.repo.PageRepo.pageHeader"/></sql>
+    <sql id="pagingFooter"><include refid="com.ibk.sb.restapi.biz.service.common.repo.PageRepo.pageFooter"/></sql>
+
+
+    <!--=============================================== 기업 정보 조회 ===============================================-->
+
+    <!--    추천 기업 리스트 조회-->
+    <select id="selectRecommendCompanyList" parameterType="String" resultType="CompanyRecommendVO">
+        SELECT
+            rcm.UTLINSTT_ID
+            , eim.ETNM AS BPLC_NM
+            , rcm.INVM_STG_CD
+            , rcm.INVM_AMT_CD
+            , eid.ENPR_DSNC_CLSF_CD
+
+            , ccd_com.COM_CD_NM AS ENPR_DSNC_CLSF_NM
+            , ccd_stg.COM_CD_NM AS INVM_STG_NM
+            , ccd_amt.COM_CD_NM AS INVM_AMT_NM
+
+            <!-- 2023.03.30 배치 수정 후 목록 정보 범위 수정-->
+            , CASE WHEN TRIM(eim.CMPNY_LOGO_IMAGE_FILE) IS NULL
+                THEN eim.CMPNY_LOGO_BASS_IMAGE_FILE
+                ELSE eim.CMPNY_LOGO_IMAGE_FILE END AS LOGO_IMAGE_URL
+
+            , CASE WHEN TRIM(eim.CMPNY_LOGO_IMAGE_FILE) IS NULL
+                THEN 'Y'
+                ELSE 'N' END AS DEFAULT_LOGO_YN
+
+            , CASE WHEN eim.NW_ADRES_AT = 'Y'
+                THEN CONCAT(CONCAT(eim.NW_ADRES, ' '), eim.NW_ADRES_DETAIL)
+                ELSE CONCAT(CONCAT(eim.ADRES, ' '), eim.DETAIL_ADRES) END AS ADDRESS
+
+            , CASE WHEN pref_mapp.PREF_CNT IS NULL THEN 0 ELSE pref_mapp.PREF_CNT END AS PREF_CNT
+            , CASE WHEN pref_yn.UTLINSTT_ID IS NULL THEN 'N' ELSE 'Y' END AS LOGIN_USIS_LIKE_YN
+
+            , ROWNUM
+        FROM (
+            SELECT
+                main.UTLINSTT_ID
+                , main.INVM_STG_CD
+                , main.INVM_AMT_CD
+                , SUM(main.TOTAL)
+            FROM (
+
+                SELECT
+                   sub.UTLINSTT_ID
+                   , com_hope.INVM_STG_CD
+                   , com_hope.INVM_AMT_CD
+                   , NVL(COUNT(sub.INVM_FILD_CD), 0) AS TOTAL
+                FROM
+                    <include refid="INVEST"/>TB_BOX_IVT_ENPR_IVFL_R sub
+
+                INNER JOIN (
+                    SELECT UTLINSTT_ID, INVM_STG_CD, INVM_AMT_CD
+                    FROM <include refid="INVEST"/>TB_BOX_IVT_INVM_HOPE_D
+                    WHERE OPPB_YN = 'Y'
+                ) com_hope ON sub.UTLINSTT_ID = com_hope.UTLINSTT_ID
+
+                INNER JOIN (
+                    SELECT DISTINCT INVM_FILD_CD
+                    FROM <include refid="INVEST"/>TB_BOX_IVT_VC_PRTF_L
+                    WHERE UTLINSTT_ID = #{utlinsttId}
+                ) pf_fild ON sub.INVM_FILD_CD = pf_fild.INVM_FILD_CD
+
+                GROUP BY sub.UTLINSTT_ID, com_hope.INVM_STG_CD, com_hope.INVM_AMT_CD
+
+                UNION ALL
+
+                SELECT
+                    sub.UTLINSTT_ID
+                    , sub.INVM_STG_CD
+                    , sub.INVM_AMT_CD
+                    , NVL(COUNT(sub.INVM_STG_CD), 0) AS TOTAL
+                FROM
+                   <include refid="INVEST"/>TB_BOX_IVT_INVM_HOPE_D sub
+
+                INNER JOIN (
+                    SELECT DISTINCT INVM_STG_CD
+                    FROM <include refid="INVEST"/>TB_BOX_IVT_VC_PRTF_L
+                    WHERE UTLINSTT_ID = #{utlinsttId}
+                ) pf_fild ON sub.INVM_STG_CD = pf_fild.INVM_STG_CD
+
+                WHERE
+                    sub.OPPB_YN = 'Y'
+                GROUP BY
+                    sub.UTLINSTT_ID, sub.INVM_STG_CD, sub.INVM_AMT_CD
+
+                ) main
+
+            LEFT JOIN
+                <include refid="INVEST"/>TB_BOX_IVT_VNCM_CPTL_L vc_chk ON main.UTLINSTT_ID = vc_chk.UTLINSTT_ID
+
+            WHERE
+                (vc_chk.UTLINSTT_ID IS NULL OR vc_chk.USE_YN != 'Y')
+            GROUP BY
+                main.UTLINSTT_ID, main.INVM_STG_CD, main.INVM_AMT_CD
+            ORDER BY
+                SUM(main.TOTAL) DESC, DBMS_RANDOM.RANDOM
+        ) rcm
+
+        INNER JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_M eim ON eim.UTLINSTT_ID = rcm.UTLINSTT_ID
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_D eid ON eid.UTLINSTT_ID = rcm.UTLINSTT_ID
+
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd_com ON ccd_com.COM_CD_ID = eid.ENPR_DSNC_CLSF_CD
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd_stg ON ccd_stg.COM_CD_ID = rcm.INVM_STG_CD
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd_amt ON ccd_amt.COM_CD_ID = rcm.INVM_AMT_CD
+
+        LEFT JOIN (
+            SELECT
+            PRFN_USIS_ID
+            , COUNT(*) AS PREF_CNT
+            FROM <include refid="INVEST"/>TB_BOX_IVT_PRFN_USIS_R
+            GROUP BY PRFN_USIS_ID
+        ) pref_mapp ON rcm.UTLINSTT_ID = pref_mapp.PRFN_USIS_ID
+
+        <!-- INSTR을 사용하지 않고 한번더 JOIN 검색 처리 -->
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_PRFN_USIS_R pref_yn
+            ON (rcm.UTLINSTT_ID = pref_yn.PRFN_USIS_ID AND pref_yn.UTLINSTT_ID = #{utlinsttId})
+
+        WHERE 1=1
+            AND eim.ACVT_YN = 'Y'
+            <![CDATA[ AND ROWNUM < 19 ]]>
+    </select>
+
+    <!--    메인화면 최근 기업정보 리스트 조회-->
+    <select id="selectRecentCompanyList" parameterType="RequestSearchCompanyVO" resultType="RecentCompanyVO">
+        <include refid="pagingHeader"/>
+
+        SELECT
+            eim.UTLINSTT_ID
+            , eim.ETNM AS BPLC_NM
+            , eim.INCR_YMD AS FOND_DE
+            , eim.ENPR_JNNG_DT
+
+            , NVL(nid.EMP_CNT, 0) AS EMP_CNT
+            , NVL(nid.CREW_RTRV, 0) AS CREW_RTRV
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_M eim
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_VNCM_CPTL_L tbivcl ON eim.UTLINSTT_ID = tbivcl.UTLINSTT_ID
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_D nid ON eim.UTLINSTT_ID = nid.UTLINSTT_ID
+
+        WHERE 1=1
+        AND (tbivcl.UTLINSTT_ID IS NULL OR tbivcl.USE_YN != 'Y')
+        AND eim.ACVT_YN = 'Y'
+
+        ORDER BY
+            eim.ENPR_JNNG_DT DESC, eim.INCR_YMD DESC
+        <include refid="pagingFooter"/>
+    </select>
+
+    <!--    기업정보 페이지 기업리스트 조회-->
+    <select id="selectCompanyList" resultType="CompanySummaryVO" parameterType="RequestSearchCompanyVO">
+        <include refid="pagingHeader"/>
+             SELECT
+                 eim.UTLINSTT_ID
+                   , eim.ETNM AS BPLC_NM
+                   , eim.ENPR_JNNG_DT
+                   , TO_NUMBER(TO_CHAR(SYSDATE, 'YYYY')) - decode(trim(eim.INCR_YMD), NULL, NULL, (TO_NUMBER(SUBSTR(eim.INCR_YMD, 0, 4)))) AS YEAR_CNT
+
+                   , nid.BTNM
+                   , nid.ENPR_INRD_CON
+
+                   , nid.BSUN_DWAR_CD
+                   , ccd_dwar.COM_CD_NM AS BSUN_DWAR_NM
+
+                   , CASE WHEN nid.RCMD_ENPR_STUP_YN IS NULL THEN 'N' WHEN nid.RCMD_ENPR_STUP_YN = 'Y'
+                       THEN 'Y' ELSE 'N' END AS RCMD_ENPR_STUP_YN
+                   , CASE WHEN ihd.OPPB_YN IS NULL THEN 'N' WHEN ihd.OPPB_YN = 'Y'
+                       THEN 'Y' ELSE 'N' END AS INVM_HOPE_YN
+
+                   <!-- 2023.03.30 배치 수정 후 목록 정보 범위 수정-->
+                   , CASE WHEN TRIM(eim.CMPNY_LOGO_IMAGE_FILE) IS NULL
+                       THEN eim.CMPNY_LOGO_BASS_IMAGE_FILE
+                       ELSE eim.CMPNY_LOGO_IMAGE_FILE END AS LOGO_IMAGE_URL
+                   , CASE WHEN eim.NW_ADRES_AT = 'Y'
+                       THEN CONCAT(CONCAT(eim.NW_ADRES, ' '), eim.NW_ADRES_DETAIL)
+                       ELSE CONCAT(CONCAT(eim.ADRES, ' '), eim.DETAIL_ADRES) END AS ADDRESS
+
+                   , CASE WHEN TRIM(eim.CMPNY_LOGO_IMAGE_FILE) IS NULL
+                       THEN 'Y'
+                       ELSE 'N' END AS DEFAULT_LOGO_YN
+
+                   , CASE WHEN pref_mapp.PREF_CNT IS NULL THEN 0 ELSE pref_mapp.PREF_CNT END AS PREF_CNT
+
+                    <if test="loginUsisId != null and !loginUsisId.equals('')">
+                        , CASE WHEN pref_yn.UTLINSTT_ID IS NULL THEN 'N' ELSE 'Y' END AS LOGIN_USIS_LIKE_YN
+                    </if>
+
+             FROM
+                 <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_M eim
+             LEFT JOIN
+                 <include refid="INVEST"/>TB_BOX_IVT_VNCM_CPTL_L tbivcl ON eim.UTLINSTT_ID = tbivcl.UTLINSTT_ID
+             LEFT JOIN
+                 <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_D nid ON eim.UTLINSTT_ID = nid.UTLINSTT_ID
+             LEFT JOIN
+                 <include refid="INVEST"/>TB_BOX_IVT_INVM_HOPE_D ihd ON eim.UTLINSTT_ID = ihd.UTLINSTT_ID
+             LEFT JOIN
+                 <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_D eid ON eim.UTLINSTT_ID = eid.UTLINSTT_ID
+             LEFT JOIN
+                 <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd_dwar ON ccd_dwar.COM_CD_ID = nid.BSUN_DWAR_CD
+
+             LEFT JOIN (
+                SELECT
+                    PRFN_USIS_ID
+                    , COUNT(*) AS PREF_CNT
+                FROM <include refid="INVEST"/>TB_BOX_IVT_PRFN_USIS_R
+                GROUP BY PRFN_USIS_ID
+             ) pref_mapp ON eim.UTLINSTT_ID = pref_mapp.PRFN_USIS_ID
+
+            <if test="loginUsisId != null and !loginUsisId.equals('')">
+                <!-- INSTR을 사용하지 않고 한번더 JOIN 검색 처리 -->
+                LEFT JOIN
+                    <include refid="INVEST"/>TB_BOX_IVT_PRFN_USIS_R pref_yn
+                    ON (eim.UTLINSTT_ID = pref_yn.PRFN_USIS_ID AND pref_yn.UTLINSTT_ID = #{loginUsisId})
+            </if>
+
+             <if test="invmFildCd != null and !invmFildCd.equals('')">
+                 LEFT JOIN
+                    <include refid="INVEST"/>TB_BOX_IVT_ENPR_IVFL_R eir ON eim.UTLINSTT_ID = eir.UTLINSTT_ID
+             </if>
+
+             WHERE 1=1
+                AND eim.ACVT_YN = 'Y'
+                <!--AND eim.ACT_AT = 'Y'-->
+                AND (tbivcl.UTLINSTT_ID IS NULL OR tbivcl.USE_YN != 'Y')
+                <!--기업명 검색조건-->
+                <if test="bplcNm != null and !bplcNm.equals('')">
+                    AND UPPER(eim.ETNM) LIKE '%' || UPPER(#{bplcNm}) || '%'
+                </if>
+                <!--투자분야(산업분류) 검색조건-->
+                <if test="invmFildCd != null and !invmFildCd.equals('')">
+                    AND eir.INVM_FILD_CD = #{invmFildCd}
+                </if>
+                <!--기업구분(기업규모) 검색조건-->
+                <if test="enprDsncClsfCd != null and !enprDsncClsfCd.equals('')">
+                    AND nid.ENPR_DSNC_CLSF_CD = #{enprDsncClsfCd}
+                </if>
+                <!--사업장소재지코드(지역) 검색조건-->
+                <if test="bsunDwarCd != null and !bsunDwarCd.equals('')">
+                    AND nid.BSUN_DWAR_CD = #{bsunDwarCd}
+                </if>
+                <!--매출액 검색조건 (이상)-->
+                <if test="msrnAmslAmtSt != null">
+                    <![CDATA[ AND #{msrnAmslAmtSt} <= nid.MSRN_AMSL_AMT ]]>
+                </if>
+                <!--매출액 검색조건 (이하)-->
+                <if test="msrnAmslAmtFn != null">
+                    <![CDATA[ AND nid.MSRN_AMSL_AMT <= #{msrnAmslAmtFn} ]]>
+                </if>
+                <!--설립일 검색조건 (start)-->
+                <if test="fondDeSt != null and !fondDeSt.equals('')">
+                    <![CDATA[ AND #{fondDeSt} <= eim.INCR_YMD ]]>
+                </if>
+                <!--설립일 검색조건 (end)-->
+                <if test="fondDeFn != null and !fondDeFn.equals('')">
+                    <![CDATA[ AND eim.INCR_YMD <= #{fondDeFn} ]]>
+                </if>
+                <!--직원수 검색조건 (이상)-->
+                <if test="empCntSt != null">
+                    <![CDATA[ AND #{empCntSt} <= nid.EMP_CNT ]]>
+                </if>
+                <!--직원수 검색조건 (이하)-->
+                <if test="empCntFn != null">
+                    <![CDATA[ AND nid.EMP_CNT <= #{empCntFn} ]]>
+                </if>
+                <!--투자희망기업유무-->
+                <if test="invmHopeYn != null and !invmHopeYn.equals('')">
+                    AND (CASE WHEN ihd.OPPB_YN IS NULL THEN 'N' WHEN ihd.OPPB_YN = 'Y' THEN 'Y' ELSE 'N' END) = #{invmHopeYn}
+                </if>
+                <!--추천기업유무-->
+                <if test="rcmdEnprStupYn != null and !rcmdEnprStupYn.equals('')">
+                    AND (CASE WHEN nid.RCMD_ENPR_STUP_YN IS NULL THEN 'N' WHEN nid.RCMD_ENPR_STUP_YN = 'Y' THEN 'Y' ELSE 'N' END) = #{rcmdEnprStupYn}
+                </if>
+                <!--선호도 유무-->
+                <if test='isPreferYn != null and isPreferYn.equals("Y")'>
+                    <![CDATA[ AND (CASE WHEN pref_mapp.PREF_CNT IS NULL THEN 0 ELSE pref_mapp.PREF_CNT END) > 0 ]]>
+                </if>
+                <!--해외투자희망기업-->
+                <if test="osivHopeyn != null and !osivHopeyn.equals('')">
+                    AND (CASE WHEN ihd.OSIV_HOPEYN IS NULL THEN 'N' WHEN ihd.OSIV_HOPEYN = 'Y' THEN 'Y' ELSE 'N' END) = #{osivHopeyn}
+                </if>
+
+            ORDER BY
+                <choose>
+                    <!--추천기업유무-->
+<!--                    <when test="rcmdEnprStupYn != null and rcmdEnprStupYn.equals('Y'.toString())">-->
+                    <when test='sortType != null and sortType.equals(SORT_RANDOM)'>
+                        DBMS_RANDOM.RANDOM
+                    </when>
+                    <when test='sortType != null and sortType.equals(SORT_PREFERENCE)'>
+                        pref_mapp.PREF_CNT DESC, eim.INCR_YMD DESC
+                    </when>
+                    <otherwise>
+                        eim.ENPR_JNNG_DT DESC, eim.INCR_YMD DESC
+                    </otherwise>
+                </choose>
+        <include refid="pagingFooter"/>
+    </select>
+
+    <!--    기업 기본정보 조회 -->
+    <select id="selectCompanyBasic" parameterType="String" resultType="CompanyBasicVO">
+        SELECT
+            eim.*
+            , eim.ETNM AS BPLC_NM
+            , eim.INCR_YMD AS FOND_DE
+            , eim.BZN AS BIZRNO
+
+            , nid.ENFM_CLSF_CD
+            , ccd_clsf.COM_CD_NM AS ENFM_CLSF_NM
+
+            , nid.ENPR_DSNC_CLSF_CD
+            , ccd_dsnc.COM_CD_NM AS ENPR_DSNC_CLSF_NM
+
+            , nid.BSUN_DWAR_CD
+            , ccd_dwar.COM_CD_NM AS BSUN_DWAR_NM
+
+            , nid.EMP_CNT
+            , nid.BTNM
+            , nid.BZST_NM
+            , nid.MSRN_AMSL_YEAR
+            , nid.MSRN_AMSL_AMT
+            , CASE WHEN nid.LSTN_YN IS NULL THEN 'N' ELSE nid.LSTN_YN END AS LSTN_YN
+            , nid.ENPR_INRD_CON
+            , nid.CREW_RTRV
+
+            <!--, CASE WHEN ihd.OPPB_YN IS NULL THEN 'N' ELSE ihd.OPPB_YN END AS OPPB_YN        -->
+            <!--, CASE WHEN ihd.OPPB_YN = 'Y' THEN ihd.INVM_STG_CD ELSE '' END AS INVM_STG_CD   -->
+            <!--, CASE WHEN ihd.OPPB_YN = 'Y' THEN ccd_stg.COM_CD_NM ELSE '' END AS INVM_STG_NM -->
+            <!--, CASE WHEN ihd.OPPB_YN = 'Y' THEN ihd.INVM_AMT_CD ELSE '' END AS INVM_AMT_CD   -->
+            <!--, CASE WHEN ihd.OPPB_YN = 'Y' THEN ccd_amt.COM_CD_NM ELSE '' END AS INVM_AMT_NM -->
+
+            , CASE WHEN pref_mapp.PREF_CNT IS NULL THEN 0 ELSE pref_mapp.PREF_CNT END AS PREF_CNT
+
+            <if test="loginUsisId != null and !loginUsisId.equals('')">
+                , CASE WHEN pref_yn.UTLINSTT_ID IS NULL THEN 'N' ELSE 'Y' END AS LOGIN_USIS_LIKE_YN
+            </if>
+
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_M eim
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_VNCM_CPTL_L tbivcl ON eim.UTLINSTT_ID = tbivcl.UTLINSTT_ID
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_D nid ON eim.UTLINSTT_ID = nid.UTLINSTT_ID
+
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd_clsf ON ccd_clsf.COM_CD_ID = nid.ENFM_CLSF_CD
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd_dsnc ON ccd_dsnc.COM_CD_ID = nid.ENPR_DSNC_CLSF_CD
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd_dwar ON ccd_dwar.COM_CD_ID = nid.BSUN_DWAR_CD
+
+        <!--LEFT JOIN                                                                                       -->
+        <!--    <include refid="INVEST"/>TB_BOX_IVT_INVM_HOPE_D ihd ON eim.UTLINSTT_ID = ihd.UTLINSTT_ID    -->
+        <!--LEFT JOIN                                                                                       -->
+        <!--    <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd_stg ON ccd_stg.COM_CD_ID = ihd.INVM_STG_CD -->
+        <!--LEFT JOIN                                                                                       -->
+        <!--    <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd_amt ON ccd_amt.COM_CD_ID = ihd.INVM_AMT_CD -->
+
+        LEFT JOIN (
+            SELECT
+                PRFN_USIS_ID
+                , COUNT(*) AS PREF_CNT
+            FROM <include refid="INVEST"/>TB_BOX_IVT_PRFN_USIS_R
+            GROUP BY PRFN_USIS_ID
+        ) pref_mapp ON eim.UTLINSTT_ID = pref_mapp.PRFN_USIS_ID
+
+        <if test="loginUsisId != null and !loginUsisId.equals('')">
+            LEFT JOIN
+                <include refid="INVEST"/>TB_BOX_IVT_PRFN_USIS_R pref_yn
+                ON (eim.UTLINSTT_ID = pref_yn.PRFN_USIS_ID AND pref_yn.UTLINSTT_ID = #{loginUsisId})
+        </if>
+
+        WHERE 1=1
+            <!--AND ful.ACT_AT = 'Y'-->
+        <if test="loginUsisId != null and !loginUsisId.equals('vcSelect')">
+            AND (tbivcl.UTLINSTT_ID IS NULL OR tbivcl.USE_YN != 'Y')
+        </if>
+            AND eim.UTLINSTT_ID = #{utlinsttId}
+    </select>
+
+    <!--    기업 관심분야 태그 리스트 조회-->
+    <select id="selectCompanyInterestTagList" parameterType="String" resultType="CompanyInterestVO">
+        SELECT
+            UTLINSTT_ID
+            , CNRN_FILD_SQN
+            , CNRN_FILD_NM
+            , RGSN_USER_ID
+            , RGSN_TS
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_CNRN_FILD_L
+        WHERE
+            UTLINSTT_ID = #{utlinsttId}
+        ORDER BY
+            CNRN_FILD_SQN ASC
+    </select>
+
+    <!--    기업 제품 리스트 조회-->
+    <select id="selectCompanyProductList" parameterType="String" resultType="CompanyProductSummaryVO">
+        SELECT
+            epl.UTLINSTT_ID
+            , epl.PRDT_ID
+            , epl.PRDT_NM
+            , epl.PRDT_IMG_FILE_ID AS IMG_FILE_ID
+            , epl.PRDT_IMG_FILE_ID AS FILE_ID
+            , epl.DEL_YN
+
+            , epl.RGSN_USER_ID
+            , epl.RGSN_TS
+            , epl.AMNN_USER_ID
+            , epl.AMNN_TS
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_ENPR_PRDT_L epl
+        WHERE
+            epl.UTLINSTT_ID = #{utlinsttId} AND epl.DEL_YN = 'N'
+
+    </select>
+
+    <!--    기업 제품 조회-->
+    <select id="selectCompanyProduct" parameterType="String" resultType="CompanyProductVO">
+        SELECT
+            epl.UTLINSTT_ID
+            , epl.PRDT_ID
+            , epl.PRDT_NM
+            , epl.PRDT_PTRN
+            , epl.PRDT_DESC
+            , epl.PRDT_CHRC
+            , epl.DEL_YN
+
+            , epl.PRDT_IMG_FILE_ID AS IMG_FILE_ID
+            , epl.PRDT_IMG_FILE_ID AS FILE_ID
+
+            , epl.RGSN_USER_ID
+            , epl.RGSN_TS
+            , epl.AMNN_USER_ID
+            , epl.AMNN_TS
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_ENPR_PRDT_L epl
+        WHERE
+            epl.UTLINSTT_ID = #{utlinsttId} AND epl.PRDT_ID = #{prdtId} AND epl.DEL_YN = 'N'
+
+    </select>
+
+    <!--    제품 키워드 리스트 조회-->
+    <select id="selectProductKeywordList" parameterType="String" resultType="ProductKeywordVO">
+        SELECT
+            UTLINSTT_ID
+            , PRDT_ID
+            , KWR_SQN
+            , KWR_NM
+            , RGSN_USER_ID
+            , RGSN_TS
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_ENPR_KWRD_L
+        WHERE
+            UTLINSTT_ID = #{utlinsttId} AND PRDT_ID = #{prdtId}
+        ORDER BY
+            KWR_SQN ASC
+    </select>
+
+    <!--    기업 투자분야 리스트 조회-->
+    <select id="selectCompanyInvestFieldList" parameterType="String" resultType="CompanyInvestFieldVO">
+        SELECT
+            eir.UTLINSTT_ID
+            , eir.IVFL_SQN
+            , eir.INVM_FILD_CD
+            , eir.RGSN_USER_ID
+            , eir.RGSN_TS
+
+            , ifc.INVM_FILD_CDNM AS INVM_FILD_NM
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_ENPR_IVFL_R eir
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_INVM_FILD_C ifc ON eir.INVM_FILD_CD = ifc.INVM_FILD_CD
+        WHERE
+            eir.UTLINSTT_ID = #{utlinsttId}
+        ORDER BY
+            eir.IVFL_SQN
+    </select>
+
+    <!--    기업 활용기술 리스트 조회-->
+    <select id="selectCompanyUtilTechList" parameterType="String" resultType="CompanyUtilTechVO">
+        SELECT
+            etr.UTLINSTT_ID
+            , etr.UTLZ_TCHN_SQN
+            , etr.UTLZ_TCHN_CD
+            , etr.RGSN_USER_ID
+            , etr.RGSN_TS
+
+            , utc.UTLZ_TCHN_CDNM AS UTLZ_TCHN_NM
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_ENPR_TCHN_R etr
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_UTLZ_TCHN_C utc ON etr.UTLZ_TCHN_CD = utc.UTLZ_TCHN_CD
+        WHERE
+            etr.UTLINSTT_ID = #{utlinsttId}
+        ORDER BY
+            etr.UTLZ_TCHN_SQN
+    </select>
+
+    <!--    기업 투자희망 조회-->
+    <select id="selectCompanyInvestHope" parameterType="String" resultType="CompanyInvestHopeVO">
+        SELECT
+            tbih.UTLINSTT_ID
+            , tbih.INVM_STG_CD
+            , ccd_stg.COM_CD_NM AS INVM_STG_NM
+            , tbih.INVM_AMT_CD
+            , ccd_amt.COM_CD_NM AS INVM_AMT_NM
+
+            , CASE WHEN tbih.OPPB_YN IS NULL THEN 'N' ELSE tbih.OPPB_YN END AS OPPB_YN
+            , tbih.RGSN_USER_ID
+            , tbih.RGSN_TS
+            , tbih.AMNN_USER_ID
+            , tbih.AMNN_TS
+
+            <!-- 해외투자 희망여부 추가 -->
+            , CASE WHEN tbih.OSIV_HOPEYN IS NULL THEN 'N' ELSE tbih.OSIV_HOPEYN END AS OSIV_HOPEYN
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_INVM_HOPE_D tbih
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd_stg ON ccd_stg.COM_CD_ID = tbih.INVM_STG_CD
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd_amt ON ccd_amt.COM_CD_ID = tbih.INVM_AMT_CD
+        WHERE
+            tbih.UTLINSTT_ID = #{utlinsttId}
+    </select>
+
+    <!--    기업 팀원목록 조회-->
+    <select id="selectCompanyMemberList" parameterType="String" resultType="CompanyMemberVO">
+        SELECT
+            tbiet.UTLINSTT_ID
+            , tbiet.TMMB_ID
+            , tbiet.TMMB_NM
+            , tbiet.TMMB_JBCL
+            , tbiet.CRR_CON
+            , tbiet.TMMB_IMG_FILE_ID AS IMG_FILE_ID
+            , tbiet.TMMB_IMG_FILE_ID AS FILE_ID
+
+            , tbiet.RGSN_USER_ID
+            , tbiet.RGSN_TS
+            , tbiet.AMNN_USER_ID
+            , tbiet.AMNN_TS
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_ENPR_TMMB_L tbiet
+        WHERE
+            tbiet.UTLINSTT_ID = #{utlinsttId}
+        ORDER BY
+            tbiet.RGSN_TS ASC
+    </select>
+
+    <!--    기업 소개영상 목록 조회-->
+    <select id="selectCompanyIntroMediaList" parameterType="String" resultType="CompanyIntroMediaVO">
+        SELECT
+            UTLINSTT_ID
+            , INRD_PICT_SQN
+            , INRD_PICT_TTL
+            , INRD_PICT_URL
+            , RGSN_USER_ID
+            , RGSN_TS
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_ENPR_INTRO_L
+        WHERE
+            UTLINSTT_ID = #{utlinsttId}
+    </select>
+
+    <!--    이용기관 좋아요 매핑 조회 (prfnUsisId가 대상 이용기관임)-->
+    <select id="selectCompanyPreferenceMapping" parameterType="String" resultType="CompanyPreferenceVO">
+        SELECT
+            UTLINSTT_ID
+            , PRFN_USIS_ID
+            , RGSN_USER_ID
+            , RGSN_TS
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_PRFN_USIS_R
+        WHERE
+            UTLINSTT_ID = #{utlinsttId} AND PRFN_USIS_ID = #{prfnUsisId}
+    </select>
+
+    <!--=============================================== 기업 정보 병합 ===============================================-->
+
+    <!--    기업 자동갱신 약관 동의 갱신-->
+    <insert id="mergeCompanyIRAgreement" parameterType="CompanyBasicVO">
+        MERGE INTO <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_D tbieid
+        USING DUAL ON (tbieid.UTLINSTT_ID = #{utlinsttId})
+        WHEN MATCHED THEN
+            UPDATE SET
+                ATRW_STPL_COSN_YN = #{atrwStplCosnYn}
+                , AMNN_USER_ID = #{amnnUserId}
+                , AMNN_TS = CURRENT_TIMESTAMP
+        WHEN NOT MATCHED THEN
+            INSERT
+            (
+                UTLINSTT_ID
+                , ATRW_STPL_COSN_YN
+                , RGSN_USER_ID
+                , RGSN_TS
+                , AMNN_USER_ID
+                , AMNN_TS
+            )
+            VALUES
+            (
+                #{utlinsttId}
+                , #{atrwStplCosnYn}
+                , #{rgsnUserId}
+                , CURRENT_TIMESTAMP
+                , #{amnnUserId}
+                , CURRENT_TIMESTAMP
+            )
+    </insert>
+
+    <!--    기업 투자박스 마이페이지 기본정보 갱신-->
+    <insert id="mergeCompanyInvestBasic" parameterType="CompanyBasicVO">
+        MERGE INTO <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_D tbieid
+        USING DUAL ON (tbieid.UTLINSTT_ID = #{utlinsttId})
+        WHEN MATCHED THEN
+            UPDATE SET
+                ENFM_CLSF_CD      = #{enfmClsfCd}
+                , ENPR_DSNC_CLSF_CD = #{enprDsncClsfCd}
+                , BSUN_DWAR_CD      = #{bsunDwarCd}
+                , EMP_CNT           = #{empCnt}
+                , BTNM              = #{btnm}
+                , BZST_NM           = #{bzstNm}
+                , MSRN_AMSL_YEAR    = #{msrnAmslYear}
+                , MSRN_AMSL_AMT     = #{msrnAmslAmt}
+                , LSTN_YN           = #{lstnYn}
+                , ENPR_INRD_CON     = #{enprInrdCon}
+                , AMNN_USER_ID      = #{amnnUserId}
+                , AMNN_TS           = CURRENT_TIMESTAMP
+        WHEN NOT MATCHED THEN
+            INSERT
+            (
+                UTLINSTT_ID
+                , ENFM_CLSF_CD
+                , ENPR_DSNC_CLSF_CD
+                , BSUN_DWAR_CD
+                , EMP_CNT
+                , BTNM
+                , BZST_NM
+                , MSRN_AMSL_YEAR
+                , MSRN_AMSL_AMT
+                , LSTN_YN
+                , ENPR_INRD_CON
+                , CREW_RTRV
+                , RGSN_USER_ID
+                , RGSN_TS
+                , AMNN_USER_ID
+                , AMNN_TS
+            )
+            VALUES
+            (
+                #{utlinsttId}
+                , #{enfmClsfCd}
+                , #{enprDsncClsfCd}
+                , #{bsunDwarCd}
+                , #{empCnt}
+                , #{btnm}
+                , #{bzstNm}
+                , #{msrnAmslYear}
+                , #{msrnAmslAmt}
+                , #{lstnYn}
+                , #{enprInrdCon}
+                , 0
+                , #{rgsnUserId}
+                , CURRENT_TIMESTAMP
+                , #{amnnUserId}
+                , CURRENT_TIMESTAMP
+            )
+    </insert>
+
+    <!--    기업 상세화면 조회수 증가-->
+    <update id="mergeCompanyViewCount" parameterType="String">
+        MERGE INTO <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_D tbieid
+            USING DUAL ON (tbieid.UTLINSTT_ID = #{utlinsttId})
+        WHEN MATCHED THEN
+            UPDATE SET
+                CREW_RTRV = (
+                    SELECT CASE WHEN CREW_RTRV IS NULL THEN 1 ELSE CREW_RTRV + 1 END AS CREW_RTRV
+                    FROM <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_D
+                    WHERE UTLINSTT_ID = #{utlinsttId}
+                )
+        WHEN NOT MATCHED THEN
+            INSERT
+            (
+                UTLINSTT_ID
+                , CREW_RTRV
+                , RGSN_USER_ID
+                , RGSN_TS
+            )
+            VALUES
+            (
+                #{utlinsttId}
+                , 1
+                , ''
+                , CURRENT_TIMESTAMP
+            )
+    </update>
+
+
+    <!--=============================================== 기업 정보 등록 ===============================================-->
+
+    <!--    기업 관심분야 태그 정보 저장-->
+    <insert id="insertCompanyInterestTag" parameterType="CompanyInterestVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_CNRN_FILD_L
+        (
+            UTLINSTT_ID
+            , CNRN_FILD_SQN
+            , CNRN_FILD_NM
+            , RGSN_USER_ID
+            , RGSN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{cnrnFildSqn}
+            , #{cnrnFildNm}
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+        )
+    </insert>
+
+    <!--    기업 주요 제품정보 등록-->
+    <insert id="insertCompanyProduct" parameterType="CompanyProductVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_ENPR_PRDT_L
+        (
+            UTLINSTT_ID
+            , PRDT_ID
+            , PRDT_NM
+            , PRDT_PTRN
+            , PRDT_DESC
+            , PRDT_CHRC
+
+            , PRDT_IMG_FILE_ID
+
+            , DEL_YN
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{prdtId}
+            , #{prdtNm}
+            , #{prdtPtrn}
+            , #{prdtDesc}
+            , #{prdtChrc}
+
+            , #{fileId}
+
+            , 'N'
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+            , #{amnnUserId}
+            , CURRENT_TIMESTAMP
+        )
+    </insert>
+
+    <!--    기업 제품 키워드 정보 등록-->
+    <insert id="insertProductKeyword">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_ENPR_KWRD_L
+        (
+            UTLINSTT_ID
+            , PRDT_ID
+            , KWR_SQN
+            , KWR_NM
+            , RGSN_USER_ID
+            , RGSN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{prdtId}
+            , #{kwrSqn}
+            , #{kwrNm}
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+        )
+    </insert>
+
+    <!--    기업 투자분야 등록-->
+    <insert id="insertCompanyInvestField" parameterType="CompanyInvestFieldVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_ENPR_IVFL_R
+        (
+            UTLINSTT_ID
+            , IVFL_SQN
+            , INVM_FILD_CD
+            , RGSN_USER_ID
+            , RGSN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{ivflSqn}
+            , #{invmFildCd}
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+        )
+    </insert>
+
+    <!--    기업 활용기술 등록-->
+    <insert id="insertCompanyUtilTech" parameterType="CompanyUtilTechVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_ENPR_TCHN_R
+        (
+            UTLINSTT_ID
+            , UTLZ_TCHN_SQN
+            , UTLZ_TCHN_CD
+            , RGSN_USER_ID
+            , RGSN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{utlzTchnSqn}
+            , #{utlzTchnCd}
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+        )
+    </insert>
+
+    <!--    기업 투자희망 등록-->
+    <insert id="insertCompanyInvestHope" parameterType="CompanyInvestHopeVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_INVM_HOPE_D
+        (
+            UTLINSTT_ID
+            , INVM_STG_CD
+            , INVM_AMT_CD
+            , OPPB_YN
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+
+            <!-- 해외투자 희망여부 추가 -->
+            , OSIV_HOPEYN
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{invmStgCd}
+            , #{invmAmtCd}
+            , #{oppbYn}
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+            , #{amnnUserId}
+            , CURRENT_TIMESTAMP
+
+            , #{osivHopeyn}
+        )
+    </insert>
+
+    <!--    기업 팀원정보 등록-->
+    <insert id="insertCompanyMember" parameterType="CompanyMemberVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_ENPR_TMMB_L
+        (
+            UTLINSTT_ID
+            , TMMB_ID
+            , TMMB_NM
+            , TMMB_JBCL
+            , CRR_CON
+            , TMMB_IMG_FILE_ID
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{tmmbId}
+            , #{tmmbNm}
+            , #{tmmbJbcl}
+            , #{crrCon}
+            , #{fileId}
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+            , #{amnnUserId}
+            , CURRENT_TIMESTAMP
+        )
+    </insert>
+
+    <!--    기업 소개영상 등록-->
+    <insert id="insertCompanyIntroMedia" parameterType="CompanyIntroMediaVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_ENPR_INTRO_L
+        (
+            UTLINSTT_ID
+            , INRD_PICT_SQN
+            , INRD_PICT_TTL
+            , INRD_PICT_URL
+            , RGSN_USER_ID
+            , RGSN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{inrdPictSqn}
+            , #{inrdPictTtl}
+            , #{inrdPictUrl}
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+        )
+    </insert>
+
+    <!--    기업 좋아요 매핑 등록-->
+    <insert id="insertCompanyPreferenceMapping" parameterType="CompanyPreferenceVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_PRFN_USIS_R
+        (
+            UTLINSTT_ID
+            , PRFN_USIS_ID
+            , RGSN_USER_ID
+            , RGSN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{prfnUsisId}
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+        )
+    </insert>
+
+    <!--=============================================== 기업 정보 수정 ===============================================-->
+
+    <!--    기업 제품 정보 수정-->
+    <update id="updateCompanyProduct" parameterType="CompanyProductVO">
+        UPDATE
+            <include refid="INVEST"/>TB_BOX_IVT_ENPR_PRDT_L
+        SET
+            PRDT_NM            = #{prdtNm}
+            , PRDT_PTRN          = #{prdtPtrn}
+            , PRDT_IMG_FILE_ID   = #{fileId}
+            , PRDT_DESC          = #{prdtDesc}
+            , PRDT_CHRC          = #{prdtChrc}
+            , AMNN_USER_ID       = #{amnnUserId}
+            , AMNN_TS            = CURRENT_TIMESTAMP
+        WHERE
+            UTLINSTT_ID = #{utlinsttId}
+            AND PRDT_ID = #{prdtId}
+    </update>
+
+    <!--    기업 투자희망 정보 수정-->
+    <update id="updateCompanyInvestHope" parameterType="CompanyInvestHopeVO">
+        UPDATE
+            <include refid="INVEST"/>TB_BOX_IVT_INVM_HOPE_D
+        SET
+            INVM_STG_CD        = #{invmStgCd}
+            , INVM_AMT_CD        = #{invmAmtCd}
+            , OPPB_YN            = #{oppbYn}
+
+            , AMNN_USER_ID     = #{amnnUserId}
+            , AMNN_TS          = CURRENT_TIMESTAMP
+
+            <!-- 해외투자희망 추가 -->
+            , OSIV_HOPEYN      = #{osivHopeyn}
+        WHERE
+            UTLINSTT_ID = #{utlinsttId}
+    </update>
+
+    <!--    기업 팀원 정보 수정-->
+    <update id="updateCompanyMember" parameterType="CompanyMemberVO">
+        UPDATE
+            <include refid="INVEST"/>TB_BOX_IVT_ENPR_TMMB_L
+        SET
+            TMMB_NM          = #{tmmbNm}
+            , TMMB_JBCL        = #{tmmbJbcl}
+            , CRR_CON          = #{crrCon}
+            , TMMB_IMG_FILE_ID = #{fileId}
+            , AMNN_USER_ID     = #{amnnUserId}
+            , AMNN_TS          = #{amnnTs}
+        WHERE
+            UTLINSTT_ID = #{utlinsttId} AND TMMB_ID = #{tmmbId}
+    </update>
+
+    <!--=============================================== 기업 정보 삭제 ===============================================-->
+
+    <!--    기업 제품 논리 삭제-->
+    <update id="deleteCompanyProduct" parameterType="String">
+        UPDATE
+            <include refid="INVEST"/>TB_BOX_IVT_ENPR_PRDT_L
+        SET
+            DEL_YN                = 'Y'
+            , AMNN_USER_ID       = #{amnnUserId}
+            , AMNN_TS            = CURRENT_TIMESTAMP
+        WHERE
+            UTLINSTT_ID = #{utlinsttId}
+            AND PRDT_ID = #{prdtId}
+    </update>
+
+    <!--    기업 팀원 삭제-->
+    <update id="deleteCompanyMember" parameterType="String">
+        DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_ENPR_TMMB_L
+        WHERE UTLINSTT_ID = #{utlinsttId} AND TMMB_ID = #{tmmbId}
+    </update>
+
+    <!--    기업 관심분야태그 삭제-->
+    <delete id="deleteCompanyInterestTagList" parameterType="String">
+        DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_CNRN_FILD_L
+        WHERE UTLINSTT_ID = #{utlinsttId}
+    </delete>
+
+    <!--    기업 투자분야 삭제-->
+    <delete id="deleteCompanyInvestFieldList" parameterType="String">
+        DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_ENPR_IVFL_R
+        WHERE UTLINSTT_ID = #{utlinsttId}
+    </delete>
+
+    <!--    기업 활용기술 삭제-->
+    <delete id="deleteCompanyUtilTechList" parameterType="String">
+        DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_ENPR_TCHN_R
+        WHERE UTLINSTT_ID = #{utlinsttId}
+    </delete>
+
+    <!--    제품키워드 목록 삭제-->
+    <delete id="deleteProductKeywordList" parameterType="String">
+        DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_ENPR_KWRD_L
+        WHERE UTLINSTT_ID = #{utlinsttId} AND PRDT_ID = #{prdtId}
+    </delete>
+
+
+    <!--    기업 소개영상목록 삭제-->
+    <delete id="deleteCompanyIntroMediaList" parameterType="String">
+        DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_ENPR_INTRO_L
+        WHERE UTLINSTT_ID = #{utlinsttId}
+    </delete>
+
+    <!--    기업 좋아요 매핑 삭제 (prfnUsisId가 대상 이용기관)-->
+    <delete id="deleteCompanyPreferenceMapping" parameterType="String">
+        DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_PRFN_USIS_R
+        WHERE UTLINSTT_ID = #{utlinsttId} AND PRFN_USIS_ID = #{prfnUsisId}
+    </delete>
+</mapper>

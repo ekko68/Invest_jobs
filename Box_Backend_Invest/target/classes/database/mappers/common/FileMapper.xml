@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ibk.sb.restapi.biz.service.common.repo.CommonFileRepo">
+    <!--    SchemaMapper ID-->
+    <sql id="INVEST"><include refid="com.ibk.sb.restapi.biz.service.common.repo.SchemaRepo.INVEST"/></sql>
+
+    <!--    PagingMapper ID-->
+    <sql id="pagingHeader"><include refid="com.ibk.sb.restapi.biz.service.common.repo.PageRepo.pageHeader"/></sql>
+    <sql id="pagingFooter"><include refid="com.ibk.sb.restapi.biz.service.common.repo.PageRepo.pageFooter"/></sql>
+
+    <!--파일 정보 조회-->
+    <select id="selectFileInfo" parameterType="String" resultType="ComFileInfoVO">
+        SELECT
+            FILE_ID
+            , FILE_NM
+            , FILE_PATH
+            , FILE_PTRN
+            , FILE_ETNS
+            , FILE_SIZE
+
+            , DEL_YN
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        FROM
+             <include refid="INVEST"/>TB_BOX_IVT_FILE_ATCH_M
+        WHERE
+            FILE_ID = #{fileId} AND DEL_YN = 'N'
+    </select>
+
+    <!--파일 정보 등록-->
+    <insert id="insertFileInfo" parameterType="ComFileInfoVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_FILE_ATCH_M
+        (
+            FILE_ID
+            , FILE_NM
+            , FILE_PATH
+            , FILE_PTRN
+            , FILE_ETNS
+            , FILE_SIZE
+            , DEL_YN
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        )
+        VALUES
+        (
+            #{fileId}
+            , #{fileNm}
+            , #{filePath}
+            , #{filePtrn}
+            , #{fileEtns}
+            , #{fileSize}
+            , 'N'
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+            , #{amnnUserId}
+            , CURRENT_TIMESTAMP
+        )
+    </insert>
+
+<!--    <update id="updateFileAuth" parameterType="ComFileInfoVO">-->
+<!--        UPDATE-->
+<!--            <include refid="INVEST"/>TB_BOX_IVT_FILE_ATCH_M-->
+<!--        SET-->
+<!--            ATHR_UTLINSTT_ID          = #{athrUtlinsttId}-->
+<!--            , ATHR_INVM_CMP_UTLINSTT_ID = #{athrInvmCmpUtlinsttId}-->
+<!--            , ATHR                      = #{athr}-->
+
+<!--            , AMNN_USER_ID              = #{amnnUserId}-->
+<!--            , AMNN_TS                   = CURRENT_TIMESTAMP-->
+<!--        WHERE-->
+<!--            FILE_ID = #{fileMngmNo}-->
+<!--    </update>-->
+
+    <!--파일 정보 삭제(논리)-->
+    <update id="deleteFileInfo" parameterType="String">
+        UPDATE
+            <include refid="INVEST"/>TB_BOX_IVT_FILE_ATCH_M
+        SET
+            DEL_YN = 'Y'
+            , AMNN_USER_ID = #{amnnUserId}
+            , AMNN_TS = CURRENT_TIMESTAMP
+        WHERE
+            FILE_ID = #{fileId}
+    </update>
+
+    <delete id="deleteFilePhysical" parameterType="String">
+        DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_FILE_ATCH_M
+        WHERE FILE_ID = #{fileId}
+    </delete>
+    
+    <!-- 파일 임시이름으로 infotech 간편서류 조회 -->
+    <select id="selectInfotechFileInfo" parameterType="String" resultType="ComFileInfoVO">
+        SELECT
+		    FILE_ID
+		    , FILE_NM
+		    , FILE_PATH
+		    , FILE_PTRN
+		    , FILE_ETNS
+		    , FILE_SIZE
+		    , DEL_YN
+		    , RGSN_USER_ID
+		    , RGSN_TS
+		    , AMNN_USER_ID
+		    , AMNN_TS
+		FROM
+		     <include refid="INVEST"/>TB_BOX_IVT_FILE_ATCH_M
+		WHERE
+		   UPPER(FILE_NM) LIKE '%' || UPPER(#{fileNm}) || '%' AND DEL_YN = 'N'
+		   ORDER BY RGSN_TS DESC
+    </select>
+    
+</mapper>

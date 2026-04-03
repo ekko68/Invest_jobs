@@ -1,0 +1,1475 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ibk.sb.restapi.biz.service.vc.repo.VentureCapitalRepo">
+
+    <!--    SchemaMapper ID-->
+<!--    <sql id="MNBADM"><include refid="com.ibk.sb.restapi.biz.service.common.repo.SchemaRepo.MNBADM"/></sql>-->
+    <sql id="INVEST"><include refid="com.ibk.sb.restapi.biz.service.common.repo.SchemaRepo.INVEST"/></sql>
+
+    <!--    PagingMapper ID-->
+    <sql id="pagingHeader"><include refid="com.ibk.sb.restapi.biz.service.common.repo.PageRepo.pageHeader"/></sql>
+    <sql id="pagingFooter"><include refid="com.ibk.sb.restapi.biz.service.common.repo.PageRepo.pageFooter"/></sql>
+
+    <!--==================================================== SELECT ====================================================-->
+
+    <!--    투자사 유무 조회-->
+    <select id="selectIsVentureCapital" parameterType="String" resultType="VentureCapitalBasicVO">
+        SELECT UTLINSTT_ID, INVM_CMP_PTRN_CD
+        FROM <include refid="INVEST"/>TB_BOX_IVT_VNCM_CPTL_L
+        WHERE UTLINSTT_ID = #{utlinsttId} AND USE_YN = 'Y'
+    </select>
+
+    <!--    추천 투자사 리스트 조회-->
+    <select id="selectRecommendVCList" parameterType="String" resultType="VentureCapitalSummaryVO">
+        SELECT
+            rcm.UTLINSTT_ID
+            , eim.ETNM AS BPLC_NM
+            , tbivcl.INVM_CMP_PTRN_CD
+            , ccd.COM_CD_NM AS INVM_CMP_PTRN_NM
+            , eid.ENPR_INRD_CON
+
+            <!-- 2023.03.30 배치 수정 후 목록 정보 범위 수정-->
+            , CASE WHEN TRIM(eim.CMPNY_LOGO_IMAGE_FILE) IS NULL
+                THEN eim.CMPNY_LOGO_BASS_IMAGE_FILE
+                ELSE eim.CMPNY_LOGO_IMAGE_FILE END AS LOGO_IMAGE_URL
+
+            , CASE WHEN TRIM(eim.CMPNY_LOGO_IMAGE_FILE) IS NULL
+                THEN 'Y'
+                ELSE 'N' END AS DEFAULT_LOGO_YN
+
+            , ROWNUM
+        FROM (
+            SELECT
+                main.COM_ID, main.VC_ID AS UTLINSTT_ID, SUM(main.TOTAL)
+            FROM (
+
+                SELECT
+                    hpd.UTLINSTT_ID AS COM_ID
+                    , stg.UTLINSTT_ID AS VC_ID
+                <!--    , NVL(COUNT(0), 0) AS TOTAL -->
+                    , 1 AS TOTAL
+                FROM
+                    <include refid="INVEST"/>TB_BOX_IVT_INVM_HOPE_D hpd
+                INNER JOIN
+                    <include refid="INVEST"/>TB_BOX_IVT_INVM_STG_R stg ON hpd.INVM_STG_CD = stg.INVM_STG_CD
+                <!--GROUP BY hpd.UTLINSTT_ID, stg.UTLINSTT_ID-->
+
+                UNION ALL
+
+                SELECT
+                    hpd.UTLINSTT_ID AS COM_ID
+                    , amt.UTLINSTT_ID AS VC_ID
+                <!--    , NVL(COUNT(0), 0) * 1.2 AS TOTAL   -->
+                    , 1.2 AS TOTAL
+                FROM
+                    <include refid="INVEST"/>TB_BOX_IVT_INVM_HOPE_D hpd
+                INNER JOIN
+                    <include refid="INVEST"/>TB_BOX_IVT_INVM_AMT_R amt ON hpd.INVM_AMT_CD = amt.INVM_AMT_CD
+                <!--  GROUP BY  hpd.UTLINSTT_ID, amt.UTLINSTT_ID   -->
+
+                UNION ALL
+
+                SELECT
+                    f1.UTLINSTT_ID AS COM_ID
+                    , f2.UTLINSTT_ID AS VC_ID
+                    , NVL(COUNT(f1.INVM_FILD_CD), 0) * 1.1 AS TOTAL
+                FROM (
+                    SELECT fild.*
+                    FROM  <include refid="INVEST"/>TB_BOX_IVT_ENPR_IVFL_R fild
+                    LEFT JOIN <include refid="INVEST"/>TB_BOX_IVT_VNCM_CPTL_L vl ON fild.UTLINSTT_ID = vl.UTLINSTT_ID
+                    WHERE (vl.UTLINSTT_ID IS NULL OR vl.USE_YN != 'Y')
+                ) f1
+                INNER JOIN (
+                    SELECT fild.*
+                    FROM  <include refid="INVEST"/>TB_BOX_IVT_INVM_IVFL_R fild
+                    INNER JOIN <include refid="INVEST"/>TB_BOX_IVT_VNCM_CPTL_L vl ON fild.UTLINSTT_ID = vl.UTLINSTT_ID
+                ) f2 ON f1.INVM_FILD_CD = f2.INVM_FILD_CD
+                GROUP BY
+                    f1.UTLINSTT_ID, f2.UTLINSTT_ID
+
+            ) main
+            LEFT JOIN
+                <include refid="INVEST"/>TB_BOX_IVT_VNCM_CPTL_L vc_chk ON vc_chk.UTLINSTT_ID = main.VC_ID
+
+            WHERE main.COM_ID = #{utlinsttId} AND (vc_chk.UTLINSTT_ID IS NOT NULL AND vc_chk.USE_YN = 'Y')
+            GROUP BY main.COM_ID, main.VC_ID
+            ORDER BY SUM(main.TOTAL) DESC, DBMS_RANDOM.RANDOM
+        ) rcm
+
+        INNER JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_M eim ON eim.UTLINSTT_ID = rcm.UTLINSTT_ID
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_VNCM_CPTL_L tbivcl ON tbivcl.UTLINSTT_ID = rcm.UTLINSTT_ID
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd ON ccd.COM_CD_ID = tbivcl.INVM_CMP_PTRN_CD
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_D eid ON eid.UTLINSTT_ID = rcm.UTLINSTT_ID
+
+        WHERE 1=1
+              AND eim.ACVT_YN = 'Y'
+              <![CDATA[ AND ROWNUM < 19 ]]>
+    </select>
+
+    <!--    투자사 페이지 목록 조회-->
+    <select id="selectVentureCapitalList" parameterType="RequestSearchVcVO" resultType="VentureCapitalSummaryVO">
+        <include refid="pagingHeader"/>
+
+        SELECT
+            eim.UTLINSTT_ID
+            , eim.ETNM AS BPLC_NM
+
+            , tbivcl.INVM_CMP_PTRN_CD
+            , ccd.COM_CD_NM AS INVM_CMP_PTRN_NM
+            , nid.ENPR_INRD_CON
+            , cfl.CNRN_TAGS
+
+            <!-- 2023.03.30 배치 수정 후 목록 정보 범위 수정-->
+            , CASE WHEN TRIM(eim.CMPNY_LOGO_IMAGE_FILE) IS NULL
+                THEN eim.CMPNY_LOGO_BASS_IMAGE_FILE
+                ELSE eim.CMPNY_LOGO_IMAGE_FILE END AS LOGO_IMAGE_URL
+
+            , CASE WHEN TRIM(eim.CMPNY_LOGO_IMAGE_FILE) IS NULL
+                THEN 'Y'
+                ELSE 'N' END AS DEFAULT_LOGO_YN
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_M eim
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_VNCM_CPTL_L tbivcl ON eim.UTLINSTT_ID = tbivcl.UTLINSTT_ID
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd ON ccd.COM_CD_ID = tbivcl.INVM_CMP_PTRN_CD
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_D nid ON eim.UTLINSTT_ID = nid.UTLINSTT_ID
+        LEFT JOIN (
+            SELECT
+                UTLINSTT_ID
+                <!--, WM_CONCAT(CNRN_FILD_NM) AS CNRN_TAGS-->
+                , AGGR_CONCAT(CNRN_FILD_NM, ',') AS CNRN_TAGS
+            FROM <include refid="INVEST"/>TB_BOX_IVT_CNRN_FILD_L
+            GROUP BY UTLINSTT_ID
+        ) cfl ON eim.UTLINSTT_ID = cfl.UTLINSTT_ID
+
+        <!--투자분야 코드 리스트-->
+        <if test="invmFildCdList != null and invmFildCdList.length > 0">
+            INNER JOIN (
+                SELECT UTLINSTT_ID FROM <include refid="INVEST"/>TB_BOX_IVT_ENPR_IVFL_R
+                WHERE INVM_FILD_CD IN (
+                    <foreach collection="invmFildCdList" item="item" separator=",">
+                        #{item}
+                    </foreach>
+                )
+                GROUP BY UTLINSTT_ID
+            ) eir ON eim.UTLINSTT_ID = eir.UTLINSTT_ID 
+        </if>
+        <!--활용기술 코드 리스트-->
+        <if test="utlzTchnCdList != null and utlzTchnCdList.length > 0">
+            INNER JOIN (
+                SELECT UTLINSTT_ID FROM <include refid="INVEST"/>TB_BOX_IVT_ENPR_TCHN_R
+                WHERE UTLZ_TCHN_CD IN (
+                    <foreach collection="utlzTchnCdList" item="item" separator=",">
+                        #{item}
+                    </foreach>
+                )
+                GROUP BY UTLINSTT_ID
+             ) etr ON eim.UTLINSTT_ID = etr.UTLINSTT_ID
+        </if>
+        <!--투자단계 코드 리스트-->
+        <if test="invmStgCdList != null and invmStgCdList.length > 0">
+            INNER JOIN (
+                SELECT UTLINSTT_ID FROM <include refid="INVEST"/>TB_BOX_IVT_INVM_STG_R
+                WHERE INVM_STG_CD IN (
+                    <foreach collection="invmStgCdList" item="item" separator=",">
+                        #{item}
+                    </foreach>
+                )
+                GROUP BY UTLINSTT_ID
+            ) isr ON eim.UTLINSTT_ID = isr.UTLINSTT_ID
+        </if>
+        <!--지역 코드 리스트-->
+        <if test="invmAreaCdList != null and invmAreaCdList.length > 0">
+            INNER JOIN (
+                SELECT UTLINSTT_ID FROM <include refid="INVEST"/>TB_BOX_IVT_INVM_AREA_R
+                WHERE INVM_AREA_CD_ID IN (
+                    <foreach collection="invmAreaCdList" item="item" separator=",">
+                        #{item}
+                    </foreach>
+                )
+                GROUP BY UTLINSTT_ID
+            ) iar ON eim.UTLINSTT_ID = iar.UTLINSTT_ID
+        </if>
+
+        WHERE 1=1
+            AND eim.ACVT_YN = 'Y'
+            <!--AND  ful.ACT_AT = 'Y'-->
+            AND tbivcl.UTLINSTT_ID IS NOT NULL
+            AND tbivcl.USE_YN = 'Y'
+
+            <!--투자사명-->
+            <if test="bplcNm != null and !bplcNm.equals('')">
+                AND UPPER(eim.ETNM) LIKE '%' || UPPER(#{bplcNm}) || '%'
+            </if>
+
+        ORDER BY
+            eim.ENPR_JNNG_DT DESC, eim.INCR_YMD DESC
+
+        <include refid="pagingFooter"/>
+    </select>
+
+    <!--    투자사 투자박스 전용 기본정보 조회-->
+<!--    <select id="selectVCInvestBasic" parameterType="String" resultType="VentureCapitalBasicVO">-->
+<!--        SELECT-->
+<!--            UTLINSTT_ID-->
+<!--            , ENFM_CLSF_CD-->
+<!--            , ENPR_DSNC_CLSF_CD-->
+<!--            , BSUN_DWAR_CD-->
+<!--            , EMP_CNT-->
+<!--            , BTNM-->
+<!--            , BZST_NM-->
+<!--            , MSRN_AMSL_YEAR-->
+<!--            , MSRN_AMSL_AMT-->
+<!--            , LSTN_YN-->
+<!--            , ENPR_INRD_CON-->
+<!--            , CREW_RTRV-->
+<!--            , RGSN_USER_ID-->
+<!--            , RGSN_TS-->
+<!--            , AMNN_USER_ID-->
+<!--            , AMNN_TS-->
+<!--        FROM-->
+<!--            <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_D-->
+<!--        WHERE-->
+<!--            UTLINSTT_ID = #{utlinsttId}-->
+<!--    </select>-->
+
+    <!--    투자사 기본정보 조회-->
+    <select id="selectVentureCapital" parameterType="String" resultType="VentureCapitalBasicVO">
+        SELECT
+            eim.UTLINSTT_ID
+            , eim.*
+            , eim.ETNM AS BPLC_NM
+            , eim.BZN AS BIZRNO
+            , TO_NUMBER(TO_CHAR(SYSDATE, 'YYYY')) - decode(trim(eim.INCR_YMD), NULL, null, (TO_NUMBER(SUBSTR(eim.INCR_YMD, 0, 4)))) AS YEAR_CNT
+
+            , tbivcl.INVM_CMP_PTRN_CD
+            , ccd.COM_CD_NM AS INVM_CMP_PTRN_NM
+            , nid.EMP_CNT
+            , nid.CREW_RTRV
+            , nid.ENPR_INRD_CON
+
+            , CASE
+                WHEN tbivcl.INVMEXNT_RAP_LMTN_MNCT IS NULL THEN 12
+                ELSE tbivcl.INVMEXNT_RAP_LMTN_MNCT END INVMEXNT_RAP_LMTN_MNCT
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_M eim
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_VNCM_CPTL_L tbivcl ON eim.UTLINSTT_ID = tbivcl.UTLINSTT_ID
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd ON ccd.COM_CD_ID = tbivcl.INVM_CMP_PTRN_CD
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_D nid ON eim.UTLINSTT_ID = nid.UTLINSTT_ID
+
+        WHERE 1=1
+            <!--ful.ACT_AT = 'Y'-->
+            AND tbivcl.UTLINSTT_ID IS NOT NULL
+            AND tbivcl.USE_YN = 'Y'
+            AND eim.UTLINSTT_ID = #{utlinsttId}
+    </select>
+
+    <!--    투자사 관심분야 목록 조회-->
+    <select id="selectVCInterestTagList" parameterType="String" resultType="VcInterestVO">
+        SELECT
+            UTLINSTT_ID
+            , CNRN_FILD_SQN
+            , CNRN_FILD_NM
+            , RGSN_USER_ID
+            , RGSN_TS
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_CNRN_FILD_L
+        WHERE
+            UTLINSTT_ID = #{utlinsttId}
+        ORDER BY
+            CNRN_FILD_SQN
+    </select>
+
+    <!--    투자사 관심투자분야 목록 조회-->
+    <select id="selectVCInvestFieldList" parameterType="String" resultType="VcInvestFieldVO">
+        SELECT
+            eir.UTLINSTT_ID
+            , eir.INVM_FILD_CD
+            , eir.RGSN_USER_ID
+            , eir.RGSN_TS
+
+            , ifc.INVM_FILD_CDNM AS INVM_FILD_NM
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_INVM_IVFL_R eir
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_INVM_FILD_C ifc ON eir.INVM_FILD_CD = ifc.INVM_FILD_CD
+        WHERE
+            eir.UTLINSTT_ID = #{utlinsttId}
+    </select>
+
+    <!--    투자사 관심활용기술 목록 조회-->
+    <select id="selectVCUtilTechList" parameterType="String" resultType="VcUtilTechVO">
+        SELECT
+            etr.UTLINSTT_ID
+            , etr.UTLZ_TCHN_CD
+            , etr.RGSN_USER_ID
+            , etr.RGSN_TS
+
+            , utc.UTLZ_TCHN_CDNM AS UTLZ_TCHN_NM
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_INVM_TCHN_R etr
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_UTLZ_TCHN_C utc ON etr.UTLZ_TCHN_CD = utc.UTLZ_TCHN_CD
+        WHERE
+            etr.UTLINSTT_ID = #{utlinsttId}
+    </select>
+
+    <!--    투자사 주요투자단계 목록 조회-->
+    <select id="selectVCInvestStepList" parameterType="String" resultType="VcInvestStepVO">
+        SELECT
+            isr.UTLINSTT_ID
+            , isr.INVM_STG_CD
+            , isr.RGSN_USER_ID
+            , isr.RGSN_TS
+
+            , ccd.COM_CD_NM AS INVM_STG_NM
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_INVM_STG_R isr
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd ON isr.INVM_STG_CD = ccd.COM_CD_ID
+        WHERE
+            isr.UTLINSTT_ID = #{utlinsttId}
+    </select>
+
+    <!--    투자사 주요투자지역 목록 조회-->
+    <select id="selectVCInvestRegionList" parameterType="String" resultType="VcInvestRegionVO">
+        SELECT
+            iar.UTLINSTT_ID
+            , iar.INVM_AREA_CD_ID
+            , iar.RGSN_USER_ID
+            , iar.RGSN_TS
+
+            , ccd.COM_CD_NM AS INVM_AREA_CD_NM
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_INVM_AREA_R iar
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd ON iar.INVM_AREA_CD_ID = ccd.COM_CD_ID
+        WHERE
+            iar.UTLINSTT_ID = #{utlinsttId}
+    </select>
+
+    <!--    투자사 주요투자금액 목록 조회-->
+    <select id="selectVCInvestAmount" parameterType="String" resultType="VcInvestAmountVO">
+        SELECT
+            iar.UTLINSTT_ID
+            , iar.INVM_AMT_CD
+            , iar.RGSN_USER_ID
+            , iar.RGSN_TS
+            , iar.AMNN_USER_ID
+            , iar.AMNN_TS
+
+            , ccd.COM_CD_NM AS INVM_AMT_NM
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_INVM_AMT_R iar
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd ON iar.INVM_AMT_CD = ccd.COM_CD_ID
+        WHERE
+            iar.UTLINSTT_ID = #{utlinsttId}
+    </select>
+
+    <!--    메인화면 총 펀드금액 조회-->
+    <select id="selectTotalFundAmount" parameterType="String" resultType="PortfolioFundAmountVO">
+        SELECT
+            FLOOR(NVL(SUM(NVL(INVM_AMT, 0)), 0) / 1000) AS INVM_AMT
+            , REGEXP_REPLACE(REVERSE(REGEXP_REPLACE( REVERSE(TO_CHAR(  FLOOR(NVL(SUM(NVL(INVM_AMT, 0)), 0) / 1000)  )), '([0-9]{3})','\1,')), '^,','') AS INVM_AMT_STR
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_VC_PRTF_L
+        WHERE 1=1
+        <if test="oppbYn != null and !oppbYn.equals('')">
+            AND OPPB_YN = #{oppbYn}
+        </if>
+    </select>
+
+    <!--    투자사 포트폴리오 목록 조회-->
+    <select id="selectVCPortfolioList" parameterType="String" resultType="VcPortfolioVO">
+        <include refid="pagingHeader"/>
+            SELECT
+                tbivpd.UTLINSTT_ID
+                , tbivpd.PRTF_ID
+
+                , tbivpd.INVM_FILD_CD
+                , tbivpd.UTLZ_TCHN_CD
+                , tbiic.INVM_FILD_CDNM AS INVM_FILD_NM
+                , tbiutc.UTLZ_TCHN_CDNM AS UTLZ_TCHN_NM
+
+                , tbivpd.INVM_ENPR_NM
+                , tbivpd.INVM_ENPR_LGTY_IMG_ID AS IMG_FILE_ID
+                , tbivpd.INVM_ENPR_LGTY_IMG_ID AS FILE_ID
+
+                , tbivpd.INVM_STG_CD
+                , ccd.COM_CD_NM AS INVM_STG_NM
+
+                , tbivpd.INVM_AMT
+                , tbivpd.INVM_PRFR_DT
+                , CASE WHEN tbivpd.OPPB_YN IS NULL THEN 'N' ELSE tbivpd.OPPB_YN END AS OPPB_YN
+                , tbivpd.RGSN_USER_ID
+                , tbivpd.RGSN_TS
+                , tbivpd.AMNN_USER_ID
+                , tbivpd.AMNN_TS
+            FROM
+                <include refid="INVEST"/>TB_BOX_IVT_VC_PRTF_L tbivpd
+            LEFT JOIN
+                <include refid="INVEST"/>TB_BOX_IVT_INVM_FILD_C tbiic ON tbivpd.INVM_FILD_CD = tbiic.INVM_FILD_CD
+            LEFT JOIN
+                <include refid="INVEST"/>TB_BOX_IVT_UTLZ_TCHN_C tbiutc ON tbivpd.UTLZ_TCHN_CD = tbiutc.UTLZ_TCHN_CD
+            LEFT JOIN
+                <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd ON ccd.COM_CD_ID = tbivpd.INVM_STG_CD
+
+            WHERE
+                tbivpd.UTLINSTT_ID = #{utlinsttId}
+                <if test="oppbYn != null and !oppbYn.equals('')">
+                    AND tbivpd.OPPB_YN = #{oppbYn}
+                </if>
+            ORDER BY
+                tbivpd.INVM_PRFR_DT DESC
+
+        <include refid="pagingFooter"/>
+    </select>
+
+    <select id="selectVCPortfolio" parameterType="String" resultType="VcPortfolioVO">
+        SELECT *
+        FROM <include refid="INVEST"/>TB_BOX_IVT_VC_PRTF_L
+        WHERE UTLINSTT_ID = #{utlinsttId} AND PRTF_ID = #{prtfId}
+    </select>
+
+    <!--    투자사 선호 투자유형 조회-->
+    <select id="selectVCPreferenceChart" parameterType="VcPreferenceChartVO" resultType="VcPreferenceChartVO">
+        SELECT
+            vpl.INVM_FILD_CD AS PFRC_INVM_FILD_CD
+            , ifc.INVM_FILD_CDNM AS PFRC_INVM_FILD_NM
+            , NVL(COUNT(vpl.INVM_FILD_CD), 0) AS PFRC_INVM_FILD_CNT
+            , RATIO_TO_REPORT(NVL(COUNT(vpl.INVM_FILD_CD), 0)) OVER() AS PFRC_INVM_FILD_RATIO
+            , ROUND(RATIO_TO_REPORT(NVL(COUNT(vpl.INVM_FILD_CD), 0)) OVER(), 2) * 100 AS PFRC_INVM_FILD_PERCENT
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_VC_PRTF_L vpl
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_INVM_FILD_C ifc ON vpl.INVM_FILD_CD = ifc.INVM_FILD_CD
+        WHERE
+            vpl.UTLINSTT_ID = #{utlinsttId}
+        GROUP BY
+            vpl.INVM_FILD_CD, ifc.INVM_FILD_CDNM
+    </select>
+
+    <!--    투자사 집행 지표 정보 조회-->
+    <select id="selectAuditExecuteIndicator" parameterType="String" resultType="VcAuditExecuteIndicatorVO">
+        SELECT
+            COUNT(*) AS INVM_PRFR_CNT
+             , CASE WHEN MAX(oppb_check.OPPB_YN) IS NULL THEN NVL(SUM(NVL(INVM_AMT, 0)), 0) ELSE NULL END AS INVM_AMT
+             , CASE WHEN MAX(oppb_check.OPPB_YN) IS NULL THEN 'Y' ELSE 'N' END AS OPPB_YN
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_VC_PRTF_L vpl
+        LEFT JOIN (
+            SELECT DISTINCT OPPB_YN, UTLINSTT_ID
+            FROM <include refid="INVEST"/>TB_BOX_IVT_VC_PRTF_L
+            WHERE UTLINSTT_ID = #{utlinsttId} AND OPPB_YN = 'N'
+        ) oppb_check ON vpl.UTLINSTT_ID = oppb_check.UTLINSTT_ID
+        WHERE
+            vpl.UTLINSTT_ID = #{utlinsttId} AND vpl.OPPB_YN = 'Y'
+    </select>
+
+    <!--    투자사 투자집행 차트정보 조회-->
+    <select id="selectAuditExecuteChart" parameterType="String" resultType="VcAuditExecuteChartVO">
+        SELECT
+            NVL(vpl.INVM_AMT, 0) AS INVM_AMT
+            , ym_dual.INVM_PRFR_YM
+            , SUBSTR(ym_dual.INVM_PRFR_YM, 0, 4) AS INVM_PRFR_YEAR
+            , SUBSTR(ym_dual.INVM_PRFR_YM, 5, 6) AS INVM_PRFR_MONTH
+        FROM (
+            SELECT
+                TO_CHAR(ADD_MONTHS(SYSDATE, -LEVEL + 1), 'YYYYMM') INVM_PRFR_YM
+            FROM
+                DUAL
+            CONNECT BY
+                <![CDATA[ TO_CHAR(ADD_MONTHS(SYSDATE, -12), 'YYYYMM') < TO_CHAR(ADD_MONTHS(SYSDATE, -LEVEL + 1), 'YYYYMM') ]]>
+        ) ym_dual
+        LEFT JOIN (
+            SELECT
+                SUBSTR(INVM_PRFR_DT, 0, 6) AS INVM_PRFR_YM
+                , NVL(SUM(NVL(INVM_AMT, 0)), 0) AS INVM_AMT
+            FROM
+                <include refid="INVEST"/>TB_BOX_IVT_VC_PRTF_L
+            WHERE
+                UTLINSTT_ID = #{utlinsttId}
+                AND OPPB_YN = 'Y'
+            GROUP BY
+                SUBSTR(INVM_PRFR_DT, 0, 6)
+        ) vpl ON vpl.INVM_PRFR_YM = ym_dual.INVM_PRFR_YM
+        WHERE
+            ym_dual.INVM_PRFR_YM IS NOT NULL
+        ORDER BY
+            ym_dual.INVM_PRFR_YM ASC
+    </select>
+
+    <!--    투자사 대표심사역 페이징 리스트 조회-->
+    <select id="selectVCMemberPagingList" parameterType="RequestVcMemberVO" resultType="VcMemberVO">
+        <include refid="pagingHeader"/>
+
+        SELECT
+            vtd.UTLINSTT_ID
+            , vtd.RPRS_CROF_ID
+            , vtd.RPRS_CROF_NM
+            , vtd.RPRS_CROF_JBCL
+            , vtd.CRR_CON
+            , vtd.CROF_IMG_FILE_ID AS IMG_FILE_ID
+            , vtd.CROF_IMG_FILE_ID AS FILE_ID
+
+            , vtd.RGSN_USER_ID
+            , vtd.RGSN_TS
+            , vtd.AMNN_USER_ID
+            , vtd.AMNN_TS
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_VC_TMMB_L vtd
+        WHERE
+            vtd.UTLINSTT_ID = #{utlinsttId}
+        ORDER BY
+            vtd.RGSN_TS
+
+        <include refid="pagingFooter"/>
+    </select>
+
+    <!--    투자사 대표심사역 리스트 조회-->
+    <select id="selectVCMemberList" parameterType="String" resultType="VcMemberVO">
+        SELECT
+            vtd.UTLINSTT_ID
+            , vtd.RPRS_CROF_ID
+            , vtd.RPRS_CROF_NM
+            , vtd.RPRS_CROF_JBCL
+            , vtd.CRR_CON
+            , vtd.CROF_IMG_FILE_ID AS IMG_FILE_ID
+            , vtd.CROF_IMG_FILE_ID AS FILE_ID
+
+            , vtd.RGSN_USER_ID
+            , vtd.RGSN_TS
+            , vtd.AMNN_USER_ID
+            , vtd.AMNN_TS
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_VC_TMMB_L vtd
+        WHERE
+            vtd.UTLINSTT_ID = #{utlinsttId}
+        ORDER BY
+            vtd.RGSN_TS
+
+    </select>
+
+
+    <!--    투자사 운용보고서 단일 조회-->
+    <select id="selectVCOperationReport" parameterType="String" resultType="VcOperationReportVO">
+        SELECT
+        vtd.INVT_ID
+        , vtd.RPT_DSNC
+        , vtd.FILE_ID
+        , vtd.LADA
+        , vtd.RGSN_TS
+        , vtd.RGSN_USER_ID
+        , vtd.AMNN_TS
+        , vtd.AMNN_USER_ID
+        FROM
+        <include refid="INVEST"/>TB_BOX_IVT_ORRP_M vtd
+        WHERE
+            vtd.INVT_ID = #{utlinsttId} AND vtd.RPT_DSNC = #{rptDsnc}
+        ORDER BY
+            vtd.RPT_DSNC DESC
+    </select>
+
+    <!--    투자사 운용보고서 리스트 조회-->
+    <select id="selectVCOperationReportList" parameterType="RequestVcOperationReportVO" resultType="VcOperationReportVO">
+        <include refid="pagingHeader"/>
+            SELECT
+                vtd.INVT_ID
+                , vtd.RPT_DSNC
+                , vtd.FILE_ID
+                , vtd.LADA
+                , vtd.RGSN_TS
+                , vtd.RGSN_USER_ID
+                , vtd.AMNN_TS
+                , vtd.AMNN_USER_ID
+                , S2.FILE_NM
+            FROM
+                <include refid="INVEST"/>TB_BOX_IVT_ORRP_M vtd
+            LEFT JOIN
+                <include refid="INVEST"/>TB_BOX_IVT_FILE_ATCH_M S2 ON vtd.FILE_ID = S2.FILE_ID
+            WHERE
+                vtd.INVT_ID = #{invtId}
+            ORDER BY
+                vtd.RPT_DSNC DESC
+        <include refid="pagingFooter"/>
+    </select>
+
+
+    <!--============================================= 투자사페이지 SELECT =============================================-->
+
+    <!--    메인화면 투자사 전용 페이지 리스트 조회-->
+    <select id="selectMainVCPageList" resultType="VcPageSummaryVO">
+        SELECT
+            A.*
+            , RANK() OVER(ORDER BY A.RGSN_TS DESC)
+        FROM (
+            SELECT
+                vpm.UTLINSTT_ID
+                , tbivcl.INVM_CMP_PTRN_CD
+                , ccd.COM_CD_NM AS INVM_CMP_PTRN_NM
+                , vpm.INVM_CMP_EXUS_PAGE_ID
+                , vpm.PAGE_TTL
+                , vpm.PAGE_CON
+                , vpm.HMPG_URL
+                , vpm.RPRS_IMG_FILE_ID AS IMG_FILE_ID
+                , vpm.RPRS_IMG_FILE_ID AS FILE_ID
+
+                , vpm.DEL_YN
+                , vpm.RGSN_USER_ID
+                , vpm.RGSN_TS
+                , vpm.AMNN_USER_ID
+                , vpm.AMNN_TS
+                , CASE WHEN evnt.INVM_CMP_EXUS_PAGE_ID IS NOT NULL THEN 'Y' ELSE 'N' END AS ONGOING_YN
+                , ROWNUM AS rnum
+            FROM
+                <include refid="INVEST"/>TB_BOX_IVT_VC_PAGE_M vpm
+            LEFT JOIN
+                <include refid="INVEST"/>TB_BOX_IVT_VNCM_CPTL_L tbivcl ON vpm.UTLINSTT_ID = tbivcl.UTLINSTT_ID
+            LEFT JOIN
+                <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd ON ccd.COM_CD_ID = tbivcl.INVM_CMP_PTRN_CD
+            LEFT JOIN (
+                SELECT
+                    UTLINSTT_ID
+                    , INVM_CMP_EXUS_PAGE_ID
+                FROM
+                    <include refid="INVEST"/>TB_BOX_IVT_VC_PG_EVT_L
+                WHERE <![CDATA[
+                            TO_CHAR(EVNT_STDY_TS, 'YYYYMMDD') <= TO_CHAR(SYSDATE, 'YYYYMMDD') AND TO_CHAR(SYSDATE, 'YYYYMMDD') <= TO_CHAR(EVNT_FNDA_TS, 'YYYYMMDD')
+                        ]]>
+                GROUP BY
+                    UTLINSTT_ID
+                    , INVM_CMP_EXUS_PAGE_ID
+            ) evnt ON evnt.INVM_CMP_EXUS_PAGE_ID = vpm.INVM_CMP_EXUS_PAGE_ID
+
+            WHERE
+                vpm.DEL_YN = 'N'
+                AND evnt.INVM_CMP_EXUS_PAGE_ID IS NOT NULL
+                AND tbivcl.USE_YN = 'Y'
+                AND tbivcl.UTLINSTT_ID IS NOT NULl
+            ORDER BY
+                DBMS_RANDOM.RANDOM
+        ) A
+        WHERE <![CDATA[ ROWNUM < 10 ]]>
+    </select>
+
+    <!--    투자사 전용 페이지 리스트 조회-->
+    <select id="selectVCPageList" parameterType="RequestSearchVcPageVO" resultType="VcPageSummaryVO">
+        <include refid="pagingHeader"/>
+            SELECT
+                vpm.UTLINSTT_ID
+                , vpm.INVM_CMP_EXUS_PAGE_ID
+                , vpm.PAGE_TTL
+                , vpm.PAGE_CON
+                , vpm.HMPG_URL
+                , vpm.RPRS_IMG_FILE_ID AS IMG_FILE_ID
+                , vpm.RPRS_IMG_FILE_ID AS FILE_ID
+
+                , vpm.DEL_YN
+                , vpm.RGSN_USER_ID
+                , vpm.RGSN_TS
+                , vpm.AMNN_USER_ID
+                , vpm.AMNN_TS
+
+                , CASE WHEN evnt.INVM_CMP_EXUS_PAGE_ID IS NOT NULL THEN 'Y' ELSE 'N' END AS ONGOING_YN
+
+            FROM
+                <include refid="INVEST"/>TB_BOX_IVT_VC_PAGE_M vpm
+
+            LEFT JOIN (
+                SELECT
+                    UTLINSTT_ID
+                    , INVM_CMP_EXUS_PAGE_ID
+                FROM
+                    <include refid="INVEST"/>TB_BOX_IVT_VC_PG_EVT_L
+                WHERE <![CDATA[
+                    TO_CHAR(EVNT_STDY_TS, 'YYYYMMDD') <= TO_CHAR(SYSDATE, 'YYYYMMDD') AND TO_CHAR(SYSDATE, 'YYYYMMDD') <= TO_CHAR(EVNT_FNDA_TS, 'YYYYMMDD')
+                ]]>
+                GROUP BY
+                    UTLINSTT_ID
+                    , INVM_CMP_EXUS_PAGE_ID
+            ) evnt ON evnt.INVM_CMP_EXUS_PAGE_ID = vpm.INVM_CMP_EXUS_PAGE_ID
+
+            WHERE
+                vpm.DEL_YN = 'N' AND vpm.UTLINSTT_ID = #{utlinsttId}
+                <if test="ongoingYn != null and !ongoingYn.equals('')">
+                    AND CASE WHEN evnt.INVM_CMP_EXUS_PAGE_ID IS NOT NULL THEN 'Y' ELSE 'N' END = #{ongoingYn}
+                </if>
+            ORDER BY
+                vpm.RGSN_TS
+        <include refid="pagingFooter"/>
+    </select>
+
+    <!--    투자사 전용 페이지 메인정보 조회-->
+    <select id="selectVCPageMain" parameterType="String" resultType="VcPageMainVO">
+        SELECT
+            vpm.UTLINSTT_ID
+            , eim.ETNM AS BPLC_NM
+            , vpm.INVM_CMP_EXUS_PAGE_ID
+            , vpm.LGTY_IMG_FILE_ID
+            , fam_lgty.FILE_NM AS LGTY_IMG_FILE_NM
+            , vpm.HMPG_URL
+            , vpm.DTL_LKNG_URL_ADR
+            , vpm.RPRS_IMG_FILE_ID
+            , fam_rprs.FILE_NM AS RPRS_IMG_FILE_NM
+            , vpm.PAGE_TTL
+            , vpm.PAGE_CON
+            , vpm.INRD_IMG_FILE_ID
+            , fam_inrd.FILE_NM AS INRD_IMG_FILE_NM
+
+            , vpm.INRD_TTL
+            , vpm.INRD_CON
+            , vpm.FUND_AMT
+            , vpm.TTAL_IVEN_CNT
+            , vpm.ETVL_AMT
+            , vpm.INVM_RTRV_ENPR_CNT
+            , vpm.CSCN_TPN
+            , vpm.CSCN_EML_ADR
+            , vpm.CSCN_HMPG_URL
+            , vpm.CSCN_CPYR_CON
+            , vpm.INVM_APLC_ABYN
+
+            , vpm.DEL_YN
+            , vpm.RGSN_USER_ID
+            , vpm.RGSN_TS
+            , vpm.AMNN_USER_ID
+            , vpm.AMNN_TS
+
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_VC_PAGE_M vpm
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_M eim ON vpm.UTLINSTT_ID = eim.UTLINSTT_ID
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_FILE_ATCH_M fam_lgty ON fam_lgty.FILE_ID = vpm.LGTY_IMG_FILE_ID
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_FILE_ATCH_M fam_rprs ON fam_rprs.FILE_ID = vpm.RPRS_IMG_FILE_ID
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_FILE_ATCH_M fam_inrd ON fam_inrd.FILE_ID = vpm.INRD_IMG_FILE_ID
+        WHERE
+            vpm.INVM_CMP_EXUS_PAGE_ID = #{invmCmpExusPageId} AND vpm.DEL_YN = 'N'
+    </select>
+
+    <!--    투자사 전용 페이지 이벤트 리스트 조회-->
+    <select id="selectVCPageEventList" parameterType="String" resultType="VcPageEventVO">
+        SELECT
+            vpel.UTLINSTT_ID
+            , vpel.INVM_CMP_EXUS_PAGE_ID
+            , vpel.EVNT_SQN
+            , vpel.RPRS_IMG_FILE_ID AS IMG_FILE_ID
+            , fam.FILE_ID
+            , fam.FILE_NM
+
+            , vpel.EVNT_BKMR_URL
+            , vpel.EVNT_TTL
+            , vpel.PAGE_EVNT_CON AS EVNT_CON
+            , vpel.EVNT_STDY_TS
+            , vpel.EVNT_FNDA_TS
+
+            , TO_CHAR(vpel.EVNT_STDY_TS, 'YYYYMMDD') AS EVNT_STDT
+            , TO_CHAR(vpel.EVNT_FNDA_TS, 'YYYYMMDD') AS EVNT_FNDT
+
+            , vpel.RGSN_USER_ID
+            , vpel.RGSN_TS
+
+            , CASE WHEN <![CDATA[ TO_CHAR(vpel.EVNT_STDY_TS, 'YYYYMMDD') <= TO_CHAR(SYSDATE, 'YYYYMMDD') AND TO_CHAR(SYSDATE, 'YYYYMMDD') <= TO_CHAR(vpel.EVNT_FNDA_TS, 'YYYYMMDD') ]]>
+              THEN 'Y' ELSE 'N' END AS ONGOING_YN
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_VC_PG_EVT_L vpel
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_FILE_ATCH_M fam ON fam.FILE_ID = vpel.RPRS_IMG_FILE_ID
+        WHERE
+            vpel.INVM_CMP_EXUS_PAGE_ID = #{invmCmpExusPageId}
+
+    </select>
+
+    <!--    투자사 전용 페이지 FAQ 리스트 조회-->
+    <select id="selectVCPageFAQList" parameterType="String" resultType="VcPageFaqVO">
+        SELECT
+            UTLINSTT_ID
+            , INVM_CMP_EXUS_PAGE_ID
+            , FAQ_SQN
+            , FAQ_QSTN
+            , FAQ_RPLY
+            , RGSN_USER_ID
+            , RGSN_TS
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_VC_PG_FAQ_L
+        WHERE
+            INVM_CMP_EXUS_PAGE_ID = #{invmCmpExusPageId}
+    </select>
+
+    <!--    투자사 전용 페이지 배너 리스트 조회-->
+    <select id="selectVCPageBannerList" parameterType="String" resultType="VcPageBannerVO">
+        SELECT
+            vpbl.UTLINSTT_ID
+            , vpbl.INVM_CMP_EXUS_PAGE_ID
+            , vpbl.BNNR_SQN
+            , vpbl.BNNR_IMG_FILE_ID AS IMG_FILE_ID
+            , fam.FILE_ID
+            , fam.FILE_NM
+            , vpbl.RGSN_USER_ID
+            , vpbl.RGSN_TS
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_VC_PG_BAN_L vpbl
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_FILE_ATCH_M fam ON fam.FILE_ID = vpbl.BNNR_IMG_FILE_ID
+        WHERE
+            vpbl.INVM_CMP_EXUS_PAGE_ID = #{invmCmpExusPageId}
+    </select>
+
+    <!--==================================================== MERGE ====================================================-->
+    <insert id="mergeVentureCapitalBasic" parameterType="VentureCapitalBasicVO">
+        MERGE INTO <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_D tbieid
+        USING DUAL ON (tbieid.UTLINSTT_ID = #{utlinsttId})
+        WHEN MATCHED THEN
+            UPDATE SET
+                BSUN_DWAR_CD        = #{bsunDwarCd}
+                , EMP_CNT           = #{empCnt}
+                , ENPR_INRD_CON     = #{enprInrdCon}
+                , AMNN_USER_ID      = #{amnnUserId}
+                , AMNN_TS           = CURRENT_TIMESTAMP
+        WHEN NOT MATCHED THEN
+            INSERT
+            (
+                UTLINSTT_ID
+                , BSUN_DWAR_CD
+                , EMP_CNT
+                , ENPR_INRD_CON
+                , CREW_RTRV
+                , RGSN_USER_ID
+                , RGSN_TS
+                , AMNN_USER_ID
+                , AMNN_TS
+            )
+            VALUES
+            (
+                #{utlinsttId}
+                , #{bsunDwarCd}
+                , #{empCnt}
+                , #{enprInrdCon}
+                , 0
+                , #{rgsnUserId}
+                , CURRENT_TIMESTAMP
+                , #{amnnUserId}
+                , CURRENT_TIMESTAMP
+            )
+    </insert>
+
+    <!--==================================================== INSERT ====================================================-->
+
+    <!--    투자사 투자박스 전용 기본정보 등록-->
+<!--    <insert id="insertVentureCapitalBasic" parameterType="VentureCapitalBasicVO">-->
+<!--        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_D-->
+<!--        (-->
+<!--            UTLINSTT_ID-->
+<!--            , BSUN_DWAR_CD-->
+<!--            , EMP_CNT-->
+<!--            , ENPR_INRD_CON-->
+<!--            , CREW_RTRV-->
+<!--            , RGSN_USER_ID-->
+<!--            , RGSN_TS-->
+<!--            , AMNN_USER_ID-->
+<!--            , AMNN_TS-->
+<!--        )-->
+<!--        VALUES-->
+<!--        (-->
+<!--            #{utlinsttId}-->
+<!--            , #{bsunDwarCd}-->
+<!--            , #{empCnt}-->
+<!--            , #{enprInrdCon}-->
+<!--            , 0-->
+<!--            , #{rgsnUserId}-->
+<!--            , CURRENT_TIMESTAMP-->
+<!--            , #{amnnUserId}-->
+<!--            , CURRENT_TIMESTAMP-->
+<!--        )-->
+<!--    </insert>-->
+
+    <!--    투자사 관심분야 등록-->
+    <insert id="insertVCInterestTag" parameterType="VcInterestVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_CNRN_FILD_L
+        (
+            UTLINSTT_ID
+            , CNRN_FILD_SQN
+            , CNRN_FILD_NM
+            , RGSN_USER_ID
+            , RGSN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{cnrnFildSqn}
+            , #{cnrnFildNm}
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+        )
+    </insert>
+
+    <!--    투자사 관심투자분야 등록-->
+    <insert id="insertVCInvestField" parameterType="VcInvestFieldVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_INVM_IVFL_R
+        (
+            UTLINSTT_ID
+            , INVM_FILD_CD
+            , RGSN_USER_ID
+            , RGSN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{invmFildCd}
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+        )
+    </insert>
+
+    <!--    투자사 관심활용기술 등록-->
+    <insert id="insertVCUtilTech" parameterType="VcUtilTechVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_INVM_TCHN_R
+        (
+            UTLINSTT_ID
+            , UTLZ_TCHN_CD
+            , RGSN_USER_ID
+            , RGSN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{utlzTchnCd}
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+        )
+    </insert>
+
+    <!--    투자사 주요투자단계 등록-->
+    <insert id="insertVCInvestStep" parameterType="VcInvestStepVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_INVM_STG_R
+        (
+            UTLINSTT_ID
+            , INVM_STG_CD
+            , RGSN_USER_ID
+            , RGSN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{invmStgCd}
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+        )
+    </insert>
+
+    <!--    투자사 주요투자지역 등록-->
+    <insert id="insertVCInvestRegion" parameterType="VcInvestRegionVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_INVM_AREA_R
+        (
+            UTLINSTT_ID
+            , INVM_AREA_CD_ID
+            , RGSN_USER_ID
+            , RGSN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{invmAreaCdId}
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+        )
+    </insert>
+
+    <!--    투자사 주요투자금액 등록-->
+    <insert id="insertVCInvestAmount" parameterType="VcInvestAmountVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_INVM_AMT_R
+        (
+            UTLINSTT_ID
+            , INVM_AMT_CD
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{invmAmtCd}
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+            , #{amnnUserId}
+            , CURRENT_TIMESTAMP
+        )
+    </insert>
+
+    <!--    투자사 대표심사역 등록-->
+    <insert id="insertVCMember" parameterType="VcMemberVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_VC_TMMB_L
+        (
+            UTLINSTT_ID
+            , RPRS_CROF_ID
+            , RPRS_CROF_NM
+            , RPRS_CROF_JBCL
+            , CRR_CON
+            , CROF_IMG_FILE_ID
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{rprsCrofId}
+            , #{rprsCrofNm}
+            , #{rprsCrofJbcl}
+            , #{crrCon}
+            , #{fileId}
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+            , #{amnnUserId}
+            , CURRENT_TIMESTAMP
+        )
+    </insert>
+
+    <!--    투자사 포트폴리오 등록-->
+    <insert id="insertVCPortfolio" parameterType="VcPortfolioVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_VC_PRTF_L
+        (
+            UTLINSTT_ID
+            , PRTF_ID
+            , INVM_FILD_CD
+            , UTLZ_TCHN_CD
+            , INVM_ENPR_NM
+            , INVM_ENPR_LGTY_IMG_ID
+            , INVM_STG_CD
+            , INVM_AMT
+            , INVM_PRFR_DT
+            , OPPB_YN
+            , DEL_YN
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{prtfId}
+            , #{invmFildCd}
+            , #{utlzTchnCd}
+            , #{invmEnprNm}
+            , #{fileId}
+            , #{invmStgCd}
+            , #{invmAmt}
+            , #{invmPrfrDt}
+            , #{oppbYn}
+            , 'N'
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+            , #{amnnUserId}
+            , CURRENT_TIMESTAMP
+        )
+    </insert>
+    <!--    투자사 운용 보고서 등록-->
+    <insert id="insertVCOperationReport" parameterType="VcOperationReportVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_ORRP_M
+        (
+        INVT_ID
+        , RPT_DSNC
+        , FILE_ID
+        , LADA
+        , RGSN_TS
+        , RGSN_USER_ID
+        , AMNN_TS
+        , AMNN_USER_ID
+        )
+        VALUES
+        (
+        #{invtId}
+        , #{rptDsnc}
+        , #{fileId}
+        , #{lada}
+        , CURRENT_TIMESTAMP
+        , #{rgsnUserId}
+        , CURRENT_TIMESTAMP
+        , #{rgsnUserId}
+        )
+    </insert>
+
+    <!--============================================= 투자사페이지 INSERT =============================================-->
+
+    <!--    투자사 페이지 메인정보 등록-->
+    <insert id="insertVCPageMain" parameterType="VcPageMainVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_VC_PAGE_M
+        (
+            UTLINSTT_ID
+            , INVM_CMP_EXUS_PAGE_ID
+            , LGTY_IMG_FILE_ID
+            , HMPG_URL
+            , DTL_LKNG_URL_ADR
+            , RPRS_IMG_FILE_ID
+            , PAGE_TTL
+            , PAGE_CON
+            , INRD_IMG_FILE_ID
+            , INRD_TTL
+            , INRD_CON
+            , FUND_AMT
+            , TTAL_IVEN_CNT
+            , ETVL_AMT
+            , INVM_RTRV_ENPR_CNT
+            , CSCN_TPN
+            , CSCN_EML_ADR
+            , CSCN_HMPG_URL
+            , CSCN_CPYR_CON
+            , INVM_APLC_ABYN
+            , DEL_YN
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{invmCmpExusPageId}
+            , #{lgtyImgFileId}
+            , #{hmpgUrl}
+            , #{dtlLkngUrlAdr}
+            , #{rprsImgFileId}
+            , #{pageTtl}
+            , #{pageCon}
+            , #{inrdImgFileId}
+            , #{inrdTtl}
+            , #{inrdCon}
+            , #{fundAmt}
+            , #{ttalIvenCnt}
+            , #{etvlAmt}
+            , #{invmRtrvEnprCnt}
+            , #{cscnTpn}
+            , #{cscnEmlAdr}
+            , #{cscnHmpgUrl}
+            , #{cscnCpyrCon}
+            , #{invmAplcAbyn}
+            , 'N'
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+            , #{amnnUserId}
+            , CURRENT_TIMESTAMP
+        )
+    </insert>
+
+    <!--    투자사 페이지 이벤트정보 등록-->
+    <insert id="insertVCPageEvent" parameterType="VcPageEventVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_VC_PG_EVT_L
+        (
+            UTLINSTT_ID
+            , INVM_CMP_EXUS_PAGE_ID
+            , EVNT_SQN
+            , RPRS_IMG_FILE_ID
+            , EVNT_BKMR_URL
+            , EVNT_TTL
+            , PAGE_EVNT_CON
+            , EVNT_STDY_TS
+            , EVNT_FNDA_TS
+            , RGSN_USER_ID
+            , RGSN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{invmCmpExusPageId}
+            , #{evntSqn}
+            , #{fileId}
+            , #{evntBkmrUrl}
+            , #{evntTtl}
+            , #{evntCon}
+            , TO_TIMESTAMP(#{evntStdt})
+            , TO_TIMESTAMP(#{evntFndt})
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+        )
+    </insert>
+
+    <!--    투자사 페이지 FAQ정보 등록-->
+    <insert id="insertVCPageFAQ" parameterType="VcPageFaqVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_VC_PG_FAQ_L
+        (
+            UTLINSTT_ID
+            , INVM_CMP_EXUS_PAGE_ID
+            , FAQ_SQN
+            , FAQ_QSTN
+            , FAQ_RPLY
+            , RGSN_USER_ID
+            , RGSN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{invmCmpExusPageId}
+            , #{faqSqn}
+            , #{faqQstn}
+            , #{faqRply}
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+        )
+    </insert>
+
+    <!--    투자사 페이지 배너정보 등록-->
+    <insert id="insertVCPageBanner" parameterType="VcPageBannerVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_VC_PG_BAN_L
+        (
+            UTLINSTT_ID
+            , INVM_CMP_EXUS_PAGE_ID
+            , BNNR_SQN
+            , BNNR_IMG_FILE_ID
+            , RGSN_USER_ID
+            , RGSN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{invmCmpExusPageId}
+            , #{bnnrSqn}
+            , #{fileId}
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+        )
+    </insert>
+
+    <!--==================================================== UPDATE ====================================================-->
+
+    <!--    투자사 전환 요청 결과 알림 확인 todo : 처리 관련 보류-->
+    <update id="updateConvertResultCheck" parameterType="AdminVcConvertRequestVO">
+        UPDATE
+            <include refid="INVEST"/>TB_BOX_IVT_INVM_CNVS_L
+        SET
+            ALRT_CNFA_YN = 'Y'
+            , AMNN_USER_ID     = #{amnnUserId}
+            , AMNN_TS          = CURRENT_TIMESTAMP
+        WHERE
+            UTLINSTT_ID = #{utlinsttId}
+            AND CNVS_RQST_SQN = #{cnvsRqstSqn}
+            AND CNVS_RQST_STTS_CD_ID = #{cnvsRqstSttsCdId}
+    </update>
+
+    <!--    투자사 상세화면 조회수 증가 처리-->
+    <update id="updateVCViewCount" parameterType="String">
+        UPDATE
+            <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_D
+        SET
+            CREW_RTRV = (
+                SELECT CASE WHEN CREW_RTRV IS NULL THEN 0 ELSE CREW_RTRV END AS CREW_RTRV
+                FROM <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_D
+                WHERE UTLINSTT_ID = #{utlinsttId}
+            ) + 1
+        WHERE
+            UTLINSTT_ID = #{utlinsttId}
+    </update>
+
+    <!--    투자사 타입 수정-->
+    <update id="updateVentureCapitalInvestorData" parameterType="VentureCapitalBasicVO">
+        UPDATE
+            <include refid="INVEST"/>TB_BOX_IVT_VNCM_CPTL_L
+        SET
+            INVM_CMP_PTRN_CD         = #{invmCmpPtrnCd}
+            , INVMEXNT_RAP_LMTN_MNCT = #{invmexntRapLmtnMnct}
+            , AMNN_USER_ID           = #{amnnUserId}
+            , AMNN_TS                = CURRENT_TIMESTAMP
+        WHERE
+            UTLINSTT_ID = #{utlinsttId}
+    </update>
+
+    <!--    투자사 투자박스 전용 기본정보 수정-->
+<!--    <update id="updateVentureCapitalBasic" parameterType="VentureCapitalBasicVO">-->
+<!--        UPDATE-->
+<!--            <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_D-->
+<!--        SET-->
+<!--            BSUN_DWAR_CD        = #{bsunDwarCd}-->
+<!--            , EMP_CNT           = #{empCnt}-->
+<!--            , ENPR_INRD_CON     = #{enprInrdCon}-->
+<!--            , AMNN_USER_ID      = #{amnnUserId}-->
+<!--            , AMNN_TS           = CURRENT_TIMESTAMP-->
+<!--        WHERE-->
+<!--            UTLINSTT_ID = #{utlinsttId}-->
+<!--    </update>-->
+
+    <!--    투자사 투자금액 수정-->
+    <update id="updateVCInvestAmount" parameterType="VcInvestAmountVO">
+        UPDATE
+            <include refid="INVEST"/>TB_BOX_IVT_INVM_AMT_R
+        SET
+            INVM_AMT_CD     = #{invmAmtCd}
+            , AMNN_USER_ID  = #{amnnUserId}
+            , AMNN_TS       = CURRENT_TIMESTAMP
+        WHERE
+            UTLINSTT_ID = #{utlinsttId}
+    </update>
+
+    <!--    포트폴리오 수정-->
+    <update id="updateVCPortfolio" parameterType="VcPortfolioVO">
+        UPDATE
+            <include refid="INVEST"/>TB_BOX_IVT_VC_PRTF_L
+        SET
+            INVM_FILD_CD          = #{invmFildCd}
+            , UTLZ_TCHN_CD          = #{utlzTchnCd}
+            , INVM_ENPR_NM          = #{invmEnprNm}
+            , INVM_ENPR_LGTY_IMG_ID = #{fileId}
+            , INVM_STG_CD           = #{invmStgCd}
+            , INVM_AMT              = #{invmAmt}
+            , INVM_PRFR_DT          = #{invmPrfrDt}
+            , OPPB_YN               = #{oppbYn}
+            , AMNN_USER_ID          = #{amnnUserId}
+            , AMNN_TS               = CURRENT_TIMESTAMP
+        WHERE
+            UTLINSTT_ID = #{utlinsttId}
+            AND PRTF_ID = #{prtfId}
+    </update>
+
+    <!--    대표심사역 항목 수정-->
+    <update id="updateVCMember" parameterType="VcMemberVO">
+        UPDATE
+            <include refid="INVEST"/>TB_BOX_IVT_VC_TMMB_L
+        SET
+            RPRS_CROF_NM        = #{rprsCrofNm}
+            , RPRS_CROF_JBCL    = #{rprsCrofJbcl}
+            , CRR_CON           = #{crrCon}
+            , CROF_IMG_FILE_ID  = #{fileId}
+
+            , AMNN_USER_ID = #{amnnUserId}
+            , AMNN_TS      = CURRENT_TIMESTAMP
+        WHERE
+            UTLINSTT_ID = #{utlinsttId}
+            AND RPRS_CROF_ID = #{rprsCrofId}
+    </update>
+    <!--    투자 운용 보고서 수정-->
+    <update id="updateVCOperationReport" parameterType="VcOperationReportVO">
+        UPDATE
+        <include refid="INVEST"/>TB_BOX_IVT_ORRP_M
+        SET
+            RPT_DSNC        = #{rptDsnc}
+            , FILE_ID    = #{fileId}
+            , LADA           = #{lada}
+            , AMNN_TS  = CURRENT_TIMESTAMP
+            , AMNN_USER_ID = #{rgsnUserId}
+        WHERE
+            INVT_ID = #{invtId}
+            AND RPT_DSNC = #{rptDsncPrev}
+    </update>
+
+    <!--============================================= 투자사페이지 UPDATE =============================================-->
+
+    <!--    투자사 페이지 메인정보 수정-->
+    <update id="updateVCPageMain" parameterType="VcPageMainVO">
+        UPDATE
+            <include refid="INVEST"/>TB_BOX_IVT_VC_PAGE_M
+        SET
+            LGTY_IMG_FILE_ID    = #{lgtyImgFileId}
+            , HMPG_URL            = #{hmpgUrl}
+            , DTL_LKNG_URL_ADR    = #{dtlLkngUrlAdr}
+            , RPRS_IMG_FILE_ID    = #{rprsImgFileId}
+            , PAGE_TTL            = #{pageTtl}
+            , PAGE_CON            = #{pageCon}
+            , INRD_IMG_FILE_ID    = #{inrdImgFileId}
+            , INRD_TTL            = #{inrdTtl}
+            , INRD_CON            = #{inrdCon}
+            , FUND_AMT            = #{fundAmt}
+            , TTAL_IVEN_CNT       = #{ttalIvenCnt}
+            , ETVL_AMT            = #{etvlAmt}
+            , INVM_RTRV_ENPR_CNT  = #{invmRtrvEnprCnt}
+            , CSCN_TPN            = #{cscnTpn}
+            , CSCN_EML_ADR        = #{cscnEmlAdr}
+            , CSCN_HMPG_URL       = #{cscnHmpgUrl}
+            , CSCN_CPYR_CON       = #{cscnCpyrCon}
+            , INVM_APLC_ABYN      = #{invmAplcAbyn}
+            , AMNN_USER_ID        = #{amnnUserId}
+            , AMNN_TS             = CURRENT_TIMESTAMP
+        WHERE
+            UTLINSTT_ID = #{utlinsttId} AND
+            INVM_CMP_EXUS_PAGE_ID = #{invmCmpExusPageId}
+    </update>
+
+    <!--    투자사 페이지 메인정보 논리 삭제-->
+    <update id="deleteVCPageMain" parameterType="String">
+        UPDATE
+            <include refid="INVEST"/>TB_BOX_IVT_VC_PAGE_M
+        SET
+            DEL_YN = 'Y'
+            , AMNN_USER_ID        = #{amnnUserId}
+            , AMNN_TS             = CURRENT_TIMESTAMP
+        WHERE
+            UTLINSTT_ID = #{utlinsttId} AND
+            INVM_CMP_EXUS_PAGE_ID = #{invmCmpExusPageId}
+    </update>
+
+    <!--==================================================== DELETE ====================================================-->
+
+    <!--    대표심사역 삭제-->
+    <update id="deleteVCMember" parameterType="String">
+        DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_VC_TMMB_L
+        WHERE UTLINSTT_ID = #{utlinsttId} AND RPRS_CROF_ID = #{rprsCrofId}
+    </update>
+
+    <!--    투자사 관심분야 전체삭제-->
+    <delete id="deleteVCInterestTagList" parameterType="String">
+        DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_CNRN_FILD_L
+        WHERE UTLINSTT_ID = #{utlinsttId}
+    </delete>
+
+    <!--    투자사 관심투자분야 전체삭제-->
+    <delete id="deleteVCInvestFieldList" parameterType="String">
+        DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_INVM_IVFL_R
+        WHERE UTLINSTT_ID = #{utlinsttId}
+    </delete>
+
+    <!--    투자사 관심활용기술 전체삭제-->
+    <delete id="deleteVCUtilTechList" parameterType="String">
+        DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_INVM_TCHN_R
+        WHERE UTLINSTT_ID = #{utlinsttId}
+    </delete>
+
+    <!--    투자사 주요투자단계 전체삭제-->
+    <delete id="deleteVCInvestStepList" parameterType="String">
+        DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_INVM_STG_R
+        WHERE UTLINSTT_ID = #{utlinsttId}
+    </delete>
+
+    <!--    투자사 주요투자지역 리스트 삭제-->
+    <delete id="deleteVCInvestRegionList" parameterType="String">
+        DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_INVM_AREA_R
+        WHERE UTLINSTT_ID = #{utlinsttId}
+    </delete>
+
+    <!--    투자사 투자금액 매핑 삭제-->
+    <delete id="deleteVCInvestAmount" parameterType="String">
+        DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_INVM_AMT_R
+        WHERE UTLINSTT_ID = #{utlinsttId}
+    </delete>
+
+    <!--============================================= 투자사페이지 DELETE =============================================-->
+
+    <!--    투자사 페이지 이벤트 리스트 삭제-->
+    <delete id="deleteVCPageEventList" parameterType="String">
+        DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_VC_PG_EVT_L
+        WHERE UTLINSTT_ID = #{utlinsttId} AND INVM_CMP_EXUS_PAGE_ID = #{invmCmpExusPageId}
+    </delete>
+
+    <!--    투자사 페이지 FAQ 리스트 삭제-->
+    <delete id="deleteVCPageFAQList" parameterType="String">
+        DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_VC_PG_FAQ_L
+        WHERE UTLINSTT_ID = #{utlinsttId} AND INVM_CMP_EXUS_PAGE_ID = #{invmCmpExusPageId}
+    </delete>
+
+    <!--    투자사 페이지 배너 리스트 삭제-->
+    <delete id="deleteVCPageBannerList" parameterType="String">
+        DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_VC_PG_BAN_L
+        WHERE UTLINSTT_ID = #{utlinsttId} AND INVM_CMP_EXUS_PAGE_ID = #{invmCmpExusPageId}
+    </delete>
+
+</mapper>

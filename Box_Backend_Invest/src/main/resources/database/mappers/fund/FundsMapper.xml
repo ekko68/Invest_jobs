@@ -1,0 +1,1027 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ibk.sb.restapi.biz.service.fund.repo.FundRepo">
+    <!--    SchemaMapper ID-->
+    <sql id="INVEST"><include refid="com.ibk.sb.restapi.biz.service.common.repo.SchemaRepo.INVEST"/></sql>
+
+    <!--    PagingMapper ID-->
+    <sql id="pagingHeader"><include refid="com.ibk.sb.restapi.biz.service.common.repo.PageRepo.pageHeader"/></sql>
+    <sql id="pagingFooter"><include refid="com.ibk.sb.restapi.biz.service.common.repo.PageRepo.pageFooter"/></sql>
+
+    <!-- 펀드제안 페이징 리스트 조회-->
+    <select id="searchFundList" parameterType="FundPrdtInfoPageVO" resultType="FundPrdtInfoVO">
+    	<include refid="pagingHeader"/>
+	    	SELECT
+				UTLINSTT_ID
+				,FUND_ID
+				,FUND_NM
+				,FUND_PTRN
+				,ORGZ_TRGPFT
+				,AUDIT_STG
+				,TO_TIMESTAMP(WODY) as wody
+				,FUND_DSNC
+				,TO_TIMESTAMP(RGSN_TS) as rgsnTs
+				,RGSN_USER_ID
+				,TO_TIMESTAMP(AMNN_TS) as amnnTs
+				,AMNN_USER_ID
+			FROM
+				<include refid="INVEST"/>TB_BOX_IVT_PRDT_FUND_INFO_M
+				WHERE AUDIT_STG IN ('AUD01001', 'AUD01002', 'AUD01003', 'AUD01004', 'AUD01005', 'AUD01006', 'cancel')
+				<if test="searchFundName != null and !searchFundName.equals('')">
+					AND FUND_NM LIKE '%' || #{searchFundName} || '%'
+				</if>
+				ORDER BY
+					WODY DESC
+		 <include refid="pagingFooter"/>
+    </select>
+
+	<!-- 나의 펀드제안 페이징 리스트 조회-->
+	<select id="searchFundMyList" parameterType="FundPrdtInfoPageVO" resultType="FundPrdtInfoVO">
+		<include refid="pagingHeader"/>
+		SELECT
+		UTLINSTT_ID
+		,FUND_ID
+		,FUND_NM
+		,FUND_PTRN
+		,ORGZ_TRGPFT
+		,AUDIT_STG
+		,TO_TIMESTAMP(WODY) as wody
+		,FUND_DSNC
+		,TO_TIMESTAMP(RGSN_TS) as rgsnTs
+		,RGSN_USER_ID
+		,TO_TIMESTAMP(AMNN_TS) as amnnTs
+		,AMNN_USER_ID
+		FROM
+		<include refid="INVEST"/>TB_BOX_IVT_PRDT_FUND_INFO_M
+		WHERE UTLINSTT_ID = #{utlinsttId}
+		<if test="searchFundName != null and !searchFundName.equals('')">
+			AND FUND_NM LIKE '%' || #{searchFundName} || '%'
+		</if>
+		ORDER BY
+		RGSN_TS DESC
+		<include refid="pagingFooter"/>
+	</select>
+
+    <!-- 펀드제안 불러오기 리스트 조회-->
+    <select id="loadFundList" parameterType="String" resultType="FundPrdtInfoVO">
+    	SELECT
+			UTLINSTT_ID
+			,FUND_ID
+			,FUND_NM
+			,FUND_PTRN
+			,ORGZ_TRGPFT
+			,AUDIT_STG
+			,TO_TIMESTAMP(WODY) as wody
+			,TO_TIMESTAMP(RGSN_TS) as rgsnTs
+			,RGSN_USER_ID
+			,TO_TIMESTAMP(AMNN_TS) as amnnTs
+			,AMNN_USER_ID
+		FROM
+			<include refid="INVEST"/>TB_BOX_IVT_PRDT_FUND_INFO_M
+			WHERE UTLINSTT_ID = #{utlinsttId}
+			ORDER BY
+               	RGSN_TS DESC
+    </select>
+
+      <!-- 펀드제안 제안펀드 등록 - step1 / 계속작성 -->
+    <select id="searchFundPrdtInfo" parameterType="String" resultType="FundPrdtInfoVO">
+	    SELECT
+	        UTLINSTT_ID
+	        ,FUND_ID
+	        ,FUND_NM
+	        ,FUND_PTRN
+	        ,ORGZ_TRGPFT
+	        ,IBK_INVSTMNT_PRPL_AMT
+	        ,STDR_ERN_RT
+	        ,CNTNNC_PDYY
+	        ,RSLT_MENDNG_IRR_EXCESS_ERN
+	        ,AUDIT_STG
+	        ,INVT_PDYY
+	        ,MNG_MENDNG_RT
+	        ,PMNT_MTHD
+	        ,INVT_TGT
+	        ,AUDIT_STG
+	        ,ORGZ_TGPR
+	        ,ORGZ_RTO
+	        ,IBK_PRPL_AMT
+	        ,IBK_PRPL_RTO
+	        ,RPLY_CON
+	        ,RGSN_USER_ID
+	        ,RGSN_TS
+	        ,TO_TIMESTAMP(WODY) as wody
+	       	,GP_FNCNINFO
+			,FUND_DSNC
+			,PROPOSAL_DOC_BASE_DAY
+		FROM
+			<include refid="INVEST"/>TB_BOX_IVT_PRDT_FUND_INFO_M
+	    WHERE
+	    	FUND_ID = #{fundId}
+    </select>
+
+    <!-- 펀드제안 제안펀드 등록 - step1 / 계속작성 / 주요LP -->
+    <select id="searchPrmrLpChcFild" parameterType="String" resultType="PrmrLpChcFildVO">
+	    SELECT
+			FUND_ID
+		   ,SQN
+		   ,INVST_INST
+		   ,SPRN_FILD
+		   ,SPRN_AMT
+		   ,PROGRS_STG
+		   ,RGSN_USER_ID
+		   ,RGSN_TS
+		FROM
+		   <include refid="INVEST"/>TB_BOX_IVT_PRMR_LP_CHC_FILD_R
+		WHERE
+			FUND_ID = #{fundId}
+    </select>
+
+    <!-- 펀드제안 제안펀드 등록 - step1 / 계속작성 / 출자기관 -->
+    <select id="searchFncnEnlsPsstList" parameterType="String" resultType="FncnEnlsPsstListVO">
+	    SELECT
+			FUND_ID
+        	,SQN
+        	,INVST_INST
+        	,INVSTMNY
+        	,RATE
+        	,PROGRS_STG
+        	,RGSN_USER_ID
+		    ,RGSN_TS
+		FROM
+		   <include refid="INVEST"/>TB_BOX_IVT_FNCN_ENLS_PSST_R
+		WHERE
+			FUND_ID = #{fundId}
+    </select>
+
+	<!-- 펀드제안 ID 카운트 -->
+	<select id="countFundIdTotal" parameterType="String" resultType="int">
+		SELECT COUNT(*)+1 AS FUND_ID
+		FROM <include refid="INVEST"/>TB_BOX_IVT_PRDT_FUND_INFO_M
+	</select>
+
+    <!-- 펀드제안 제안펀드 등록 - step1 -->
+    <insert id="insertFundPrdtInfoStep1" parameterType="FundPrdtInfoVo">
+    	INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_PRDT_FUND_INFO_M
+    	(
+			UTLINSTT_ID
+			,FUND_ID
+			,FUND_NM
+			,FUND_PTRN
+			,ORGZ_TRGPFT
+			,IBK_INVSTMNT_PRPL_AMT
+			,STDR_ERN_RT
+			,CNTNNC_PDYY
+			,RSLT_MENDNG_IRR_EXCESS_ERN
+			,INVT_PDYY
+			,MNG_MENDNG_RT
+			,PMNT_MTHD
+			<if test="invtTgt != null and !invtTgt.equals('')">
+			,INVT_TGT
+			</if>
+			<if test="orgzTgpr != null and !orgzTgpr.equals('')">
+			,ORGZ_TGPR
+			</if>
+			<if test="orgzRto != null and !orgzRto.equals('')">
+			,ORGZ_RTO
+			</if>
+			,AUDIT_STG
+			,WODY
+			<if test="ibkPrplAmt != null and !ibkPrplAmt.equals('')">
+			,IBK_PRPL_AMT
+			</if>
+			<if test="ibkPrplRto != null and !ibkPrplRto.equals('')">
+			,IBK_PRPL_RTO
+			</if>
+			,RGSN_TS
+			,RGSN_USER_ID
+			<if test="gpFncnInfo != null and gpFncnInfo != 0">
+ 			,GP_FNCNINFO
+ 			</if>
+ 			<if test="fundDsnc != null and !fundDsnc.equals('')">
+			,FUND_DSNC
+			</if>
+			<if test="ProposalDocBaseDay != null and !ProposalDocBaseDay.equals('')">
+			,PROPOSAL_DOC_BASE_DAY
+			</if>
+    	)
+    	VALUES
+    	(
+    		#{utlinsttId}
+    		,#{fundId}
+    		,#{fundNm}
+			,#{fundPtrn}
+			,#{orgzTrgpft}
+			,#{ibkInvstmntPrplAmt}
+			,#{stdrErnRt}
+			,#{cntnncPdyy}
+			,#{rsltMendngIrrExcessErn}
+			,#{invtPdyy}
+			,#{mngMendngRt}
+			,#{pmntMthd}
+			<if test="invtTgt != null and !invtTgt.equals('')">
+				,#{invtTgt}
+			</if>
+			<if test="orgzTgpr != null and !orgzTgpr.equals('')">
+				,#{orgzTgpr}
+			</if>
+			<if test="orgzRto != null and !orgzRto.equals('')">
+				,#{orgzRto}
+			</if>
+			,#{auditStg}
+			,TO_CHAR(CURRENT_TIMESTAMP, 'YYYYMMDD')
+			<if test="ibkPrplAmt != null and !ibkPrplAmt.equals('')">
+				,#{ibkPrplAmt}
+			</if>
+			<if test="ibkPrplRto != null and !ibkPrplRto.equals('')">
+				,#{ibkPrplRto}
+			</if>
+			,CURRENT_TIMESTAMP
+			,#{rgsnUserId}
+			<if test="gpFncnInfo != null and gpFncnInfo != 0">
+ 			,#{gpFncnInfo}
+ 			</if>
+ 			<if test="fundDsnc != null and !fundDsnc.equals('')">
+			,#{fundDsnc}
+			</if>
+			<if test="ProposalDocBaseDay != null and !ProposalDocBaseDay.equals('')">
+			,#{ProposalDocBaseDay}
+			</if>
+    	)
+    </insert>
+
+    <!-- 주요LP 지원 및 선정분야 등록 -->
+    <insert id="insertPrmrLpChcFild" parameterType="PrmrLpChcFildVO">
+    	INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_PRMR_LP_CHC_FILD_R
+    	(
+			FUND_ID
+			,SQN
+			,INVST_INST
+			,SPRN_FILD
+			,SPRN_AMT
+			,PROGRS_STG
+			,RGSN_TS
+			,RGSN_USER_ID
+    	)
+    	VALUES
+    	(
+    		#{fundId}
+			,#{sqn}
+			,#{invstInst}
+			,#{sprnFild}
+			,#{sprnAmt}
+			,#{progrsStg}
+			,CURRENT_TIMESTAMP
+			,#{rgsnUserId}
+    	)
+    </insert>
+
+    <!-- 출자자 모집현황 등록 -->
+    <insert id="insertFncnEnlsPsst" parameterType="FncnEnlsPsstListVO">
+    	INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_FNCN_ENLS_PSST_R
+    	(
+			FUND_ID
+			,SQN
+			,INVST_INST
+			,INVSTMNY
+			,RATE
+			,PROGRS_STG
+			,RGSN_TS
+			,RGSN_USER_ID
+    	)
+    	VALUES
+    	(
+    		#{fundId}
+			,#{sqn}
+			,#{invstInst}
+			,#{invstMny}
+			,#{rate}
+			,#{progrsStg}
+			,CURRENT_TIMESTAMP
+			,#{rgsnUserId}
+    	)
+    </insert>
+
+    <!-- 펀드제안 제안펀드 수정 - step1 / 등록 후 저장 및 종료 -->
+    <update id="updateFundPrdtInfoStep1" parameterType="FundPrdtInfoVO">
+    	 UPDATE <include refid="INVEST"/>TB_BOX_IVT_PRDT_FUND_INFO_M
+	        SET
+    			FUND_NM 					= #{fundNm}
+				,FUND_PTRN                  = #{fundPtrn}
+				,ORGZ_TRGPFT                = #{orgzTrgpft}
+				,IBK_INVSTMNT_PRPL_AMT      = #{ibkInvstmntPrplAmt}
+				,STDR_ERN_RT                = #{stdrErnRt}
+				,CNTNNC_PDYY                = #{cntnncPdyy}
+				,RSLT_MENDNG_IRR_EXCESS_ERN = #{rsltMendngIrrExcessErn}
+				,INVT_PDYY                  = #{invtPdyy}
+				,MNG_MENDNG_RT              = #{mngMendngRt}
+				,PMNT_MTHD                  = #{pmntMthd}
+				<choose>
+					<when test="invtTgt != null and !invtTgt.equals('')">
+						,INVT_TGT           = #{invtTgt}
+					</when>
+					<when test="invtTgt == null and invtTgt.equals('')">
+						,INVT_TGT           = DEFAULT
+					</when>
+				</choose>
+				<choose>
+					<when test="orgzTgpr != null and !orgzTgpr.equals('')">
+						,ORGZ_TGPR      = #{orgzTgpr}
+					</when>
+					<when test="orgzTgpr == null and orgzTgpr.equals('')">
+						,ORGZ_TGPR      = DEFAULT
+					</when>
+				</choose>
+				<choose>
+					<when test="orgzRto != null and !orgzRto.equals('')">
+						,ORGZ_RTO       = #{orgzRto}
+					</when>
+					<when test="orgzRto == null and orgzRto.equals('')">
+						,ORGZ_RTO       = DEFAULT
+					</when>
+				</choose>
+				<if test="ibkPrplAmt != null and !ibkPrplAmt.equals('')">
+					,IBK_PRPL_AMT = #{ibkPrplAmt}
+				</if>
+				<if test="ibkPrplRto != null and !ibkPrplRto.equals('')">
+					,IBK_PRPL_RTO = #{ibkPrplRto}
+				</if>
+				,AMNN_TS				= CURRENT_TIMESTAMP
+				,AMNN_USER_ID   		= #{amnnUserId}
+				<if test="gpFncnInfo != null and gpFncnInfo != 0">
+ 				,GP_FNCNINFO			= #{gpFncnInfo}
+ 				</if>
+ 				<if test="fundDsnc != null and !fundDsnc.equals('')">
+				,FUND_DSNC				= #{fundDsnc}
+				</if>
+				<if test="ProposalDocBaseDay != null and !ProposalDocBaseDay.equals('')">
+				,PROPOSAL_DOC_BASE_DAY  = #{ProposalDocBaseDay}
+				</if>
+	        WHERE
+	      		FUND_ID					= #{fundId}
+	        	AND UTLINSTT_ID 		= #{utlinsttId}
+	</update>
+
+	<!-- 출자자 모집현황 수정  / 등록 후 저장 및 종료 -->
+    <update id="updateFncnEnlsPsst" parameterType="FncnEnlsPsstListVO">
+    	 UPDATE
+    	 	<include refid="INVEST"/>TB_BOX_IVT_FNCN_ENLS_PSST_R
+	        SET
+	        	INVST_INST          = #{invstInst}
+				,INVSTMNY           = #{invstMny}
+				,RATE				= #{rate}
+				,PROGRS_STG			= #{progrsStg}
+	        	,AMNN_TS			= CURRENT_TIMESTAMP
+				,AMNN_USER_ID   	= #{amnnUserId}
+	        WHERE
+	        	FUND_ID = #{fundId}
+	        	AND SQN = #{sqn}
+	</update>
+
+	<!-- 주요LP 지원 및 선정분야 수정 / 등록 후 저장 및 종료 -->
+    <update id="updatePrmrLpChcFild" parameterType="PrmrLpChcFildVO">
+    	UPDATE
+    		 <include refid="INVEST"/>TB_BOX_IVT_PRMR_LP_CHC_FILD_R
+    		 SET
+		        INVST_INST          = #{invstInst}
+				,SPRN_FILD          = #{sprnFild}
+				,SPRN_AMT  			= #{sprnAmt}
+				,PROGRS_STG			= #{progrsStg}
+	        	,AMNN_TS			= CURRENT_TIMESTAMP
+				,AMNN_USER_ID   	= #{amnnUserId}
+	        WHERE
+	        	FUND_ID = #{fundId}
+	        	AND SQN = #{sqn}
+	</update>
+
+	<!-- 펀드제안 제안펀드 등록 - step2 -->
+    <insert id="insertFundPrdtInfoStep2" parameterType="FundOpcmInfoVO">
+    	INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_OPERTR_INFO_R
+    	(
+			UTLINSTT_ID
+      		,FUND_ID
+			,PRN_NM
+			,BZN
+			,RPRNM
+			,ADRES
+			,INCR_YMD
+			,FUND_OPR_TS
+			,CPTS_TTSM
+			,PAY_CAPL
+			<if test="dscplYn != null and !dscplYn.equals('')">
+			,DSCPL_YN
+			</if>
+			<if test="opratnScaleCo != null and !opratnScaleCo.equals('')">
+			,OPRATN_SCALE_CO
+			</if>
+			<if test="opratnScaleAm != null and !opratnScaleAm.equals('')">
+			,OPRATN_SCALE_AM
+			</if>
+			<if test="blindCo != null and !blindCo.equals('')">
+			,BLIND_CO
+			</if>
+			<if test="blindAm != null and !blindAm.equals('')">
+			,BLIND_AM
+			</if>
+			<if test="prjctCo != null and !prjctCo.equals('')">
+			,PRJCT_CO
+			</if>
+			<if test="prjctAm != null and !prjctAm.equals('')">
+			,PRJCT_AM
+			</if>
+			<if test="lqdFundErnrt != null and !lqdFundErnrt.equals('')">
+			,LQD_FUND_ERNRT
+			</if>
+			,AST_TTSM_AMT
+			,LBLT_CPST_AMT
+			,CPTS_TTSM_AMT
+			,BSN_ERN
+			,BSN_CT
+			,CTNP_AMT
+			,AST_TTSM_AMT_1Y
+			,AST_TTSM_AMT_2Y
+			,LBLT_CPST_AMT_1Y
+			,LBLT_CPST_AMT_2Y
+			,CPTS_TTSM_AMT_1Y
+			,CPTS_TTSM_AMT_2Y
+			,BSN_ERN_1Y
+			,BSN_ERN_2Y
+			,BSN_CT_1Y
+			,BSN_CT_2Y
+			,CTNP_AMT_1Y
+			,CTNP_AMT_2Y
+			,PROGRS_STG
+			<if test="fundExhsRt != null and !fundExhsRt.equals('')">
+			,FUND_EXHS_RT
+			</if>
+			,OPRATN_HNF_INFO_TOT_CO
+			,OPRATN_HNF_INFO_MNGR_NM
+			<if test="opratnHnfInfoDscplYn != null and !opratnHnfInfoDscplYn.equals('')">
+			,OPRATN_HNF_INFO_DSCPL_YN
+			</if>
+			,MANAGE_HNF_INFO_TOT_CO
+			,MANAGE_HNF_INFO_HNF
+			<if test="managedtaAtchmnfl != null and !managedtaAtchmnfl.equals('')">
+			,MANAGEDTA_ATCHMNFL
+			</if>
+			, RGSN_TS
+			, RGSN_USER_ID
+			<if test="cogpYn != null and !cogpYn.equals('')">
+			, COGP_YN
+			</if>
+			<if test="majorPrnNm != null and !majorPrnNm.equals('')">
+			, MAJOR_PRN_NM
+			</if>
+    	)
+    	VALUES
+    	(
+    		#{utlinsttId}
+    		,#{fundId}
+			,#{prnNm}
+			,#{bzn}
+			,#{rprNm}
+			,#{adres}
+			,#{incrYmd}
+			,#{fundOprTs}
+			,#{cptsTtsm}
+			,#{payCapl}
+			<if test="dscplYn != null and !dscplYn.equals('')">
+			,#{dscplYn}
+			</if>
+			<if test="opratnScaleCo != null and !opratnScaleCo.equals('')">
+			,#{opratnScaleCo}
+			</if>
+			<if test="opratnScaleAm != null and !opratnScaleAm.equals('')">
+			,#{opratnScaleAm}
+			</if>
+			<if test="blindCo != null and !blindCo.equals('')">
+			,#{blindCo}
+			</if>
+			<if test="blindAm != null and !blindAm.equals('')">
+			,#{blindAm}
+			</if>
+			<if test="prjctCo != null and !prjctCo.equals('')">
+			,#{prjctCo}
+			</if>
+			<if test="prjctAm != null and !prjctAm.equals('')">
+			,#{prjctAm}
+			</if>
+			<if test="lqdFundErnrt != null and !lqdFundErnrt.equals('')">
+			,#{lqdFundErnrt}
+			</if>
+			,#{astTtsmAmt}
+			,#{lbltCpstAmt}
+			,#{cptsTtsmAmt}
+			,#{bsnErn}
+			,#{bsnCt}
+			,#{ctnpAmt}
+			,#{astTtsmAmt1y}
+			,#{astTtsmAmt2y}
+			,#{lbltCpstAmt1y}
+			,#{lbltCpstAmt2y}
+			,#{cptsTtsmAmt1y}
+			,#{cptsTtsmAmt2y}
+			,#{bsnErn1y}
+			,#{bsnErn2y}
+			,#{bsnCt1y}
+			,#{bsnCt2y}
+			,#{ctnpAmt1y}
+			,#{ctnpAmt2y}
+			,#{progrsStg}
+			<if test="fundExhsRt != null and !fundExhsRt.equals('')">
+			,#{fundExhsRt}
+			</if>
+			,#{opratnHnfInfoTotCo}
+			,#{opratnHnfInfoMngrNm}
+			<if test="opratnHnfInfoDscplYn != null and !opratnHnfInfoDscplYn.equals('')">
+			,#{opratnHnfInfoDscplYn}
+			</if>
+			,#{manageHnfInfoTotCo}
+			,#{manageHnfInfoHnf}
+			<if test="managedtaAtchmnfl != null and !managedtaAtchmnfl.equals('')">
+			,#{managedtaAtchmnfl}
+			</if>
+			,CURRENT_TIMESTAMP
+			,#{rgsnUserId}
+			<if test="cogpYn != null and !cogpYn.equals('')">
+			,#{cogpYn}
+			</if>
+			<if test="majorPrnNm != null and !majorPrnNm.equals('')">
+			,#{majorPrnNm}
+			</if>
+    	)
+    </insert>
+
+    <!-- 펀드제안 제안펀드 수정 - step2 / 등록 후 저장 및 종료 -->
+    <update id="updateFundPrdtInfoStep2" parameterType="FundOpcmInfoVO">
+    	 UPDATE <include refid="INVEST"/>TB_BOX_IVT_OPERTR_INFO_R
+	        SET
+				PRN_NM                      = #{prnNm}
+				,BZN                        = #{bzn}
+				,RPRNM                      = #{rprNm}
+				,ADRES                      = #{adres}
+				,INCR_YMD                   = #{incrYmd}
+				,FUND_OPR_TS                = #{fundOprTs}
+				,CPTS_TTSM                  = #{cptsTtsm}
+				,PAY_CAPL                   = #{payCapl}
+				<choose>
+					<when test="dscplYn != null and !dscplYn.equals('')">
+						,DSCPL_YN           = #{dscplYn}
+					</when>
+					<otherwise>
+						,DSCPL_YN           = DEFAULT
+					</otherwise>
+				</choose>
+				<choose>
+					<when test="opratnScaleCo != null and !opratnScaleCo.equals('')">
+						,OPRATN_SCALE_CO    = #{opratnScaleCo}
+					</when>
+					<otherwise>
+						,OPRATN_SCALE_CO    = DEFAULT
+					</otherwise>
+				</choose>
+				<choose>
+					<when test="opratnScaleAm != null and !opratnScaleAm.equals('')">
+						,OPRATN_SCALE_AM    = #{opratnScaleAm}
+					</when>
+					<otherwise>
+						,OPRATN_SCALE_AM    = DEFAULT
+					</otherwise>
+				</choose>
+				<choose>
+					<when test="blindCo != null and !blindCo.equals('')">
+						,BLIND_CO            = #{blindCo}
+					</when>
+					<otherwise>
+						,BLIND_CO     		 = DEFAULT
+					</otherwise>
+				</choose>
+				<choose>
+					<when test="blindAm != null and !blindAm.equals('')">
+						,BLIND_AM    		= #{blindAm}
+					</when>
+					<when test="blindAm == null and blindAm.equals('')">
+						,BLIND_AM           = DEFAULT
+					</when>
+				</choose>
+				<choose>
+					<when test="prjctCo != null and !prjctCo.equals('')">
+						,PRJCT_CO           = #{prjctCo}
+					</when>
+					<otherwise>
+						,PRJCT_CO           = DEFAULT
+					</otherwise>
+				</choose>
+ 				<choose>
+					<when test="prjctAm != null and !prjctAm.equals('')">
+						,PRJCT_AM           = #{prjctAm}
+					</when>
+					<otherwise>
+						,PRJCT_AM           = DEFAULT
+					</otherwise>
+				</choose>
+				<choose>
+					<when test="prjctCo != null and !prjctCo.equals('')">
+						,LQD_FUND_ERNRT     = #{lqdFundErnrt}
+					</when>
+					<otherwise>
+						,LQD_FUND_ERNRT     = DEFAULT
+					</otherwise>
+				</choose>
+				,AST_TTSM_AMT               = #{astTtsmAmt}
+				,LBLT_CPST_AMT              = #{lbltCpstAmt}
+				,CPTS_TTSM_AMT              = #{cptsTtsmAmt}
+				,BSN_ERN                    = #{bsnErn}
+				,BSN_CT                     = #{bsnCt}
+				,CTNP_AMT                   = #{ctnpAmt}
+				,AST_TTSM_AMT_1Y            = #{astTtsmAmt1y}
+				,AST_TTSM_AMT_2Y            = #{astTtsmAmt2y}
+				,LBLT_CPST_AMT_1Y           = #{lbltCpstAmt1y}
+				,LBLT_CPST_AMT_2Y           = #{lbltCpstAmt2y}
+				,CPTS_TTSM_AMT_1Y           = #{cptsTtsmAmt1y}
+				,CPTS_TTSM_AMT_2Y           = #{cptsTtsmAmt2y}
+				,BSN_ERN_1Y                 = #{bsnErn1y}
+				,BSN_ERN_2Y                 = #{bsnErn2y}
+				,BSN_CT_1Y                  = #{bsnCt1y}
+				,BSN_CT_2Y                  = #{bsnCt2y}
+				,CTNP_AMT_1Y                = #{ctnpAmt1y}
+				,CTNP_AMT_2Y                = #{ctnpAmt2y}
+				,PROGRS_STG                 = #{progrsStg}
+				<choose>
+					<when test="fundExhsRt != null and !fundExhsRt.equals('')">
+						,FUND_EXHS_RT      = #{fundExhsRt}
+					</when>
+					<otherwise>
+						,FUND_EXHS_RT     = DEFAULT
+					</otherwise>
+				</choose>
+				,OPRATN_HNF_INFO_TOT_CO     = #{opratnHnfInfoTotCo}
+				,OPRATN_HNF_INFO_MNGR_NM    = #{opratnHnfInfoMngrNm}
+				<choose>
+					<when test="opratnHnfInfoDscplYn != null and !opratnHnfInfoDscplYn.equals('')">
+						,OPRATN_HNF_INFO_DSCPL_YN   = #{opratnHnfInfoDscplYn}
+					</when>
+					<otherwise>
+						,OPRATN_HNF_INFO_DSCPL_YN     = DEFAULT
+					</otherwise>
+				</choose>
+				,MANAGE_HNF_INFO_TOT_CO     = #{manageHnfInfoTotCo}
+				,MANAGE_HNF_INFO_HNF        = #{manageHnfInfoHnf}
+				<if test="managedtaAtchmnfl != null and !managedtaAtchmnfl.equals('')">
+				,MANAGEDTA_ATCHMNFL			= #{managedtaAtchmnfl}
+				</if>
+				,AMNN_TS					= CURRENT_TIMESTAMP
+				,AMNN_USER_ID   			= #{amnnUserId}
+				<if test="cogpYn != null and !cogpYn.equals('')">
+				, COGP_YN					= #{cogpYn}
+				</if>
+				<if test="majorPrnNm != null and !majorPrnNm.equals('')">
+				, MAJOR_PRN_NM        	    = #{majorPrnNm}
+				</if>
+	        WHERE
+	        	FUND_ID			= #{fundId}
+	        	AND UTLINSTT_ID = #{utlinsttId}
+	</update>
+
+    <!-- 펀드제안 제안펀드 등록 - step2 / 계속작성 -->
+    <select id="searchFundOpcmInfo" parameterType="String" resultType="FundOpcmInfoVO">
+	    SELECT
+	        UTLINSTT_ID
+      		,FUND_ID
+			,PRN_NM
+			,BZN
+			,RPRNM
+			,ADRES
+			,INCR_YMD
+			,FUND_OPR_TS
+			,CPTS_TTSM
+			,PAY_CAPL
+			,DSCPL_YN
+			,AST_TTSM_AMT
+			,LBLT_CPST_AMT
+			,CPTS_TTSM_AMT
+			,BSN_ERN
+			,BSN_CT
+			,CTNP_AMT
+			,AST_TTSM_AMT_1Y
+			,AST_TTSM_AMT_2Y
+			,LBLT_CPST_AMT_1Y
+			,LBLT_CPST_AMT_2Y
+			,CPTS_TTSM_AMT_1Y
+			,CPTS_TTSM_AMT_2Y
+			,BSN_ERN_1Y
+			,BSN_ERN_2Y
+			,BSN_CT_1Y
+			,BSN_CT_2Y
+			,CTNP_AMT_1Y
+			,CTNP_AMT_2Y
+			,PROGRS_STG
+			,OPRATN_SCALE_CO
+			,OPRATN_SCALE_AM
+			,BLIND_CO
+			,BLIND_AM
+			,PRJCT_CO
+			,PRJCT_AM
+			,LQD_FUND_ERNRT
+			,FUND_EXHS_RT
+			,OPRATN_HNF_INFO_TOT_CO
+			,OPRATN_HNF_INFO_MNGR_NM
+			,OPRATN_HNF_INFO_DSCPL_YN
+			,MANAGE_HNF_INFO_TOT_CO
+			,MANAGE_HNF_INFO_HNF
+			,MANAGEDTA_ATCHMNFL
+			,TO_TIMESTAMP(RGSN_TS) as rgsnTs
+			,RGSN_USER_ID
+			, COGP_YN
+			, MAJOR_PRN_NM
+		FROM
+			<include refid="INVEST"/>TB_BOX_IVT_OPERTR_INFO_R
+	    WHERE
+	    	FUND_ID = #{fundId}
+    </select>
+
+    <!-- 운용인력 유지율 조회 -->
+    <select id="searchOpratnHnfMntnc" parameterType="String" resultType="OpratnHnfMntncVO">
+	    SELECT
+			FUND_ID
+			,SQN
+			,OPRATN_HNF_NM
+			,NOW_HFFC_YN
+			,RM
+			,RGSN_TS
+			,RGSN_USER_ID
+		FROM
+		   <include refid="INVEST"/>TB_BOX_IVT_OPRATN_HNF_MNTNC_RT_R
+		WHERE
+			FUND_ID = #{fundId}
+	    ORDER BY SQN ASC
+    </select>
+
+	<!-- 운용인력 유지율 등록 -->
+    <insert id="insertOpratnHnfMntnc" parameterType="OpratnHnfMntncVO">
+    	INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_OPRATN_HNF_MNTNC_RT_R
+    	(
+			FUND_ID
+			,SQN
+			,OPRATN_HNF_NM
+			,NOW_HFFC_YN
+			,RM
+			,RGSN_TS
+			,RGSN_USER_ID
+    	)
+    	VALUES
+    	(
+    		#{fundId}
+			,#{sqn}
+			,#{opratnHnfNm}
+			,#{nowHffcYn}
+			,#{rm}
+			,CURRENT_TIMESTAMP
+			,#{rgsnUserId}
+    	)
+    </insert>
+
+    <!-- 운용인력 유지율 수정 -->
+    <update id="updateOpratnHnfMntnc" parameterType="OpratnHnfMntncVO">
+    	UPDATE <include refid="INVEST"/>TB_BOX_IVT_OPRATN_HNF_MNTNC_RT_R
+	        SET
+				OPRATN_HNF_NM	= #{opratnHnfNm}
+				,NOW_HFFC_YN	= #{nowHffcYn}
+				,RM				= #{rm}
+				,AMNN_TS		= CURRENT_TIMESTAMP
+				,AMNN_USER_ID   = #{amnnUserId}
+		    WHERE
+		    	SQN = #{sqn} AND
+		    	FUND_ID = #{fundId}
+    </update>
+
+
+    <!-- 제안 펀드 참여 운용인력 조회 -->
+    <select id="searchProFundPartcptn" parameterType="String" resultType="ProFundPartcptnVO">
+	    SELECT
+			FUND_ID
+			,SQN
+	        ,HMRS_DSNC
+			,PARTCPTN_NM
+			,INVT_CAREER
+			,CNWK_YY_CNT
+			,FIVE_FYER_INVM_AMT
+			,TEN_FYER_INVM_RTRVLACRS_INVT
+			,TEN_FYER_INVM_RTRVLACRS_RTRVL
+			,RGSN_TS
+			,RGSN_USER_ID
+		FROM
+		   <include refid="INVEST"/>TB_BOX_IVT_PROPSE_FUND_PARTCPTN_R
+		WHERE
+			FUND_ID = #{fundId}
+		ORDER BY SQN ASC
+    </select>
+
+    <!-- 제안펀드 참여 등록 -->
+    <insert id="insertProFundPartcptn" parameterType="ProFundPartcptnVO">
+    	INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_PROPSE_FUND_PARTCPTN_R
+    	(
+			FUND_ID
+			,SQN
+			,HMRS_DSNC
+			,PARTCPTN_NM
+			,INVT_CAREER
+			,CNWK_YY_CNT
+			,FIVE_FYER_INVM_AMT
+			,TEN_FYER_INVM_RTRVLACRS_INVT
+			,TEN_FYER_INVM_RTRVLACRS_RTRVL
+			,RGSN_TS
+			,RGSN_USER_ID
+    	)
+    	VALUES
+    	(
+    		#{fundId}
+			,#{sqn}
+			,#{hmrsDsnc}
+    		,#{partcptnNm}
+			,#{invtCareer}
+			,#{cnwkYyCnt}
+			,#{fiveFyerInvmAmt}
+			,#{tenFyerInvmRtrvlacrsInvt}
+			,#{tenFyerInvmRtrvlacrsRtrvl}
+			,CURRENT_TIMESTAMP
+			,#{rgsnUserId}
+    	)
+    </insert>
+
+    <!-- 제안펀드 참여 수정 -->
+    <update id="updateProFundPartcptn" parameterType="ProFundPartcptnVO">
+    	UPDATE <include refid="INVEST"/>TB_BOX_IVT_PROPSE_FUND_PARTCPTN_R
+	        SET
+	      		PARTCPTN_NM				= #{partcptnNm}
+				,HMRS_DSNC				= #{hmrsDsnc}
+				,INVT_CAREER			= #{invtCareer}
+				,CNWK_YY_CNT			= #{cnwkYyCnt}
+				,FIVE_FYER_INVM_AMT		= #{fiveFyerInvmAmt}
+				,TEN_FYER_INVM_RTRVLACRS_INVT	= #{tenFyerInvmRtrvlacrsInvt}
+				,TEN_FYER_INVM_RTRVLACRS_RTRVL	= #{tenFyerInvmRtrvlacrsRtrvl}
+				,AMNN_TS				= CURRENT_TIMESTAMP
+				,AMNN_USER_ID   		= #{amnnUserId}
+		    WHERE
+		    	SQN = #{sqn} AND
+		    	FUND_ID = #{fundId}
+    </update>
+
+    <!-- 펀드제안 제안 취소 / TB_BOX_IVT_PRDT_FUND_INFO_M-->
+    <update id="fundPrdtInfoCancle" parameterType="FundOpcmInfoVO">
+    	UPDATE <include refid="INVEST"/>TB_BOX_IVT_PRDT_FUND_INFO_M
+	        SET
+	      		AUDIT_STG	= #{auditStg}
+	        	,AMNN_TS	= CURRENT_TIMESTAMP
+		    WHERE
+		    	FUND_ID 	= #{fundId} AND
+		    	UTLINSTT_ID = #{utlinsttId}
+    </update>
+
+    <!-- 펀드제안 제안 취소 / TB_BOX_IVT_OPERTR_INFO_R-->
+    <update id="fundOpertrInfoCancle" parameterType="FundOpcmInfoVO">
+    	UPDATE <include refid="INVEST"/>TB_BOX_IVT_OPERTR_INFO_R oper
+			SET
+			(oper.PROGRS_STG) = (SELECT prdt.AUDIT_STG FROM <include refid="INVEST"/>TB_BOX_IVT_PRDT_FUND_INFO_M prdt WHERE prdt.UTLINSTT_ID = #{utlinsttId} AND prdt.FUND_ID = #{fundId})
+			,AMNN_TS	= CURRENT_TIMESTAMP
+			WHERE oper.FUND_ID = #{fundId};
+    </update>
+
+	<!-- 펀드제안 최종 등록 시 진행단계 update -->
+    <update id="updateFundAuditStg" parameterType="String">
+    	UPDATE <include refid="INVEST"/>TB_BOX_IVT_PRDT_FUND_INFO_M prdt
+			SET
+			(prdt.AUDIT_STG) = (SELECT oper.PROGRS_STG FROM <include refid="INVEST"/>TB_BOX_IVT_OPERTR_INFO_R oper WHERE oper.FUND_ID = #{fundId})
+			WHERE prdt.FUND_ID = #{fundId};
+    </update>
+
+    <!-- 관리인력 운용인력 징계여부 리스트 조회 -->
+    <select id="searchopratnHnfInfoDscpl" parameterType="String" resultType="OpratnHnfInfoDscplLVO">
+	    SELECT
+			FUND_ID
+			,SQN
+			,NAME
+			,RMDP
+			,RMRK
+			,RGSN_TS
+			,RGSN_USER_ID
+		FROM
+		   <include refid="INVEST"/>TB_BOX_IVT_OPRATN_HNF_INFO_DSCPL_L
+		WHERE
+			FUND_ID = #{fundId}
+		ORDER BY SQN ASC
+    </select>
+
+    <!-- 관리인력 운용인력 징계여부 리스트 등록 -->
+    <insert id="insertOpratnHnfInfoDscpl" parameterType="OpratnHnfInfoDscplLVO">
+    	INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_OPRATN_HNF_INFO_DSCPL_L
+    	(
+			FUND_ID
+			,SQN
+			,NAME
+			,RMDP
+			,RMRK
+			,RGSN_TS
+			,RGSN_USER_ID
+    	)
+    	VALUES
+    	(
+    		#{fundId}
+			,#{sqn}
+    		,#{name}
+			,#{rmdp}
+			,#{rmrk}
+			,CURRENT_TIMESTAMP
+			,#{rgsnUserId}
+    	)
+    </insert>
+
+    <!-- 관리인력 운용인력 징계여부 리스트 수정 -->
+    <update id="updateOpratnHnfInfoDscpl" parameterType="OpratnHnfInfoDscplLVO">
+    	UPDATE <include refid="INVEST"/>TB_BOX_IVT_OPRATN_HNF_INFO_DSCPL_L
+	        SET
+	      		NAME			= #{name}
+	      		,RMDP			= #{rmdp}
+	      		,RMRK			= #{rmrk}
+	      		,AMNN_TS		= CURRENT_TIMESTAMP
+				,AMNN_USER_ID   = #{amnnUserId}
+		    WHERE
+		    	SQN = #{sqn}
+    			AND FUND_ID = #{fundId}
+    </update>
+
+    <!-- 첨부된 파일정보 불러오기 -->
+    <select id="searchFileInfo" parameterType="ComFileInfoVO" resultType="ComFileInfoVO">
+    	SELECT
+    		FILE_ID,
+    		FILE_NM,
+    		FILE_PATH,
+    		FILE_ETNS,
+    		FILE_PTRN,
+    		FILE_SIZE
+    	FROM
+    		<include refid="INVEST"/>TB_BOX_IVT_FILE_ATCH_M
+		WHERE
+			UPPER(FILE_ID) LIKE '%' || UPPER(#{fileId}) || '%'
+    </select>
+
+	<!-- 주요주주구성 리스트 조회 -->
+	<select id="searchFundStchCnfg" parameterType="String" resultType="FundStchCnfgVO">
+		SELECT
+			FUND_ID
+			,RGSN_SQN
+			,STCH_NM
+			,PRTN_AMT
+			,PRTN_RTO
+			,RMRK
+			,RGSN_TS
+			,RGSN_USER_ID
+			,AMNN_TS
+			,AMNN_USER_ID
+		FROM
+		<include refid="INVEST"/>TB_BOX_IVT_FUND_STCH_CNFG_L
+		WHERE
+			FUND_ID = #{fundId}
+		ORDER BY RGSN_SQN ASC
+	</select>
+
+	<!-- 주요 주주구성 리스트 등록 -->
+	<insert id="insertFundStchCnfg" parameterType="FundStchCnfgVO">
+		INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_FUND_STCH_CNFG_L
+		(
+			FUND_ID
+			,RGSN_SQN
+			,STCH_NM
+			,PRTN_AMT
+			,PRTN_RTO
+			,RMRK
+			,RGSN_TS
+			,RGSN_USER_ID
+		)
+		VALUES
+		(
+			#{fundId}
+			,#{rgsnSqn}
+			,#{stchNm}
+			,#{prtnAmt}
+			,#{prtnRto}
+			,#{rmrk}
+			,CURRENT_TIMESTAMP
+			,#{rgsnUserId}
+		)
+	</insert>
+
+	<!-- 주요주주구성 리스트 수정 -->
+	<update id="updateFundStchCnfg" parameterType="FundStchCnfgVO">
+		UPDATE <include refid="INVEST"/>TB_BOX_IVT_FUND_STCH_CNFG_L
+		SET
+			STCH_NM			= #{stchNm}
+			,PRTN_AMT		= #{prtnAmt}
+			,PRTN_RTO		= #{prtnRto}
+			,RMRK			= #{rmrk}
+			,AMNN_TS		= CURRENT_TIMESTAMP
+			,AMNN_USER_ID   = #{amnnUserId}
+		WHERE
+			RGSN_SQN = #{rgsnSqn}
+			AND FUND_ID = #{fundId}
+	</update>
+
+</mapper>

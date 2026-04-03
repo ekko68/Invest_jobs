@@ -1,0 +1,342 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ibk.sb.restapi.biz.service.prplcm.repo.ProposalCompanyRepo">
+	<!-- SchemaMapper ID -->
+	<sql id="INVEST"><include refid="com.ibk.sb.restapi.biz.service.common.repo.SchemaRepo.INVEST" /></sql>
+
+	<!-- PagingMapper ID -->
+	<sql id="pagingHeader"><include refid="com.ibk.sb.restapi.biz.service.common.repo.PageRepo.pageHeader" /></sql>
+	<sql id="pagingFooter"><include refid="com.ibk.sb.restapi.biz.service.common.repo.PageRepo.pageFooter" /></sql>
+
+	<!-- 투자 기업추천 이력 리스트 조회 -->
+	<select id="selectProposalCompanyList" parameterType="com.ibk.sb.restapi.biz.service.prplcm.vo.RequestPropsalCompanyPageVo" resultType="com.ibk.sb.restapi.biz.service.admin.vo.PrplCmVO">
+		<include refid="pagingHeader" />
+		SELECT
+			UTLINSTT_ID
+			, RCMD_ENPR_BZN
+			, RCMD_ID
+			, PRN_NM
+			, CHRG_AUDOFIR
+			, CNPL
+			, EAD
+			, RCMD_ENPR_NM
+			, MAIN_BIZ
+			, LEAD_INVSTR_PRN_NM
+			, LEAD_INVSTR_AMOUNT
+			, LEAD_INVSTR_STEP
+			, INVM_RND_END_PNTTM
+			, TOT_INVM_CNFMN_AMT
+			, TOT_INVM_CNFMN_AMT_TO
+			, PROGRS_VALUE
+			, PROGRS_VALUE_TO
+			, RECOMEND_OPINION
+			, OPRTR_CNFA_YN
+			, ATCHMNFL
+			, SBMS_STTS
+			, RGSN_TS
+			, RGSN_USER_ID
+			, AMNN_TS
+			, AMNN_USER_ID
+		FROM
+		<include refid="INVEST" />TB_BOX_IVT_RECOMENDCP_INFO_BASS_M
+		WHERE 1=1
+		<if test="cmpnNm != null and !cmpnNm.equals('')">
+			AND RCMD_ENPR_NM LIKE '%' || #{cmpnNm} || '%'
+		</if>
+		<if test="bizNum != null and !bizNum.equals('')">
+			AND RCMD_ENPR_BZN = #{bizNum}
+		</if>
+		ORDER BY RGSN_TS DESC
+		<include refid="pagingFooter" />
+	</select>
+
+	<!-- 나의 투자 기업추천 이력 리스트 조회 -->
+	<select id="searchProposalCompanyMyList" parameterType="com.ibk.sb.restapi.biz.service.prplcm.vo.RequestPropsalCompanyPageVo" resultType="com.ibk.sb.restapi.biz.service.admin.vo.PrplCmVO">
+		<include refid="pagingHeader" />
+		SELECT
+			UTLINSTT_ID
+			, RCMD_ENPR_BZN
+			, RCMD_ID
+			, PRN_NM
+			, CHRG_AUDOFIR
+			, CNPL
+			, EAD
+			, RCMD_ENPR_NM
+			, MAIN_BIZ
+			, LEAD_INVSTR_PRN_NM
+			, LEAD_INVSTR_AMOUNT
+			, LEAD_INVSTR_STEP
+			, INVM_RND_END_PNTTM
+			, TOT_INVM_CNFMN_AMT
+			, TOT_INVM_CNFMN_AMT_TO
+			, PROGRS_VALUE
+			, PROGRS_VALUE_TO
+			, RECOMEND_OPINION
+			, OPRTR_CNFA_YN
+			, ATCHMNFL
+			, SBMS_STTS
+			, RGSN_TS
+			, RGSN_USER_ID
+			, AMNN_TS
+			, AMNN_USER_ID
+		FROM
+		<include refid="INVEST" />TB_BOX_IVT_RECOMENDCP_INFO_BASS_M
+		WHERE UTLINSTT_ID = #{userGroupId}
+		<if test="cmpnNm != null and !cmpnNm.equals('')">
+			AND RCMD_ENPR_NM LIKE '%' || #{cmpnNm} || '%'
+		</if>
+		<if test="bizNum != null and !bizNum.equals('')">
+			AND RCMD_ENPR_BZN = #{bizNum}
+		</if>
+		ORDER BY RGSN_TS DESC
+		<include refid="pagingFooter" />
+	</select>
+
+	<!-- 투자 기업 추천 이력 상세 조회 -->
+	<select id="selectProposalCompany" parameterType="String" resultType="com.ibk.sb.restapi.biz.service.admin.vo.PrplCmVO">
+		SELECT
+		UTLINSTT_ID
+		, RCMD_ID
+		, RCMD_ENPR_BZN
+		, PRN_NM
+		, CHRG_AUDOFIR
+		, CNPL
+		, EAD
+		, RCMD_ENPR_NM
+		, MAIN_BIZ
+		, LEAD_INVSTR_PRN_NM
+		, LEAD_INVSTR_AMOUNT
+		, LEAD_INVSTR_STEP
+		, INVM_RND_END_PNTTM
+		, TOT_INVM_CNFMN_AMT
+		, TOT_INVM_CNFMN_AMT_TO
+		, PROGRS_VALUE
+		, PROGRS_VALUE_TO
+		, RECOMEND_OPINION
+		, OPRTR_CNFA_YN
+		, ATCHMNFL
+		, SBMS_STTS
+		, RGSN_TS
+		, RGSN_USER_ID
+		, AMNN_TS
+		, AMNN_USER_ID
+		FROM
+		<include refid="INVEST" />TB_BOX_IVT_RECOMENDCP_INFO_BASS_M
+		WHERE RCMD_ID = #{rcmdId}
+	</select>
+
+	<!-- 투자 기업 추천 요청 취소 -->
+	<update id="cancelPrplCm" parameterType="String">
+		UPDATE
+		<include refid="INVEST" />TB_BOX_IVT_RECOMENDCP_INFO_BASS_M
+		SET
+		SBMS_STTS = 'N'
+		, AMNN_USER_ID = #{amnnUserId}
+		, AMNN_TS = CURRENT_TIMESTAMP
+		WHERE UTLINSTT_ID = #{utlinsttId}
+		AND RCMD_ID = #{rcmdId}
+	</update>
+
+	<!-- 투자 기업 추천 등록 -->
+	<insert id="insertProposalCompany" parameterType="com.ibk.sb.restapi.biz.service.admin.vo.PrplCmVO">
+		INSERT INTO
+		<include refid="INVEST" />TB_BOX_IVT_RECOMENDCP_INFO_BASS_M
+		(
+		UTLINSTT_ID
+		, RCMD_ID
+		, RCMD_ENPR_BZN
+		, PRN_NM
+		, CHRG_AUDOFIR
+		, CNPL
+		, EAD
+		, RCMD_ENPR_NM
+		, MAIN_BIZ
+		, LEAD_INVSTR_PRN_NM
+		, LEAD_INVSTR_AMOUNT
+		, LEAD_INVSTR_STEP
+		, INVM_RND_END_PNTTM
+		, TOT_INVM_CNFMN_AMT
+		, TOT_INVM_CNFMN_AMT_TO
+		, PROGRS_VALUE
+		, PROGRS_VALUE_TO
+		, RECOMEND_OPINION
+		, OPRTR_CNFA_YN
+		, ATCHMNFL
+		, SBMS_STTS
+		, RGSN_TS
+		, RGSN_USER_ID
+		, AMNN_TS
+		, AMNN_USER_ID
+		)
+		VALUES
+		(
+		#{utlinsttId}
+		, #{rcmdId}
+		, #{rcmdEnprBzn}
+		<choose>
+			<when test="prnNm != null and !prnNm.equals('')">
+				, #{prnNm}
+			</when>
+			<otherwise>
+				, ' '
+			</otherwise>
+		</choose>
+		<choose>
+			<when test="chrgAudofir != null and !chrgAudofir.equals('')">
+				, #{chrgAudofir}
+			</when>
+			<otherwise>
+				, ' '
+			</otherwise>
+		</choose>
+		<choose>
+			<when test="cnpl != null and !cnpl.equals('')">
+				, #{cnpl}
+			</when>
+			<otherwise>
+				, ' '
+			</otherwise>
+		</choose>
+		<choose>
+			<when test="ead != null and !ead.equals('')">
+				, #{ead}
+			</when>
+			<otherwise>
+				, ' '
+			</otherwise>
+		</choose>
+		<choose>
+			<when test="rcmdEnprNm != null and !rcmdEnprNm.equals('')">
+				, #{rcmdEnprNm}
+			</when>
+			<otherwise>
+				, ' '
+			</otherwise>
+		</choose>
+		<choose>
+			<when test="mainBiz != null and !mainBiz.equals('')">
+				, #{mainBiz}
+			</when>
+			<otherwise>
+				, ' '
+			</otherwise>
+		</choose>
+		<choose>
+			<when test="leadInvstrPrnNm != null and !leadInvstrPrnNm.equals('')">
+				, #{leadInvstrPrnNm}
+			</when>
+			<otherwise>
+				, ' '
+			</otherwise>
+		</choose>
+		<choose>
+			<when test="leadInvstrAmount != null">
+				, #{leadInvstrAmount}
+			</when>
+			<otherwise>
+				, 0
+			</otherwise>
+		</choose>
+		<choose>
+			<when test="leadInvstrStep != null and !leadInvstrStep.equals('')">
+				, #{leadInvstrStep}
+			</when>
+			<otherwise>
+				, ' '
+			</otherwise>
+		</choose>
+		<choose>
+			<when test="invmRndEndPnttm != null and !invmRndEndPnttm.equals('')">
+				, #{invmRndEndPnttm}
+			</when>
+			<otherwise>
+				, ' '
+			</otherwise>
+		</choose>
+		<choose>
+			<when test="totInvmCnfmnAmt != null">
+				, #{totInvmCnfmnAmt}
+			</when>
+			<otherwise>
+				, 0
+			</otherwise>
+		</choose>
+		<choose>
+			<when test="totInvmCnfmnAmtTo != null">
+				, #{totInvmCnfmnAmtTo}
+			</when>
+			<otherwise>
+				, 0
+			</otherwise>
+		</choose>
+		<choose>
+			<when test="progrsValue != null">
+				, #{progrsValue}
+			</when>
+			<otherwise>
+				, 0
+			</otherwise>
+		</choose>
+
+		<choose>
+			<when test="progrsValueTo != null">
+				, #{progrsValueTo}
+			</when>
+			<otherwise>
+				, 0
+			</otherwise>
+		</choose>
+		<choose>
+			<when test="recomendOpinion != null and !recomendOpinion.equals('')">
+				, #{recomendOpinion}
+			</when>
+			<otherwise>
+				, ' '
+			</otherwise>
+		</choose>
+		<choose>
+			<when test="oprtrCnfaYn != null and !oprtrCnfaYn.equals('')">
+				, #{oprtrCnfaYn}
+			</when>
+			<otherwise>
+				, ' '
+			</otherwise>
+		</choose>
+		<choose>
+			<when test="atchmnfl != null and !atchmnfl.equals('')">
+				, #{atchmnfl}
+			</when>
+			<otherwise>
+				, ' '
+			</otherwise>
+		</choose>
+		<choose>
+			<when test="sbmsStts != null and !sbmsStts.equals('')">
+				, #{sbmsStts}
+			</when>
+			<otherwise>
+				, ' '
+			</otherwise>
+		</choose>
+
+		, SYSDATE
+		<choose>
+			<when test="rgsnUserId != null and !rgsnUserId.equals('')">
+				, #{rgsnUserId}
+			</when>
+			<otherwise>
+				, ' '
+			</otherwise>
+		</choose>
+
+		, #{amnnTs}
+		, ' '
+		)
+	</insert>
+
+	<!-- 투자 기업 추천 id 카운트 -->
+	<select id="countProposalIdTotal" parameterType="String" resultType="int">
+		SELECT COUNT(*)+1 AS RCMD_ID
+		FROM <include refid="INVEST"/>TB_BOX_IVT_RECOMENDCP_INFO_BASS_M
+	</select>
+</mapper>

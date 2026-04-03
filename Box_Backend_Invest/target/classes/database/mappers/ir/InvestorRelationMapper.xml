@@ -1,0 +1,1530 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ibk.sb.restapi.biz.service.ir.repo.InvestorRelationRepo">
+    <!--    SchemaMapper ID-->
+<!--    <sql id="MNBADM"><include refid="com.ibk.sb.restapi.biz.service.common.repo.SchemaRepo.MNBADM"/></sql>-->
+    <sql id="INVEST"><include refid="com.ibk.sb.restapi.biz.service.common.repo.SchemaRepo.INVEST"/></sql>
+
+    <!--    PagingMapper ID-->
+    <sql id="pagingHeader"><include refid="com.ibk.sb.restapi.biz.service.common.repo.PageRepo.pageHeader"/></sql>
+    <sql id="pagingFooter"><include refid="com.ibk.sb.restapi.biz.service.common.repo.PageRepo.pageFooter"/></sql>
+
+    <!--=============================================== 기업 IR 정보 조회 ===============================================-->
+
+    <!--    IR 전체 작성 진행률 조회-->
+    <select id="selectCompanyIRProgress" parameterType="String" resultType="IrProgressVO">
+        SELECT
+            NVL(BSIN_PGRS_RT, 0)
+            + NVL(PRMR_ORDV_PGRS_RT, 0)
+            + NVL(PRMR_HMRS_PGRS_RT, 0)
+            + NVL(STCH_PSST_PGRS_RT, 0)
+            + NVL(FNAM_PGRS_RT, 0)
+            + NVL(PRDT_TCHN_INFO_PGRS_RT, 0)
+            + NVL(OTCM_PLAN_INFO_PGRS_RT, 0) AS PROGRESS
+            , AMNN_TS AS LAST_MODIFIED_DATE
+            , AMNN_TS AS LAST_MODIFIED_TIMESTAMP
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_IR_PGRS_RT_D
+        WHERE
+            UTLINSTT_ID = #{utlinsttId}
+    </select>
+
+
+    <!--    기본정보 IR 조회-->
+    <select id="selectCompanyIR" parameterType="String" resultType="InvestRelationVO">
+        SELECT
+            bbm.UTLINSTT_ID
+            , bbm.BNNM
+            , bbm.ENPR_DSNC_CD
+            , ccd.COM_CD_NM AS ENPR_DSNC_NM
+            , bbm.BZN
+            , bbm.COL
+            , bbm.RPRNM
+            , bbm.EMP_CNT
+            , bbm.BTNM
+            , bbm.CGN
+            , bbm.CNPL
+            , bbm.HMPG_URL_ADR
+            , bbm.ADR
+            , bbm.ZPCD
+            , bbm.CPFN_AMT
+            , bbm.PVPR_AMT
+            , bbm.TTIS_STCNT
+            , bbm.ACPR
+            , bbm.ETVL_AMT
+            , bbm.INVM_MNY_USUS
+            , bbm.INVM_RTRV_PLAN_CON
+            , bbm.RGSN_USER_ID
+            , bbm.RGSN_TS
+            , bbm.AMNN_USER_ID
+            , bbm.AMNN_TS
+        FROM
+             <include refid="INVEST"/>TB_BOX_IVT_IR_B_BSIN_M bbm
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd ON ccd.COM_CD_ID = bbm.ENPR_DSNC_CD
+        WHERE
+            UTLINSTT_ID = #{utlinsttId}
+    </select>
+
+    <!--    투자유치정보 IR 리스트 조회-->
+    <select id="selectCompanyIRInvestList" parameterType="String" resultType="IrInvestVO">
+        SELECT
+            UTLINSTT_ID
+            , INVM_ENMT_SQN
+            , INVM_ENMT_YM
+            , INVM_ENMT_ETNM
+            , INVM_ENMT_AMT
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_IR_B_INVM_D
+        WHERE
+            UTLINSTT_ID = #{utlinsttId}
+        ORDER BY
+            INVM_ENMT_YM DESC, INVM_ENMT_SQN ASC
+    </select>
+
+    <!--    기관지원금정보 IR 리스트 조회-->
+    <select id="selectCompanyIRSupportFundList" parameterType="String" resultType="IrSupportFundVO">
+        SELECT
+            UTLINSTT_ID
+            , SPRN_MNY_SQN
+            , SPRN_MNY_ENMT_DT
+            , SPRN_INTT_NM
+            , SPRN_AMT
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_IR_B_SPRN_L
+        WHERE
+            UTLINSTT_ID = #{utlinsttId}
+        ORDER BY
+            SPRN_MNY_ENMT_DT DESC, SPRN_MNY_SQN ASC
+    </select>
+
+    <!--    주요연혁 IR 리스트 조회-->
+    <select id="selectCompanyIRHistoryList" parameterType="String" resultType="IrHistoryVO">
+        SELECT
+            UTLINSTT_ID
+            , ORDV_SQN
+            , ORDV_YM
+            , ORDV_CON
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+
+            , SUBSTR(ORDV_YM, 0, 4) AS GROUP_YEAR
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_IR_H_ORDV_L
+        WHERE
+            UTLINSTT_ID = #{utlinsttId}
+        ORDER BY
+            GROUP_YEAR DESC, ORDV_SQN ASC
+    </select>
+
+    <!--    주요인력 IR 리스트 조회-->
+    <select id="selectCompanyIRMemberList" parameterType="String" resultType="IrMemberVO">
+        SELECT
+            tbiit.UTLINSTT_ID
+            , tbiit.TMMB_SQN
+            , tbiit.TMMB_NM
+            , tbiit.TMMB_JBCL
+            , tbiit.CRR_CON
+
+            , tbiit.TMMB_IMG_FILE_ID AS IMG_FILE_ID
+            , tbiit.TMMB_IMG_FILE_ID AS FILE_ID
+
+            , tbiit.RGSN_USER_ID
+            , tbiit.RGSN_TS
+            , tbiit.AMNN_USER_ID
+            , tbiit.AMNN_TS
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_IR_T_TMMB_L tbiit
+        WHERE
+            tbiit.UTLINSTT_ID = #{utlinsttId}
+        ORDER BY
+            tbiit.TMMB_SQN ASC
+    </select>
+
+    <!--    주주현황 IR 리스트 조회-->
+    <select id="selectCompanyIRStockHolderList" parameterType="String" resultType="IrStockHolderVO">
+        SELECT
+            UTLINSTT_ID
+            , STCH_SQN
+            , STCH_NM
+
+            , PFST_HOLD_CNT
+            , PFST_PVPR
+            , PFST_AMT
+            , CMSC_HOLD_CNT
+            , CMSC_PVPR
+            , CMSC_AMT
+
+            , PRRA
+            , RMRK
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_IR_S_STCH_L
+        WHERE
+            UTLINSTT_ID = #{utlinsttId}
+        ORDER BY
+            STCH_SQN ASC
+    </select>
+
+    <!--    재무정보 IR 조회-->
+    <select id="selectCompanyIRFinance" parameterType="String" resultType="IrFinanceVO">
+        SELECT
+            UTLINSTT_ID
+
+            , FLAS_AMT
+            , NONE_FLAS_AMT
+            , LBLT_TTSM_AMT
+            , CPTS_TTSM_AMT
+
+            , QCKAS_AMT
+            , INAS_AMT
+            , ETC_FLAS_AMT
+            , IVAS_AMT
+            , TGAS_AMT
+            , ITAS_AMT
+            , ETC_NONE_FLAS_AMT
+            , CRLB_AMT
+            , NONE_CRLB_AMT
+            , CPFN_AMT
+            , CPSP_MNY_AMT
+            , CPCR_AMT
+            , ETC_INLV_PL_CTAM
+            , ERNSP_AMT
+
+            , AMSL_AMT
+
+            , AST_TTSM_AMT
+            , LBLT_CPTS_TTSM
+
+            , AMPM_AMT
+            , SLTP_AMT
+            , SACST_AMT
+            , OPPR_AMT
+            , NNOE_AMT
+            , NONOP_EXP_AMT
+            , ORPF_AMT
+            , CRTX_AMT
+            , CTNP_AMT
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_IR_F_FNAM_M
+        WHERE
+            UTLINSTT_ID = #{utlinsttId}
+    </select>
+
+    <!--    채무정보 IR 리스트 조회-->
+    <select id="selectCompanyIRDebtList" parameterType="String" resultType="IrDebtVO">
+        SELECT
+            UTLINSTT_ID
+            , BRNG_PLCE_SQN
+            , BRNG_PLCE_NM
+            , BRNG_PLCE_AMT
+            , EXPI_DT
+            , INT_RT
+            , RPMN_CNDT_CON
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_IR_F_DEBT_D
+        WHERE
+            UTLINSTT_ID = #{utlinsttId}
+        ORDER BY
+            BRNG_PLCE_SQN ASC
+    </select>
+
+    <!--    제품/기술/시장 정보 IR 조회-->
+    <!--    주요제품 조회-->
+    <select id="selectCompanyIRProduct" parameterType="String" resultType="IrProductVO">
+        SELECT
+            UTLINSTT_ID
+            , PRDT_DESC
+            , PRDT_CHRC
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_IR_P_PRDT_D
+        WHERE
+            UTLINSTT_ID = #{utlinsttId}
+    </select>
+
+    <!--    주요매출처 리스트-->
+    <select id="selectCompanyMainSaleList" parameterType="String" resultType="IrMainSaleVO">
+        SELECT
+            ipsl.UTLINSTT_ID
+            , ipsl.AMPL_SQN
+            , ipsl.AREA_DSNC_CD
+            , ipsl.AMSL_CON
+            , ipsl.AMSL_AMT
+            , ipsl.AMSL_RLIM
+            , ipsl.RGSN_USER_ID
+            , ipsl.RGSN_TS
+            , ipsl.AMNN_USER_ID
+            , ipsl.AMNN_TS
+
+            , ccd.COM_CD_NM AS AREA_DSNC_NM
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_IR_P_SALE_L ipsl
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd ON ipsl.AREA_DSNC_CD = ccd.COM_CD_ID
+        WHERE
+            UTLINSTT_ID = #{utlinsttId}
+        ORDER BY
+            AMPL_SQN ASC
+    </select>
+
+    <!--    보유기술 정보-->
+    <select id="selectCompanyIRTech" parameterType="String" resultType="IrTechVO">
+        SELECT
+            UTLINSTT_ID
+            , HOLD_TCHN_DESC
+            , HOLD_TCHN_CHRC
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_IR_P_TECH_D
+        WHERE
+            UTLINSTT_ID = #{utlinsttId}
+    </select>
+
+    <!--    지적재산권 리스트-->
+    <select id="selectCompanyIRIPStateList" parameterType="String" resultType="IrIpStateVO">
+        SELECT
+            iptl.UTLINSTT_ID
+            , iptl.HOLD_TCHN_SQN
+            , iptl.STTS_CD
+            , iptl.PNOT_PRRG_CON
+            , iptl.PNOT_PRRG_RGDA
+            , iptl.ALFR_NO
+            , iptl.RGSN_USER_ID
+            , iptl.RGSN_TS
+            , iptl.AMNN_USER_ID
+            , iptl.AMNN_TS
+
+            , ccd.COM_CD_NM AS STTS_NM
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_IR_P_TCHN_L iptl
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd ON iptl.STTS_CD = ccd.COM_CD_ID
+        WHERE
+            UTLINSTT_ID = #{utlinsttId}
+        ORDER BY
+            HOLD_TCHN_SQN ASC
+    </select>
+
+    <!--    시장 정보-->
+    <select id="selectCompanyIRMarket" parameterType="String" resultType="IrMarketVO">
+        SELECT
+            UTLINSTT_ID
+            , MRKT_INVG_DESC
+            , MRKT_CHRC
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_IR_P_MKRT_D
+        WHERE
+            UTLINSTT_ID = #{utlinsttId}
+    </select>
+
+    <!--    시장 주요목표 리스트-->
+    <select id="selectCompanyIRMarketTargetList" parameterType="String" resultType="IrMarketTargetVO">
+        SELECT
+            ipgl.UTLINSTT_ID
+            , ipgl.PRMR_GOAL_SQN
+            , ipgl.AREA_DSNC_CD
+            , ipgl.PRMR_GOAL_CON
+            , ipgl.PRMR_GOAL_AMT
+            , ipgl.RGSN_USER_ID
+            , ipgl.RGSN_TS
+            , ipgl.AMNN_USER_ID
+            , ipgl.AMNN_TS
+
+            , ccd.COM_CD_NM AS AREA_DSNC_NM
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_IR_P_GOAL_L ipgl
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd ON ipgl.AREA_DSNC_CD = ccd.COM_CD_ID
+        WHERE
+            UTLINSTT_ID = #{utlinsttId}
+        ORDER BY
+            PRMR_GOAL_SQN ASC
+    </select>
+
+    <!--    시장 플레이어(참여자) 리스트-->
+    <select id="selectCompanyIRMarketPlayerList" parameterType="String" resultType="IrMarketPlayerVO">
+        SELECT
+            ippl.UTLINSTT_ID
+            , ippl.MRKT_PTCN_SQN
+            , ippl.AREA_DSNC_CD
+            , ippl.MRKT_PTCN_NM
+            , ippl.MRKT_PTCN_CON
+            , ippl.AMSL_AMT
+            , ippl.RGSN_USER_ID
+            , ippl.RGSN_TS
+            , ippl.AMNN_USER_ID
+            , ippl.AMNN_TS
+
+            , ccd.COM_CD_NM AS AREA_DSNC_NM
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_IR_P_PTCN_L ippl
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd ON ippl.AREA_DSNC_CD = ccd.COM_CD_ID
+        WHERE
+            UTLINSTT_ID = #{utlinsttId}
+        ORDER BY
+            MRKT_PTCN_SQN ASC
+    </select>
+
+    <!--    성과 및 계획 정보 IR 조회-->
+    <!--    투자 성과 리스트-->
+    <select id="selectCompanyIRInvestResultList" parameterType="String" resultType="IrInvestResultVO">
+        SELECT
+            UTLINSTT_ID
+            , INVM_OTCM_SQN
+            , INDI_CON
+            , INVM_AMT
+            , INVM_DT
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_IR_A_ATRN_L
+        WHERE
+            UTLINSTT_ID = #{utlinsttId}
+        ORDER BY
+            INVM_OTCM_SQN ASC
+    </select>
+
+    <!--    수상실적 리스트-->
+    <select id="selectCompanyIRAwardResultList" parameterType="String" resultType="IrAwardResultVO">
+        SELECT
+            UTLINSTT_ID
+            , BEAW_ACRS_SQN
+            , HLD_PLAC
+            , BEAW_HST
+            , BEAW_DT
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_IR_A_AWRD_L
+        WHERE
+            UTLINSTT_ID = #{utlinsttId}
+        ORDER BY
+            BEAW_ACRS_SQN ASC
+    </select>
+
+    <!--    수출 성과 리스트-->
+    <select id="selectCompanyIRExportResultList" parameterType="String" resultType="IrExportResultVO">
+        SELECT
+            UTLINSTT_ID
+            , EPRT_HST_SQN
+            , EPRT_TGT
+            , EPRT_AMT
+            , EPRT_DT
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_IR_A_EXPT_L
+        WHERE
+            UTLINSTT_ID = #{utlinsttId}
+        ORDER BY
+            EPRT_HST_SQN ASC
+    </select>
+
+    <!--    정책자금 성과 리스트-->
+    <select id="selectCompanyIRPolicyFundList" parameterType="String" resultType="IrPolicyFundVO">
+        SELECT
+            UTLINSTT_ID
+            , PLFN_SQN
+            , PLFN_CON
+            , PLFN_AMT
+            , PLFN_PRFR_DD
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_IR_A_FUND_L
+        WHERE
+            UTLINSTT_ID = #{utlinsttId}
+        ORDER BY
+            PLFN_SQN ASC
+    </select>
+
+    <!--    주요 계획 리스트-->
+    <select id="selectCompanyIRMainPlanList" parameterType="String" resultType="IrMainPlanVO">
+        SELECT
+            iapl.UTLINSTT_ID
+            , iapl.PRMR_PLAN_SQN
+            , iapl.PRMR_INDE_DSNC
+            , iapl.PSNT_INDE_CON
+            , iapl.MN3_INDE_CON
+            , iapl.MN6_INDE_CON
+            , iapl.MN9_INDE_CON
+            , iapl.RGSN_USER_ID
+            , iapl.RGSN_TS
+            , iapl.AMNN_USER_ID
+            , iapl.AMNN_TS
+
+            , ccd.COM_CD_NM AS PRMR_INDE_NM
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_IR_A_PLAN_L iapl
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd ON iapl.PRMR_INDE_DSNC = ccd.COM_CD_ID
+        WHERE
+            UTLINSTT_ID = #{utlinsttId}
+        ORDER BY
+            PRMR_PLAN_SQN ASC
+    </select>
+
+    <!--=============================================== 기업 IR 정보 등록 ===============================================-->
+    <!--    작업진행도 등록-->
+    <insert id="insertCompanyIRProgress" parameterType="RequestIRProgressVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_IR_PGRS_RT_D
+        (
+            UTLINSTT_ID
+
+            <if test="tabType != null and !tabType.equals('')">
+                <choose>
+                    <when test="tabType.equals('BASIC')">
+                        , BSIN_PGRS_RT
+                    </when>
+                    <when test="tabType.equals('HISTORY')">
+                        , PRMR_ORDV_PGRS_RT
+                    </when>
+                    <when test="tabType.equals('MEMBER')">
+                        , PRMR_HMRS_PGRS_RT
+                    </when>
+                    <when test="tabType.equals('STOCKHOLDER')">
+                        , STCH_PSST_PGRS_RT
+                    </when>
+                    <when test="tabType.equals('FINANCE')">
+                        , FNAM_PGRS_RT
+                    </when>
+                    <when test="tabType.equals('EXTRA')">
+                        , PRDT_TCHN_INFO_PGRS_RT
+                    </when>
+                    <when test="tabType.equals('PLAN')">
+                        , OTCM_PLAN_INFO_PGRS_RT
+                    </when>
+                </choose>
+            </if>
+
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+
+            <if test="tabType != null and !tabType.equals('')">
+                , #{tabProgress}
+            </if>
+
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+            , #{amnnUserId}
+            , CURRENT_TIMESTAMP
+        )
+    </insert>
+
+    <!--    기본정보 IR 등록-->
+    <insert id="insertCompanyIR" parameterType="InvestRelationVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_IR_B_BSIN_M
+        (
+            UTLINSTT_ID
+            , BNNM
+            , ENPR_DSNC_CD
+            , BZN
+            , COL
+            , RPRNM
+            , EMP_CNT
+            , BTNM
+            , CGN
+            , CNPL
+            , HMPG_URL_ADR
+            , ADR
+            , ZPCD
+            , CPFN_AMT
+            , PVPR_AMT
+            , TTIS_STCNT
+            , ACPR
+            , ETVL_AMT
+            , INVM_MNY_USUS
+            , INVM_RTRV_PLAN_CON
+
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{bnnm}
+            , #{enprDsncCd}
+            , #{bzn}
+            , #{col}
+            , #{rprnm}
+            , #{empCnt}
+            , #{btnm}
+            , #{cgn}
+            , #{cnpl}
+            , #{hmpgUrlAdr}
+            , #{adr}
+            , #{zpcd}
+            , #{cpfnAmt}
+            , #{pvprAmt}
+            , #{ttisStcnt}
+            , #{acpr}
+            , #{etvlAmt}
+            , #{invmMnyUsus}
+            , #{invmRtrvPlanCon}
+
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+            , #{amnnUserId}
+            , CURRENT_TIMESTAMP
+        )
+    </insert>
+
+    <!--    투자유치정보 IR 등록-->
+    <insert id="insertCompanyIRInvest" parameterType="IrInvestVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_IR_B_INVM_D
+        (
+            UTLINSTT_ID
+            , INVM_ENMT_SQN
+            , INVM_ENMT_YM
+            , INVM_ENMT_ETNM
+            , INVM_ENMT_AMT
+
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{invmEnmtSqn}
+            , #{invmEnmtYm}
+            , #{invmEnmtEtnm}
+            , #{invmEnmtAmt}
+
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+            , #{amnnUserId}
+            , CURRENT_TIMESTAMP
+        )
+
+    </insert>
+
+    <!--    기관지원금 IR 등록-->
+    <insert id="insertCompanyIRSupportFund" parameterType="IrSupportFundVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_IR_B_SPRN_L
+        (
+            UTLINSTT_ID
+            , SPRN_MNY_SQN
+            , SPRN_MNY_ENMT_DT
+            , SPRN_INTT_NM
+            , SPRN_AMT
+
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{sprnMnySqn}
+            , #{sprnMnyEnmtDt}
+            , #{sprnInttNm}
+            , #{sprnAmt}
+
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+            , #{amnnUserId}
+            , CURRENT_TIMESTAMP
+        )
+    </insert>
+
+    <!--    주요연혁 IR 등록-->
+    <insert id="insertCompanyIRHistory" parameterType="IrHistoryVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_IR_H_ORDV_L
+        (
+            UTLINSTT_ID
+            , ORDV_SQN
+            , ORDV_YM
+            , ORDV_CON
+
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{ordvSqn}
+            , #{ordvYm}
+            , #{ordvCon}
+
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+            , #{amnnUserId}
+            , CURRENT_TIMESTAMP
+        )
+    </insert>
+
+    <!--    주요인력 IR 등록-->
+    <insert id="insertCompanyIRMember" parameterType="IrMemberVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_IR_T_TMMB_L
+        (
+            UTLINSTT_ID
+            , TMMB_SQN
+            , TMMB_NM
+            , TMMB_JBCL
+            , CRR_CON
+
+            , TMMB_IMG_FILE_ID
+
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{tmmbSqn}
+            , #{tmmbNm}
+            , #{tmmbJbcl}
+            , #{crrCon}
+
+            , #{fileId}
+
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+            , #{amnnUserId}
+            , CURRENT_TIMESTAMP
+        )
+    </insert>
+
+    <!--    주주현황 IR 등록-->
+    <insert id="insertCompanyIRStockHolder" parameterType="IrStockHolderVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_IR_S_STCH_L
+        (
+            UTLINSTT_ID
+            , STCH_SQN
+            , STCH_NM
+
+            , PFST_HOLD_CNT
+            , PFST_PVPR
+            , PFST_AMT
+            , CMSC_HOLD_CNT
+            , CMSC_PVPR
+            , CMSC_AMT
+
+            , PRRA
+            , RMRK
+
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{stchSqn}
+            , #{stchNm}
+
+            , #{pfstHoldCnt}
+            , #{pfstPvpr}
+            , #{pfstAmt}
+            , #{cmscHoldCnt}
+            , #{cmscPvpr}
+            , #{cmscAmt}
+
+            , #{prra}
+            , #{rmrk}
+
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+            , #{amnnUserId}
+            , CURRENT_TIMESTAMP
+        )
+    </insert>
+
+    <!--    재무정보 IR 등록-->
+    <insert id="insertCompanyIRFinance" parameterType="IrFinanceVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_IR_F_FNAM_M
+        (
+            UTLINSTT_ID
+
+            , FLAS_AMT
+            , NONE_FLAS_AMT
+            , LBLT_TTSM_AMT
+            , CPTS_TTSM_AMT
+
+            , QCKAS_AMT
+            , INAS_AMT
+            , ETC_FLAS_AMT
+            , IVAS_AMT
+            , TGAS_AMT
+            , ITAS_AMT
+            , ETC_NONE_FLAS_AMT
+            , CRLB_AMT
+            , NONE_CRLB_AMT
+            , CPFN_AMT
+            , CPSP_MNY_AMT
+            , CPCR_AMT
+            , ETC_INLV_PL_CTAM
+            , ERNSP_AMT
+
+            , AMSL_AMT
+
+            , AMPM_AMT
+            , SLTP_AMT
+            , SACST_AMT
+            , OPPR_AMT
+            , NNOE_AMT
+            , NONOP_EXP_AMT
+            , ORPF_AMT
+            , CRTX_AMT
+            , CTNP_AMT
+
+            , AST_TTSM_AMT
+            , LBLT_CPTS_TTSM
+
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+
+            , #{flasAmt}
+            , #{noneFlasAmt}
+            , #{lbltTtsmAmt}
+            , #{cptsTtsmAmt}
+
+            , #{qckasAmt}
+            , #{inasAmt}
+            , #{etcFlasAmt}
+            , #{ivasAmt}
+            , #{tgasAmt}
+            , #{itasAmt}
+            , #{etcNoneFlasAmt}
+            , #{crlbAmt}
+            , #{noneCrlbAmt}
+            , #{cpfnAmt}
+            , #{cpspMnyAmt}
+            , #{cpcrAmt}
+            , #{etcInlvPlCtam}
+            , #{ernspAmt}
+
+            , #{amslAmt}
+
+            , #{ampmAmt}
+            , #{sltpAmt}
+            , #{sacstAmt}
+            , #{opprAmt}
+            , #{nnoeAmt}
+            , #{nonopExpAmt}
+            , #{orpfAmt}
+            , #{crtxAmt}
+            , #{ctnpAmt}
+
+            , #{astTtsmAmt}
+            , #{lbltCptsTtsm}
+
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+            , #{amnnUserId}
+            , CURRENT_TIMESTAMP
+        )
+    </insert>
+
+    <!--    채무정보 IR 등록-->
+    <insert id="insertCompanyIRDebt" parameterType="IrDebtVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_IR_F_DEBT_D
+        (
+            UTLINSTT_ID
+            , BRNG_PLCE_SQN
+            , BRNG_PLCE_NM
+            , BRNG_PLCE_AMT
+            , EXPI_DT
+            , INT_RT
+            , RPMN_CNDT_CON
+
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{brngPlceSqn}
+            , #{brngPlceNm}
+            , #{brngPlceAmt}
+            , #{expiDt}
+            , #{intRt}
+            , #{rpmnCndtCon}
+
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+            , #{amnnUserId}
+            , CURRENT_TIMESTAMP
+        )
+    </insert>
+
+    <!--    제품/기술/시장 등록-->
+    <!--    제품설명 등록-->
+    <insert id="insertCompanyIRProduct" parameterType="IrProductVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_IR_P_PRDT_D
+        (
+            UTLINSTT_ID
+            , PRDT_DESC
+            , PRDT_CHRC
+
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{prdtDesc}
+            , #{prdtChrc}
+
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+            , #{amnnUserId}
+            , CURRENT_TIMESTAMP
+        )
+    </insert>
+
+    <!--    주요매출처 등록-->
+    <insert id="insertCompanyIRMainSale" parameterType="IrMainSaleVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_IR_P_SALE_L
+        (
+            UTLINSTT_ID
+            , AMPL_SQN
+            , AREA_DSNC_CD
+            , AMSL_CON
+            , AMSL_AMT
+            , AMSL_RLIM
+
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{amplSqn}
+            , #{areaDsncCd}
+            , #{amslCon}
+            , #{amslAmt}
+            , #{amslRlim}
+
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+            , #{amnnUserId}
+            , CURRENT_TIMESTAMP
+        )
+    </insert>
+
+    <!--    보유기술 등록-->
+    <insert id="insertCompanyIRTech" parameterType="IrTechVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_IR_P_TECH_D
+        (
+            UTLINSTT_ID
+            , HOLD_TCHN_DESC
+            , HOLD_TCHN_CHRC
+
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{holdTchnDesc}
+            , #{holdTchnChrc}
+
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+            , #{amnnUserId}
+            , CURRENT_TIMESTAMP
+        )
+    </insert>
+
+    <!--    지적재산권 등록-->
+    <insert id="insertCompanyIRIPState" parameterType="IrIpStateVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_IR_P_TCHN_L
+        (
+            UTLINSTT_ID
+            , HOLD_TCHN_SQN
+            , STTS_CD
+            , PNOT_PRRG_CON
+            , PNOT_PRRG_RGDA
+            , ALFR_NO
+
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{holdTchnSqn}
+            , #{sttsCd}
+            , #{pnotPrrgCon}
+            , #{pnotPrrgRgda}
+            , #{alfrNo}
+
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+            , #{amnnUserId}
+            , CURRENT_TIMESTAMP
+        )
+    </insert>
+
+    <!--    시장 정보 등록-->
+    <insert id="insertCompanyIRMarket" parameterType="IrMarketVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_IR_P_MKRT_D
+        (
+            UTLINSTT_ID
+            , MRKT_INVG_DESC
+            , MRKT_CHRC
+
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{mrktInvgDesc}
+            , #{mrktChrc}
+
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+            , #{amnnUserId}
+            , CURRENT_TIMESTAMP
+        )
+    </insert>
+
+    <!--    주요 시장 목표 등록-->
+    <insert id="insertCompanyIRMarketTarget" parameterType="IrMarketTargetVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_IR_P_GOAL_L
+        (
+            UTLINSTT_ID
+            , PRMR_GOAL_SQN
+            , AREA_DSNC_CD
+            , PRMR_GOAL_CON
+            , PRMR_GOAL_AMT
+
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{prmrGoalSqn}
+            , #{areaDsncCd}
+            , #{prmrGoalCon}
+            , #{prmrGoalAmt}
+
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+            , #{amnnUserId}
+            , CURRENT_TIMESTAMP
+        )
+    </insert>
+
+    <!--    시장 플레이어 등록-->
+    <insert id="insertCompanyIRMarketPlayer" parameterType="IrMarketPlayerVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_IR_P_PTCN_L
+        (
+            UTLINSTT_ID
+            , MRKT_PTCN_SQN
+            , AREA_DSNC_CD
+            , MRKT_PTCN_NM
+            , MRKT_PTCN_CON
+            , AMSL_AMT
+
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{mrktPtcnSqn}
+            , #{areaDsncCd}
+            , #{mrktPtcnNm}
+            , #{mrktPtcnCon}
+            , #{amslAmt}
+
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+            , #{amnnUserId}
+            , CURRENT_TIMESTAMP
+        )
+    </insert>
+
+    <!--    성과 및 계획 IR 등록-->
+    <!--    투자 성과 등록-->
+    <insert id="insertCompanyIRInvestResult" parameterType="IrInvestResultVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_IR_A_ATRN_L
+        (
+            UTLINSTT_ID
+            , INVM_OTCM_SQN
+            , INDI_CON
+            , INVM_AMT
+            , INVM_DT
+
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{invmOtcmSqn}
+            , #{indiCon}
+            , #{invmAmt}
+            , #{invmDt}
+
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+            , #{amnnUserId}
+            , CURRENT_TIMESTAMP
+        )
+    </insert>
+
+    <!--    수상 실적 등록-->
+    <insert id="insertCompanyIRAwardResult" parameterType="IrAwardResultVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_IR_A_AWRD_L
+        (
+            UTLINSTT_ID
+            , BEAW_ACRS_SQN
+            , HLD_PLAC
+            , BEAW_HST
+            , BEAW_DT
+
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{beawAcrsSqn}
+            , #{hldPlac}
+            , #{beawHst}
+            , #{beawDt}
+
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+            , #{amnnUserId}
+            , CURRENT_TIMESTAMP
+        )
+    </insert>
+
+    <!--    수출 성과 등록-->
+    <insert id="insertCompanyIRExportResult" parameterType="IrExportResultVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_IR_A_EXPT_L
+        (
+            UTLINSTT_ID
+            , EPRT_HST_SQN
+            , EPRT_TGT
+            , EPRT_AMT
+            , EPRT_DT
+
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{eprtHstSqn}
+            , #{eprtTgt}
+            , #{eprtAmt}
+            , #{eprtDt}
+
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+            , #{amnnUserId}
+            , CURRENT_TIMESTAMP
+        )
+    </insert>
+
+    <!--    정책 자금 정보 등록-->
+    <insert id="insertCompanyIRPolicyFund" parameterType="IrPolicyFundVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_IR_A_FUND_L
+        (
+            UTLINSTT_ID
+            , PLFN_SQN
+            , PLFN_CON
+            , PLFN_AMT
+            , PLFN_PRFR_DD
+
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{plfnSqn}
+            , #{plfnCon}
+            , #{plfnAmt}
+            , #{plfnPrfrDd}
+
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+            , #{amnnUserId}
+            , CURRENT_TIMESTAMP
+        )
+    </insert>
+
+    <!--    주요계획정보 등록-->
+    <insert id="insertCompanyIRMainPlan" parameterType="IrMainPlanVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_IR_A_PLAN_L
+        (
+            UTLINSTT_ID
+            , PRMR_PLAN_SQN
+            , PRMR_INDE_DSNC
+            , PSNT_INDE_CON
+            , MN3_INDE_CON
+            , MN6_INDE_CON
+            , MN9_INDE_CON
+            
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{prmrPlanSqn}
+            , #{prmrIndeDsnc}
+            , #{psntIndeCon}
+            , #{mn3IndeCon}
+            , #{mn6IndeCon}
+            , #{mn9IndeCon}
+            
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+            , #{amnnUserId}
+            , CURRENT_TIMESTAMP
+        )
+    </insert>
+
+
+
+    <!--=============================================== 기업 IR 정보 수정 ===============================================-->
+
+    <!--    작업 진행률 업데이트-->
+    <update id="updateCompanyIRProgress" parameterType="RequestIRProgressVO">
+        UPDATE
+            <include refid="INVEST"/>TB_BOX_IVT_IR_PGRS_RT_D
+        SET
+            AMNN_USER_ID = #{amnnUserId}
+            , AMNN_TS      = CURRENT_TIMESTAMP
+
+        <if test="tabType != null and !tabType.equals('')">
+            <choose>
+                <when test="tabType.equals('BASIC')">
+                    , BSIN_PGRS_RT = #{tabProgress}
+                </when>
+                <when test="tabType.equals('HISTORY')">
+                    , PRMR_ORDV_PGRS_RT = #{tabProgress}
+                </when>
+                <when test="tabType.equals('MEMBER')">
+                    , PRMR_HMRS_PGRS_RT = #{tabProgress}
+                </when>
+                <when test="tabType.equals('STOCKHOLDER')">
+                    , STCH_PSST_PGRS_RT = #{tabProgress}
+                </when>
+                <when test="tabType.equals('FINANCE')">
+                    , FNAM_PGRS_RT = #{tabProgress}
+                </when>
+                <when test="tabType.equals('EXTRA')">
+                    , PRDT_TCHN_INFO_PGRS_RT = #{tabProgress}
+                </when>
+                <when test="tabType.equals('PLAN')">
+                    , OTCM_PLAN_INFO_PGRS_RT = #{tabProgress}
+                </when>
+            </choose>
+        </if>
+
+        WHERE
+            UTLINSTT_ID = #{utlinsttId}
+    </update>
+
+    <!--    기본정보 IR 수정-->
+    <update id="updateCompanyIR" parameterType="InvestRelationVO">
+        UPDATE
+            <include refid="INVEST"/>TB_BOX_IVT_IR_B_BSIN_M
+        SET
+            BNNM                    = #{bnnm}
+            , ENPR_DSNC_CD          = #{enprDsncCd}
+            , BZN                   = #{bzn}
+            , COL                   = #{col}
+            , RPRNM                 = #{rprnm}
+            , EMP_CNT               = #{empCnt}
+            , BTNM                  = #{btnm}
+            , CGN                   = #{cgn}
+            , CNPL                  = #{cnpl}
+            , HMPG_URL_ADR          = #{hmpgUrlAdr}
+            , ADR                   = #{adr}
+            , ZPCD                  = #{zpcd}
+            , CPFN_AMT              = #{cpfnAmt}
+            , PVPR_AMT              = #{pvprAmt}
+            , TTIS_STCNT            = #{ttisStcnt}
+            , ACPR                  = #{acpr}
+            , ETVL_AMT              = #{etvlAmt}
+            , INVM_MNY_USUS         = #{invmMnyUsus}
+            , INVM_RTRV_PLAN_CON    = #{invmRtrvPlanCon}
+
+            , AMNN_USER_ID  = #{amnnUserId}
+            , AMNN_TS       = CURRENT_TIMESTAMP
+        WHERE
+            UTLINSTT_ID = #{utlinsttId}
+    </update>
+
+    <!--    재무정보 IR 수정-->
+    <update id="updateCompanyIRFinance" parameterType="IrFinanceVO">
+        UPDATE
+            <include refid="INVEST"/>TB_BOX_IVT_IR_F_FNAM_M
+        SET
+            FLAS_AMT            = #{flasAmt}
+            , NONE_FLAS_AMT     = #{noneFlasAmt}
+            , LBLT_TTSM_AMT     = #{lbltTtsmAmt}
+            , CPTS_TTSM_AMT     = #{cptsTtsmAmt}
+
+            , QCKAS_AMT         = #{qckasAmt}
+            , INAS_AMT          = #{inasAmt}
+            , ETC_FLAS_AMT      = #{etcFlasAmt}
+            , IVAS_AMT          = #{ivasAmt}
+            , TGAS_AMT          = #{tgasAmt}
+            , ITAS_AMT          = #{itasAmt}
+            , ETC_NONE_FLAS_AMT = #{etcNoneFlasAmt}
+            , CRLB_AMT          = #{crlbAmt}
+            , NONE_CRLB_AMT     = #{noneCrlbAmt}
+            , CPFN_AMT          = #{cpfnAmt}
+            , CPSP_MNY_AMT      = #{cpspMnyAmt}
+            , CPCR_AMT          = #{cpcrAmt}
+            , ETC_INLV_PL_CTAM  = #{etcInlvPlCtam}
+            , ERNSP_AMT         = #{ernspAmt}
+
+            , AMSL_AMT          = #{amslAmt}
+
+            , AMPM_AMT          = #{ampmAmt}
+            , SLTP_AMT          = #{sltpAmt}
+            , SACST_AMT         = #{sacstAmt}
+            , OPPR_AMT          = #{opprAmt}
+            , NNOE_AMT          = #{nnoeAmt}
+            , NONOP_EXP_AMT     = #{nonopExpAmt}
+            , ORPF_AMT          = #{orpfAmt}
+            , CRTX_AMT          = #{crtxAmt}
+            , CTNP_AMT          = #{ctnpAmt}
+
+            , AST_TTSM_AMT      = #{astTtsmAmt}
+            , LBLT_CPTS_TTSM    = #{lbltCptsTtsm}
+
+            , AMNN_USER_ID      = #{amnnUserId}
+            , AMNN_TS           = CURRENT_TIMESTAMP
+        WHERE
+            UTLINSTT_ID = #{utlinsttId}
+    </update>
+
+    <!--    제품/기술/시장 수정-->
+    <!--    제품 설명 수정-->
+    <update id="updateCompanyIRProduct" parameterType="IrProductVO">
+        UPDATE
+            <include refid="INVEST"/>TB_BOX_IVT_IR_P_PRDT_D
+        SET
+            PRDT_DESC    = #{prdtDesc}
+            , PRDT_CHRC    = #{prdtChrc}
+            , AMNN_USER_ID = #{amnnUserId}
+            , AMNN_TS      = CURRENT_TIMESTAMP
+        WHERE
+            UTLINSTT_ID = #{utlinsttId}
+    </update>
+
+    <!--    보유기술 정보 수정-->
+    <update id="updateCompanyIRTech" parameterType="IrTechVO">
+        UPDATE
+            <include refid="INVEST"/>TB_BOX_IVT_IR_P_TECH_D
+        SET
+            HOLD_TCHN_DESC = #{holdTchnDesc}
+            , HOLD_TCHN_CHRC = #{holdTchnChrc}
+            , AMNN_USER_ID   = #{amnnUserId}
+            , AMNN_TS        = CURRENT_TIMESTAMP
+        WHERE
+            UTLINSTT_ID = #{utlinsttId}
+    </update>
+
+    <!--    시장 정보 수정-->
+    <update id="updateCompanyIRMarket" parameterType="IrMarketVO">
+        UPDATE
+            <include refid="INVEST"/>TB_BOX_IVT_IR_P_MKRT_D
+        SET
+            MRKT_INVG_DESC = #{mrktInvgDesc}
+            , MRKT_CHRC      = #{mrktChrc}
+            , AMNN_USER_ID   = #{amnnUserId}
+            , AMNN_TS        = CURRENT_TIMESTAMP
+        WHERE
+            UTLINSTT_ID = #{utlinsttId}
+    </update>
+
+
+    <!--=============================================== 기업 IR 정보 삭제 ===============================================-->
+
+    <!--==============물리삭제==============-->
+
+    <!--    IR 수정시 기존 투자유치정보 제거-->
+    <delete id="deleteCompanyIRInvestList" parameterType="String">
+        DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_IR_B_INVM_D
+        WHERE UTLINSTT_ID = #{utlinsttId}
+    </delete>
+
+    <!--    IR 수정시 기존 기관지원금정보 제거-->
+    <delete id="deleteCompanyIRSupportFundList" parameterType="String">
+        DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_IR_B_SPRN_L
+        WHERE UTLINSTT_ID = #{utlinsttId}
+    </delete>
+
+    <!--    IR 수정시 기존 연혁정보 제거-->
+    <delete id="deleteCompanyIRHistoryList" parameterType="String">
+        DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_IR_H_ORDV_L
+        WHERE UTLINSTT_ID = #{utlinsttId}
+    </delete>
+
+    <!--    IR 수정시 기존 주요인력정보 제거-->
+    <delete id="deleteCompanyIRMemberList" parameterType="String">
+        DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_IR_T_TMMB_L
+        WHERE UTLINSTT_ID = #{utlinsttId}
+    </delete>
+
+    <!--    IR 수정시 기존 주주정보 제거-->
+    <delete id="deleteCompanyIRStockHolderList" parameterType="String">
+        DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_IR_S_STCH_L
+        WHERE UTLINSTT_ID = #{utlinsttId}
+    </delete>
+
+    <!--    IR 수정시 기존 채무정보 제거-->
+    <delete id="deleteCompanyIRDebtList" parameterType="String">
+        DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_IR_F_DEBT_D
+        WHERE UTLINSTT_ID = #{utlinsttId}
+    </delete>
+
+    <!--    IR 수정시 기존 주요 매출처 제거-->
+    <delete id="deleteCompanyIRMainSaleList" parameterType="String">
+        DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_IR_P_SALE_L
+        WHERE UTLINSTT_ID = #{utlinsttId}
+    </delete>
+
+    <!--    IR 수정시 기존 기술 지적재산권 제거-->
+    <delete id="deleteCompanyIRIPStateList" parameterType="String">
+        DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_IR_P_TCHN_L
+        WHERE UTLINSTT_ID = #{utlinsttId}
+    </delete>
+
+    <!--    IR 수정시 기존 시장 목표 제거-->
+    <delete id="deleteCompanyIRMarketTargetList" parameterType="String">
+        DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_IR_P_GOAL_L
+        WHERE UTLINSTT_ID = #{utlinsttId}
+    </delete>
+
+    <!--    IR 수정시 기존 시장 플레이어 제거-->
+    <delete id="deleteCompanyIRMarketPlayerList" parameterType="String">
+        DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_IR_P_PTCN_L
+        WHERE UTLINSTT_ID = #{utlinsttId}
+    </delete>
+
+    <!--    IR 수정시 기존 투자 성과 제거-->
+    <delete id="deleteCompanyIRInvestResultList" parameterType="String">
+        DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_IR_A_ATRN_L
+        WHERE UTLINSTT_ID = #{utlinsttId}
+    </delete>
+
+    <!--    IR 수정시 기존 기존 수상 실적 제거-->
+    <delete id="deleteCompanyIRAwardResultList" parameterType="String">
+        DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_IR_A_AWRD_L
+        WHERE UTLINSTT_ID = #{utlinsttId}
+    </delete>
+
+    <!--    IR 수정시 기존 수출 실적 제거-->
+    <delete id="deleteCompanyIRExportResultList" parameterType="String">
+        DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_IR_A_EXPT_L
+        WHERE UTLINSTT_ID = #{utlinsttId}
+    </delete>
+
+    <!--    IR 수정시 기존 정책 자금 제거-->
+    <delete id="deleteCompanyIRPolicyFundList" parameterType="String">
+        DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_IR_A_FUND_L
+        WHERE UTLINSTT_ID = #{utlinsttId}
+    </delete>
+
+    <!--    IR 수정시 기존 주요 계획 제거-->
+    <delete id="deleteCompanyIRMainPlanList" parameterType="String">
+        DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_IR_A_PLAN_L
+        WHERE UTLINSTT_ID = #{utlinsttId}
+    </delete>
+
+</mapper>

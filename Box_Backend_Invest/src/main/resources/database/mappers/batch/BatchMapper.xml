@@ -1,0 +1,554 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ibk.sb.restapi.biz.service.batch.repo.BatchRepo">
+
+    <!--    SchemaMapper ID-->
+    <sql id="INVEST"><include refid="com.ibk.sb.restapi.biz.service.common.repo.SchemaRepo.INVEST"/></sql>
+
+    <!--    기업 기본 정보 갱신 -->
+    <insert id="batchMergeEnprInfo" parameterType="UpdateCompanyVO">
+
+        MERGE INTO <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_M TBIEIM
+
+        USING DUAL ON (TBIEIM.UTLINSTT_ID = #{utlinsttId})
+
+        WHEN MATCHED THEN
+            UPDATE SET
+                TBIEIM.ETNM          = #{bplcNm}
+                , TBIEIM.INCR_YMD    = #{fondDe}
+                , TBIEIM.AMNN_TS     = CURRENT_TIMESTAMP
+
+                , TBIEIM.CMPNY_LOGO_IMAGE_FILE      = #{cmpnyLogoImageFile}
+                , TBIEIM.CMPNY_LOGO_BASS_IMAGE_FILE = #{cmpnyLogoBassImageFile}
+                , TBIEIM.POST_NO                    = #{postNo}
+                , TBIEIM.ADRES                      = #{adres}
+                , TBIEIM.DETAIL_ADRES               = #{detailAdres}
+                , TBIEIM.NW_ADRES                   = #{nwAdres}
+                , TBIEIM.NW_ADRES_DETAIL            = #{nwAdresDetail}
+                , TBIEIM.NW_ADRES_AT                = #{nwAdresAt}
+
+                , TBIEIM.BZN                        = #{bizrno}
+                , TBIEIM.ACVT_YN                    = #{actAt}
+                , TBIEIM.ENPR_JNNG_DT               = #{enprJnngDt}
+
+
+        WHEN NOT MATCHED THEN
+            INSERT
+            (
+                TBIEIM.UTLINSTT_ID
+                , TBIEIM.ETNM
+                , TBIEIM.INCR_YMD
+                , TBIEIM.RGSN_TS
+                , TBIEIM.AMNN_TS
+
+                , TBIEIM.CMPNY_LOGO_IMAGE_FILE
+                , TBIEIM.CMPNY_LOGO_BASS_IMAGE_FILE
+                , TBIEIM.POST_NO
+                , TBIEIM.ADRES
+                , TBIEIM.DETAIL_ADRES
+                , TBIEIM.NW_ADRES
+                , TBIEIM.NW_ADRES_DETAIL
+                , TBIEIM.NW_ADRES_AT
+
+                , TBIEIM.BZN
+                , TBIEIM.ACVT_YN
+                , TBIEIM.ENPR_JNNG_DT
+            )
+            VALUES
+            (
+                #{utlinsttId}
+                , #{bplcNm}
+                , #{fondDe}
+                , CURRENT_TIMESTAMP
+                , CURRENT_TIMESTAMP
+
+                , #{cmpnyLogoImageFile}
+                , #{cmpnyLogoBassImageFile}
+                , #{postNo}
+                , #{adres}
+                , #{detailAdres}
+                , #{nwAdres}
+                , #{nwAdresDetail}
+                , #{nwAdresAt}
+
+                , #{bizrno}
+                , #{actAt}
+                , #{enprJnngDt}
+            )
+    </insert>
+
+    <!--    기업 투자박스 사업장소재지 정보 초기값 설정-->
+    <insert id="batchInitEnprProvinceSite" parameterType="String">
+        MERGE INTO <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_D tbieid
+        USING DUAL ON (tbieid.UTLINSTT_ID = #{utlinsttId})
+        WHEN MATCHED THEN
+            UPDATE SET
+                BSUN_DWAR_CD = (
+                    SELECT COM_CD_ID
+                    FROM (
+                        SELECT COM_CD_ID
+                        FROM <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D
+                        WHERE GRP_CD_ID = #{GRP_CD} AND COM_CD_NM = #{provinceNm}
+                    )
+                    WHERE ROWNUM = 1
+                )
+            WHERE
+                BSUN_DWAR_CD IS NULL
+        WHEN NOT MATCHED THEN
+            INSERT
+            (
+                UTLINSTT_ID
+                , BSUN_DWAR_CD
+                , RGSN_TS
+                , AMNN_TS
+            )
+            VALUES
+            (
+                #{utlinsttId}
+                ,   (
+                    SELECT COM_CD_ID
+                    FROM (
+                        SELECT COM_CD_ID
+                        FROM <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D
+                        WHERE GRP_CD_ID = #{GRP_CD} AND COM_CD_NM = #{provinceNm}
+                    )
+                    WHERE ROWNUM = 1
+                )
+                , CURRENT_TIMESTAMP
+                , CURRENT_TIMESTAMP
+            )
+    </insert>
+
+    <!--    기간만료 처리가 필요한 투자심사 리스트 조회-->
+    <select id="selectExpireAuditTargetList" parameterType="String" resultType="InvestAuditVO">
+        SELECT
+            tbiar.INVM_EXNT_RQST_ID
+             , tbiar.INVM_CMP_ID
+             , tbiar.RQST_ENPR_ID
+             , eim_vc.ETNM AS INVM_CMP_BPLC_NM
+             , eim_com.ETNM AS RQST_BPLC_NM
+
+             , tbiar.RGSN_TS AS INVM_STTG_DT
+
+             , tbias_end.INVM_EXNT_PGSG_CD
+             , tbias_end.RGSN_TS AS LAST_PGSG_DT
+
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_EXNT_RQST_M tbiar
+
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_M eim_vc ON eim_vc.UTLINSTT_ID = tbiar.INVM_CMP_ID
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_M eim_com ON eim_com.UTLINSTT_ID = tbiar.RQST_ENPR_ID
+
+        <!--투자심사 시작일은 상태 최초 등록이 아닌 투자심사 등록일을 사용 : 최종 상태 정보만 조회-->
+        LEFT JOIN
+        (
+            SELECT
+                A.INVM_EXNT_RQST_ID
+                , A.INVM_EXNT_PGSG_CD
+                , A.RGSN_TS
+                , C.COM_CD_NM AS INVM_EXNT_PGSG_NM
+            FROM
+                <include refid="INVEST"/>TB_BOX_IVT_EXNT_PGSG_R A
+            INNER JOIN
+            (
+                SELECT
+                    INVM_EXNT_RQST_ID
+                    , MAX(RGSN_TS) AS END_TS
+                FROM
+                    <include refid="INVEST"/>TB_BOX_IVT_EXNT_PGSG_R
+                GROUP BY
+                    INVM_EXNT_RQST_ID
+            ) B ON A.INVM_EXNT_RQST_ID = B.INVM_EXNT_RQST_ID AND A.RGSN_TS = B.END_TS
+            LEFT JOIN
+                <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D C ON A.INVM_EXNT_PGSG_CD = C.COM_CD_ID
+        ) tbias_end ON tbias_end.INVM_EXNT_RQST_ID = tbiar.INVM_EXNT_RQST_ID
+
+        <!--기업 투자사간 변화에 따른 조회 변동 처리-->
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_VNCM_CPTL_L vcl_vc ON tbiar.INVM_CMP_ID = vcl_vc.UTLINSTT_ID
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_VNCM_CPTL_L vcl_com ON tbiar.RQST_ENPR_ID = vcl_com.UTLINSTT_ID
+
+        WHERE 1=1
+            <!--기업 투자사간 변화에 따른 조회 변동 처리-->
+            AND vcl_vc.UTLINSTT_ID IS NOT NULL AND vcl_com.UTLINSTT_ID IS NULL
+            <!--기간만료 조건-->
+            AND (
+                <!--(투자심사 제안 OR 투자심사 요청) 이후 60일 초과-->
+                (
+                    (tbias_end.INVM_EXNT_PGSG_CD = #{AUDIT_SUGGEST_CODE} OR tbias_end.INVM_EXNT_PGSG_CD = #{AUDIT_REQUEST_CODE})
+                    AND TO_CHAR(SYSDATE - 60, 'YYYYMMDD') > TO_CHAR(tbias_end.RGSN_TS, 'YYYYMMDD')
+                )
+                <!--투자심사 시작 이후 180일 초과 + 심사중 상태-->
+                OR (
+                    tbias_end.INVM_EXNT_PGSG_CD = #{AUDIT_EVALUATE_CODE}
+                    AND TO_CHAR(SYSDATE - 180, 'YYYYMMDD') > TO_CHAR(tbiar.RGSN_TS, 'YYYYMMDD')
+                )
+            )
+            <!--신규 오픈일 이전 심사 등록건 조회 제외 : 필요시에만 활성화 할 것-->
+            <if test="openDate != null and !openDate.equals('')">
+                AND TO_CHAR(tbiar.RGSN_TS, 'YYYYMMDD') >= #{openDate}
+            </if>
+    </select>
+
+    <!--    투자심사 진행이력 등록 (기간만료 처리)-->
+    <insert id="insertBatchInvestAuditStage" parameterType="InvestAuditStageVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_EXNT_PGSG_R
+        (
+            INVM_EXNT_RQST_ID
+            , INVM_EXNT_PGSG_CD
+            , RGSN_USER_ID
+            , RGSN_TS
+        )
+        VALUES
+        (
+            #{invmExntRqstId}
+            , #{invmExntPgsgCd}
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+        )
+    </insert>
+
+    <!--    포괄적 동의 기업 리스트 조회-->
+    <select id="selectAgreementUpdateCompanyList" resultType="String">
+        SELECT UTLINSTT_ID
+        FROM <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_D
+        WHERE ATRW_STPL_COSN_YN = 'Y'
+    </select>
+
+    <!--    기본정보 IR 이력 저장-->
+    <insert id="insertIRBasicInfoHistroy" parameterType="InvestRelationVO">
+        <selectKey resultType="InvestRelationVO" keyProperty="mdphSqn" order="BEFORE">
+            SELECT NVL(MAX(MDPH_SQN), 0) + 1 AS mdphSqn
+            FROM <include refid="INVEST"/>TB_BOX_IVT_IR_B_BSIN_H
+            WHERE UTLINSTT_ID = #{utlinsttId}
+        </selectKey>
+
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_IR_B_BSIN_H
+        (
+            UTLINSTT_ID
+            , MDPH_SQN
+            , BNNM
+            , ENPR_DSNC_CD
+            , BZN
+            , COL
+            , RPRNM
+            , EMP_CNT
+            , BTNM
+            , CGN
+            , CNPL
+            , HMPG_URL_ADR
+            , ADR
+            , ZPCD
+            , CPFN_AMT
+            , PVPR_AMT
+            , TTIS_STCNT
+            , ACPR
+            , ETVL_AMT
+            , INVM_MNY_USUS
+            , INVM_RTRV_PLAN_CON
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        )
+        SELECT
+            #{utlinsttId}
+            , #{mdphSqn}
+            , BNNM
+            , ENPR_DSNC_CD
+            , BZN
+            , COL
+            , RPRNM
+            , EMP_CNT
+            , BTNM
+            , CGN
+            , CNPL
+            , HMPG_URL_ADR
+            , ADR
+            , ZPCD
+            , CPFN_AMT
+            , PVPR_AMT
+            , TTIS_STCNT
+            , ACPR
+            , ETVL_AMT
+            , INVM_MNY_USUS
+            , INVM_RTRV_PLAN_CON
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_IR_B_BSIN_M
+        WHERE
+            UTLINSTT_ID = #{utlinsttId}
+    </insert>
+
+    <!--    재무정보 IR 이력 저장-->
+    <insert id="insertIRFinancialInfoHisotry" parameterType="IrFinanceVO">
+        <selectKey resultType="IrFinanceVO" keyProperty="mdphSqn" order="BEFORE">
+            SELECT NVL(MAX(MDPH_SQN), 0) + 1 AS mdphSqn
+            FROM <include refid="INVEST"/>TB_BOX_IVT_IR_F_FNAM_H
+            WHERE UTLINSTT_ID = #{utlinsttId}
+        </selectKey>
+
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_IR_F_FNAM_H
+        (
+            UTLINSTT_ID
+            , MDPH_SQN
+            , FLAS_AMT
+            , NONE_FLAS_AMT
+            , LBLT_TTSM_AMT
+            , CPTS_TTSM_AMT
+            , QCKAS_AMT
+            , INAS_AMT
+            , ETC_FLAS_AMT
+            , IVAS_AMT
+            , TGAS_AMT
+            , ITAS_AMT
+            , ETC_NONE_FLAS_AMT
+            , CRLB_AMT
+            , NONE_CRLB_AMT
+            , CPFN_AMT
+            , CPSP_MNY_AMT
+            , CPCR_AMT
+            , ETC_INLV_PL_CTAM
+            , ERNSP_AMT
+            , AMSL_AMT
+            , AMPM_AMT
+            , SLTP_AMT
+            , SACST_AMT
+            , OPPR_AMT
+            , NNOE_AMT
+            , NONOP_EXP_AMT
+            , ORPF_AMT
+            , CRTX_AMT
+            , CTNP_AMT
+            , AST_TTSM_AMT
+            , LBLT_CPTS_TTSM
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        )
+        SELECT
+            #{utlinsttId}
+            , #{mdphSqn}
+            , FLAS_AMT
+            , NONE_FLAS_AMT
+            , LBLT_TTSM_AMT
+            , CPTS_TTSM_AMT
+            , QCKAS_AMT
+            , INAS_AMT
+            , ETC_FLAS_AMT
+            , IVAS_AMT
+            , TGAS_AMT
+            , ITAS_AMT
+            , ETC_NONE_FLAS_AMT
+            , CRLB_AMT
+            , NONE_CRLB_AMT
+            , CPFN_AMT
+            , CPSP_MNY_AMT
+            , CPCR_AMT
+            , ETC_INLV_PL_CTAM
+            , ERNSP_AMT
+            , AMSL_AMT
+            , AMPM_AMT
+            , SLTP_AMT
+            , SACST_AMT
+            , OPPR_AMT
+            , NNOE_AMT
+            , NONOP_EXP_AMT
+            , ORPF_AMT
+            , CRTX_AMT
+            , CTNP_AMT
+            , AST_TTSM_AMT
+            , LBLT_CPTS_TTSM
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_IR_F_FNAM_M
+        WHERE
+            UTLINSTT_ID = #{utlinsttId}
+    </insert>
+
+    <!--    기본정보 IR 스크래핑 데이터 갱신-->
+    <insert id="mergeIRBasicInfoFromInfotechScrapping" parameterType="InvestRelationVO">
+        MERGE INTO <include refid="INVEST"/>TB_BOX_IVT_IR_B_BSIN_M tbiibbm
+
+        USING DUAL ON (tbiibbm.UTLINSTT_ID = #{utlinsttId})
+
+        WHEN MATCHED THEN
+            UPDATE SET
+                tbiibbm.BNNM         = #{bnnm}
+                , tbiibbm.BZN          = #{bzn}
+                , tbiibbm.COL          = #{col}
+                , tbiibbm.RPRNM        = #{rprnm}
+                , tbiibbm.BTNM         = #{btnm}
+                , tbiibbm.CGN          = #{cgn}
+                , tbiibbm.ADR          = #{adr}
+                , tbiibbm.ZPCD         = #{zpcd}
+                , tbiibbm.AMNN_USER_ID = #{amnnUserId}
+                , tbiibbm.AMNN_TS      = CURRENT_TIMESTAMP
+
+        WHEN NOT MATCHED THEN
+            INSERT
+            (
+                tbiibbm.UTLINSTT_ID
+                , tbiibbm.BNNM
+                , tbiibbm.BZN
+                , tbiibbm.COL
+                , tbiibbm.RPRNM
+                , tbiibbm.BTNM
+                , tbiibbm.CGN
+                , tbiibbm.ADR
+                , tbiibbm.ZPCD
+                , tbiibbm.RGSN_USER_ID
+                , tbiibbm.RGSN_TS
+                , tbiibbm.AMNN_USER_ID
+                , tbiibbm.AMNN_TS
+            )
+            VALUES
+            (
+                #{utlinsttId}
+                , #{bnnm}
+                , #{bzn}
+                , #{col}
+                , #{rprnm}
+                , #{btnm}
+                , #{cgn}
+                , #{adr}
+                , #{zpcd}
+                , #{rgsnUserId}
+                , CURRENT_TIMESTAMP
+                , #{amnnUserId}
+                , CURRENT_TIMESTAMP
+            )
+    </insert>
+
+    <!--    재무정보 IR 스크래핑 데이터 갱신-->
+    <insert id="mergeIRFinancialInfoFromInfotechScrapping" parameterType="IrFinanceVO">
+        MERGE INTO <include refid="INVEST"/>TB_BOX_IVT_IR_F_FNAM_M tbiiffm
+
+        USING DUAL ON (tbiiffm.UTLINSTT_ID = #{utlinsttId})
+
+        WHEN MATCHED THEN
+            UPDATE SET
+                tbiiffm.FLAS_AMT          = #{flasAmt}
+                , tbiiffm.NONE_FLAS_AMT     = #{noneFlasAmt}
+                , tbiiffm.LBLT_TTSM_AMT     = #{lbltTtsmAmt}
+                , tbiiffm.CPTS_TTSM_AMT     = #{cptsTtsmAmt}
+                , tbiiffm.QCKAS_AMT         = #{qckasAmt}
+                , tbiiffm.INAS_AMT          = #{inasAmt}
+                , tbiiffm.ETC_FLAS_AMT      = #{etcFlasAmt}
+                , tbiiffm.IVAS_AMT          = #{ivasAmt}
+                , tbiiffm.TGAS_AMT          = #{tgasAmt}
+                , tbiiffm.ITAS_AMT          = #{itasAmt}
+                , tbiiffm.ETC_NONE_FLAS_AMT = #{etcNoneFlasAmt}
+                , tbiiffm.CRLB_AMT          = #{crlbAmt}
+                , tbiiffm.NONE_CRLB_AMT     = #{noneCrlbAmt}
+                , tbiiffm.CPFN_AMT          = #{cpfnAmt}
+                , tbiiffm.CPSP_MNY_AMT      = #{cpspMnyAmt}
+                , tbiiffm.CPCR_AMT          = #{cpcrAmt}
+                , tbiiffm.ETC_INLV_PL_CTAM  = #{etcInlvPlCtam}
+                , tbiiffm.ERNSP_AMT         = #{ernspAmt}
+                , tbiiffm.AMSL_AMT          = #{amslAmt}
+                , tbiiffm.AMPM_AMT          = #{ampmAmt}
+                , tbiiffm.SLTP_AMT          = #{sltpAmt}
+                , tbiiffm.SACST_AMT         = #{sacstAmt}
+                , tbiiffm.OPPR_AMT          = #{opprAmt}
+                , tbiiffm.NNOE_AMT          = #{nnoeAmt}
+                , tbiiffm.NONOP_EXP_AMT     = #{nonopExpAmt}
+                , tbiiffm.ORPF_AMT          = #{orpfAmt}
+                , tbiiffm.CRTX_AMT          = #{crtxAmt}
+                , tbiiffm.CTNP_AMT          = #{ctnpAmt}
+                , tbiiffm.AST_TTSM_AMT      = #{astTtsmAmt}
+                , tbiiffm.LBLT_CPTS_TTSM    = #{lbltCptsTtsm}
+                , tbiiffm.AMNN_USER_ID      = #{amnnUserId}
+                , tbiiffm.AMNN_TS           = CURRENT_TIMESTAMP
+
+        WHEN NOT MATCHED THEN
+            INSERT
+            (
+                tbiiffm.UTLINSTT_ID
+                , tbiiffm.FLAS_AMT
+                , tbiiffm.NONE_FLAS_AMT
+                , tbiiffm.LBLT_TTSM_AMT
+                , tbiiffm.CPTS_TTSM_AMT
+                , tbiiffm.QCKAS_AMT
+                , tbiiffm.INAS_AMT
+                , tbiiffm.ETC_FLAS_AMT
+                , tbiiffm.IVAS_AMT
+                , tbiiffm.TGAS_AMT
+                , tbiiffm.ITAS_AMT
+                , tbiiffm.ETC_NONE_FLAS_AMT
+                , tbiiffm.CRLB_AMT
+                , tbiiffm.NONE_CRLB_AMT
+                , tbiiffm.CPFN_AMT
+                , tbiiffm.CPSP_MNY_AMT
+                , tbiiffm.CPCR_AMT
+                , tbiiffm.ETC_INLV_PL_CTAM
+                , tbiiffm.ERNSP_AMT
+                , tbiiffm.AMSL_AMT
+                , tbiiffm.AMPM_AMT
+                , tbiiffm.SLTP_AMT
+                , tbiiffm.SACST_AMT
+                , tbiiffm.OPPR_AMT
+                , tbiiffm.NNOE_AMT
+                , tbiiffm.NONOP_EXP_AMT
+                , tbiiffm.ORPF_AMT
+                , tbiiffm.CRTX_AMT
+                , tbiiffm.CTNP_AMT
+                , tbiiffm.AST_TTSM_AMT
+                , tbiiffm.LBLT_CPTS_TTSM
+                , tbiiffm.RGSN_USER_ID
+                , tbiiffm.RGSN_TS
+                , tbiiffm.AMNN_USER_ID
+                , tbiiffm.AMNN_TS
+            )
+            VALUES
+            (
+                #{utlinsttId}
+                , #{flasAmt}
+                , #{noneFlasAmt}
+                , #{lbltTtsmAmt}
+                , #{cptsTtsmAmt}
+                , #{qckasAmt}
+                , #{inasAmt}
+                , #{etcFlasAmt}
+                , #{ivasAmt}
+                , #{tgasAmt}
+                , #{itasAmt}
+                , #{etcNoneFlasAmt}
+                , #{crlbAmt}
+                , #{noneCrlbAmt}
+                , #{cpfnAmt}
+                , #{cpspMnyAmt}
+                , #{cpcrAmt}
+                , #{etcInlvPlCtam}
+                , #{ernspAmt}
+                , #{amslAmt}
+                , #{ampmAmt}
+                , #{sltpAmt}
+                , #{sacstAmt}
+                , #{opprAmt}
+                , #{nnoeAmt}
+                , #{nonopExpAmt}
+                , #{orpfAmt}
+                , #{crtxAmt}
+                , #{ctnpAmt}
+                , #{astTtsmAmt}
+                , #{lbltCptsTtsm}
+                , #{rgsnUserId}
+                , CURRENT_TIMESTAMP
+                , #{amnnUserId}
+                , CURRENT_TIMESTAMP
+            )
+    </insert>
+
+</mapper>

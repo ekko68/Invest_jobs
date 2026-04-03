@@ -1,0 +1,481 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ibk.sb.restapi.biz.service.vncmloan.repo.VncmLoanRepo">
+    <sql id="INVEST"><include refid="com.ibk.sb.restapi.biz.service.common.repo.SchemaRepo.INVEST"/></sql>
+
+    <!--    PagingMapper ID-->
+    <sql id="pagingHeader"><include refid="com.ibk.sb.restapi.biz.service.common.repo.PageRepo.pageHeader"/></sql>
+    <sql id="pagingFooter"><include refid="com.ibk.sb.restapi.biz.service.common.repo.PageRepo.pageFooter"/></sql>
+
+    <!--    벤처대출 추천 내역 조회-->
+    <select id="searchVncmLoanList" parameterType="RequestVncmLoanVO" resultType="VncmLoanVO">
+        <include refid="pagingHeader"/>
+        SELECT S1.VNENTRLON_ID			/*식별번호*/
+        , S1.RCMD_ENPR_BZN			/*사업자번호*/
+        , S1.ETNM					/*기업명*/
+        , S1.RGSN_TS				/*등록일*/
+        , S1.RECOMEND_STTUS		/*추천상태*/
+        , (SELECT COM_CD_NM FROM IVBADM.TB_BOX_IVT_COM_CD_D WHERE GRP_CD_ID = 'RST01' AND COM_CD_ID = S1.RECOMEND_STTUS) AS RECOMEND_STTUS_NM	/*추천상태명*/
+        , S1.INVT_INSTT_DLIV_MSG     /*투자기관에전달할 메시지*/
+        FROM
+        <include refid="INVEST"/>TB_BOX_IVT_VNENTRLON_REQST_BASS_M S1
+        WHERE S1.RECOMEND_STTUS NOT IN ('RST01002')
+        ORDER BY
+        S1.RGSN_TS DESC
+        <include refid="pagingFooter"/>
+    </select>
+
+    <!--    벤처대출 나의 추천 내역 조회-->
+    <select id="searchVncmLoanMyList" parameterType="RequestVncmLoanVO" resultType="VncmLoanVO">
+        <include refid="pagingHeader"/>
+        SELECT S1.VNENTRLON_ID			/*식별번호*/
+        , S1.RCMD_ENPR_BZN			/*사업자번호*/
+        , S1.ETNM					/*기업명*/
+        , S1.RGSN_TS				/*등록일*/
+        , S1.RECOMEND_STTUS		/*추천상태*/
+        , (SELECT COM_CD_NM FROM IVBADM.TB_BOX_IVT_COM_CD_D WHERE GRP_CD_ID = 'RST01' AND COM_CD_ID = S1.RECOMEND_STTUS) AS RECOMEND_STTUS_NM	/*추천상태명*/
+        , S1.INVT_INSTT_DLIV_MSG     /*투자기관에전달할 메시지*/
+        FROM
+        <include refid="INVEST"/>TB_BOX_IVT_VNENTRLON_REQST_BASS_M S1
+        WHERE 1=1
+        <if test="searchUtlinsttId != null and !searchUtlinsttId.equals('')">
+            AND S1.UTLINSTT_ID = #{searchUtlinsttId}
+        </if>
+        ORDER BY
+        S1.RGSN_TS DESC
+        <include refid="pagingFooter"/>
+    </select>
+    
+    <!--    벤처대출 신청 내역 조회-->
+	<select id="searchVncmLoanAplcList" parameterType="RequestVncmLoanVO" resultType="VncmLoanAplcVO">
+        <include refid="pagingHeader"/>
+            SELECT S1.VNENTRLON_ID			/*식별번호*/
+                 , S1.BZN			/*사업자번호*/
+                 , S1.UTLINSTT_ID			/*이용기관 ID*/
+                 , S1.ETNM					/*기업명*/
+                 , S1.RGSN_TS				/*등록일*/
+                 , S1.RECOMEND_STTUS_CM		/*추천상태*/
+                 , S1.RECOMEND_STTUS_CM_RM  /*상태가 비고일 때 관리자가 작성한 메세지*/
+                 , (SELECT A.ETNM FROM IVBADM.TB_BOX_IVT_ENPR_INFO_M A WHERE A.UTLINSTT_ID = S1.UTLINSTT_ID) AS INVM_ENPR_NM /*추천기관명*/
+                 , (SELECT COM_CD_NM FROM IVBADM.TB_BOX_IVT_COM_CD_D WHERE GRP_CD_ID = 'RST02' AND COM_CD_ID = S1.RECOMEND_STTUS_CM) AS RECOMEND_STTUS_CM_NM	/*추천상태명*/
+            FROM
+                <include refid="INVEST"/>TB_BOX_IVT_VNENT_RLON_APLC_RGSN_M S1
+            WHERE 1=1
+                <if test="searchRcmdEnrpBzn != null and !searchRcmdEnrpBzn.equals('')">
+                    AND S1.BZN = #{searchRcmdEnrpBzn}
+                </if>
+                
+                <!-- <if test="searchUtlinsttId != null and !searchUtlinsttId.equals('')">
+                    AND S1.UTLINSTT_ID = #{searchUtlinsttId}
+                </if> -->
+            ORDER BY
+                S1.RGSN_TS DESC
+        <include refid="pagingFooter"/>
+    </select>
+
+    <!--    벤처대출 추천 여부 및 자료요청 확인 -->
+    <select id="countVncmLoanAplcByRecommendStatus" parameterType="String" resultType="VncmLoanAplcCountVO">
+        SELECT
+            COUNT(*) as ROW_COUNT_ALL,
+            <![CDATA[
+                    SUM(CASE WHEN S1.RECOMEND_STTUS_CM = #{recomendSttusCm} THEN 1 ELSE 0 END)
+            ]]> AS ROW_COUNT_BY_STATUS
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_VNENT_RLON_APLC_RGSN_M S1
+        WHERE 1=1
+            AND S1.BZN = #{bzn}
+    </select>
+    
+    <!--    벤처대출신청 상세 조회-->
+    <select id="searchVncmLoanAplc" parameterType="String" resultType="VncmLoanAplcVO">
+        SELECT S1.VNENTRLON_ID	            /*	 */
+             , S1.UTLINSTT_ID	            /*이용기관(회사) ID 	 */
+             , S1.BIZRNO	            /*사업자등록증 파일 	 */
+             , S1.VAT_STDTAX_PROOF	            /*부가세과세표준증명원 (최근 3개년도) 	 */
+             , S1.CPR_RGIST_MATTER_ALL_CRTF	            /*법인등기사항전부증명서 	 */
+             , S1.STCH_INFO_MNGM_NO	            /*주주명부 	 */
+             , S1.CMPNY_INTRCN	            /*회사소개서(IR자료) 	 */
+             , S1.ETNM	            /*기업명 	 */
+             , S1.RPRNM	            /*대표자명 	 */
+             , S1.BZN	            /*사업자번호 	 */
+             , S1.COL	            /*설립년월일 	 */
+             , S1.ADR	            /*본사 주소 	 */
+             , S1.RSPR_NM	            /*기업 담당자명 	 */
+             , S1.RSPR_JBCL_NM	            /*담당자 직책 	 */
+             , S1.RSPR_CNPL_TPN	            /*담당자 연락처 	 */
+             , S1.RSPR_EAD	            /*담당자 이메일 	 */
+             , S1.INNF_INQ_COSN	            /*개인(신용)정보 조회동의서 다운로드 url 	 */
+             , S1.INNF_CLUS_COSN	            /*개인(신용)정보 수집 이용 동의서 url 	 */
+             , S1.ATCSC_ATCHMNFL	            /*정관 첨부파일 url 	 */
+             , S1.GMTSCK_ANACT	            /*주주총회 또는 이사회 결의서 url	 */
+             , S1.RGSN_TS	            /*등록일 	 */
+             , S1.RGSN_USER_ID	            /*동록자 ID 	 */
+             , S1.AMNN_TS	            /*수정일 	 */
+             , S1.AMNN_USER_ID	            /*수정자 ID 	 */  
+          FROM 
+        <include refid="INVEST"/>TB_BOX_IVT_VNENT_RLON_APLC_RGSN_M S1
+        WHERE 1=1
+          AND S1.VNENTRLON_ID = #{vnentrlonId}
+    </select>
+    
+    <!--    협약벤처기관 관리에 해당 사업자번호로 데이터 check -->
+    <select id="selectAgisChk" parameterType="String" resultType="Integer">
+        SELECT COUNT(1) 
+          FROM 
+        <include refid="INVEST"/>TB_BOX_IVT_AGREM_VNENTR_INVT_MANAGE_M
+        WHERE 1=1
+          AND BZN = #{bzn}
+    </select>
+
+    <!-- 번체 대출 명 검색-->
+	<select id="searchVncmLoanAuthority" parameterType="String" resultType="String">
+        SELECT MAX(INVM_ENPR_NM) AS INVM_ENPR_NM
+        FROM <include refid="INVEST"/>TB_BOX_IVT_AGREM_VNENTR_INVT_MANAGE_M
+        WHERE BZN=#{bzn}
+    </select>
+
+    <update id="updateVncmLoanRequest" parameterType="VncmLoanVO">
+        UPDATE <include refid="INVEST"/>TB_BOX_IVT_VNENTRLON_REQST_BASS_M
+        SET
+              RCMD_ENPR_BZN		            = #{rcmdEnprBzn}    /* 	제안 기업 사업자번호	 */
+            , ETNM      		            = #{etnm}           /* 	기업명	 */
+            , RPRNM				            = #{rprnm}          /* 	대표자명	 */
+            , COL				            = #{col}            /* 	설립년월일	 */
+            , ADR				            = #{adr}            /* 	본사 주소	 */
+            , BTNM				            = #{btnm}           /* 	업종명(표준산업분류)	 */
+            , INVT_INDUTY_SE	            = #{invtIndutySe}   /* 	투자업종 구분	 */
+            , MAIN_PRODUCT		            = #{mainProduct}    /* 	주요제품	 */
+            , RSPR_NM	                    = #{rsprNm}         /* 	기업 담당자명	 */
+            , RSPR_JBCL_NM	                = #{rsprJbclNm}     /* 	담당자 직책	 */
+            , RSPR_CNPL_TPN	                = #{rsprCnplTpn}    /* 	담당자 연락처	 */
+            , RSPR_EAD	                    = #{rsprEad}        /* 	담당자 이메일	 */
+            , ENTRPRS_CMPTPW	            = #{entrprsCmptpw}  /* 	기업 경쟁력 또는성장가능성	 */
+            , FLLWINVT_POSBLTY_EXPECT_ERA   = #{fllwinvtPosbltyExpectEra} /* 	후속투자 가능성 및예상시기	 */
+            , INVT_DTLS_INVT_INSTT	        = #{invtDtlsInvtInstt}      /* 	투자내역_투자기관	 */
+            , INVT_DTLS_INVT_PNTTM	        = #{invtDtlsInvtPnttm}      /* 	투자내역_투자라운드(직전)	 */
+            , INVT_DTLS_INVT_AMOUNT	        = #{invtDtlsInvtAmount}     /* 	투자내역_투자금액(원)	 */
+            , INVT_DTLS_INVT_DE	            = #{invtDtlsInvtDe}         /* 	투자내역_투자일자(직전)	 */
+            , INVT_DTLS_STKPC	            = #{invtDtlsStkpc}          /* 	투자내역_주당가격(원)	 */
+            , INVT_DTLS_ETVL_AMT	        = #{invtDtlsEtvlAmt}        /* 	투자내역_기업가치(원)	 */
+            , INVT_DTLS_INVT_KND	        = #{invtDtlsInvtKnd}        /* 	투자내역_투자종류	 */
+            , INVT_DTLS_RM	                = #{invtDtlsRm}             /* 	투자내역_비고	 */
+            , CHRG_AUDOFIR_RSPR_NM	        = #{chrgAudofirRsprNm}      /* 	담당심사역_담당자이름	 */
+            , CHRG_AUDOFIR_RSPR_JBCL_NM     = #{chrgAudofirRsprJbclNm}  /* 	담당심사역_담당자직책	 */
+            , CHRG_AUDOFIR_RSPR_CNPL_TPN    = #{chrgAudofirRsprCnplTpn} /* 	담당심사역_담당자연락처 	 */
+            , CHRG_AUDOFIR_RSPR_EAD	        = #{chrgAudofirRsprEad}         /* 	담당심사역_담당자이메일 	 */
+            , CONTACT_AUDOFIR_RSPR_NM	    = #{contactAudofirRsprNm}       /* 	연락담당자_담당자이름	 */
+            , CONTACT_AUDOFIR_RSPR_JBCL_NM	= #{contactAudofirRsprJbclNm}   /* 	연락담당자_담당자직책	 */
+            , CONTACT_AUDOFIR_RSPR_CNPL_TPN	= #{contactAudofirRsprCnplTpn}  /* 	연락담당자_담당자연락처 	 */
+            , CONTACT_AUDOFIR_RSPR_EAD	    = #{contactAudofirRsprEad}      /* 	연락담당자_담당자이메일 	 */
+            <if test="recomendIbkBuzplc != null and !recomendIbkBuzplc.equals('')">
+            , RECOMEND_IBK_BUZPLC	        = #{recomendIbkBuzplc}          /* 	추천 기업은행 영업점	 */
+            </if>
+            , RECOMEND_STTUS	            = #{recomendSttus}              /* 	추천 진행 상태	 */
+            , AMNN_TS	                    = SYSDATE                       /* 	수정일	 */
+            , AMNN_USER_ID	                = #{utlinsttId}                 /* 	수정자 ID	 */
+        WHERE VNENTRLON_ID = #{vnentrlonId} AND UTLINSTT_ID = #{utlinsttId} AND RECOMEND_STTUS= 'RST01002'
+    </update>
+    <insert id="insertVncmLoanRequest" parameterType="VncmLoanVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_VNENTRLON_REQST_BASS_M(
+            VNENTRLON_ID	            , /* 	식별번호	 */
+            RCMD_ENPR_BZN	            , /* 	제안 기업 사업자번호	 */
+            UTLINSTT_ID	                , /* 	이용기관(회사) ID	 */
+            ETNM	                    , /* 	기업명	 */
+            RPRNM	                    , /* 	대표자명	 */
+            COL	                        , /* 	설립년월일	 */
+            ADR	                        , /* 	본사 주소	 */
+            BTNM	                    , /* 	업종명(표준산업분류)	 */
+            INVT_INDUTY_SE	            , /* 	투자업종 구분	 */
+            MAIN_PRODUCT	            , /* 	주요제품	 */
+            RSPR_NM	                    , /* 	기업 담당자명	 */
+            RSPR_JBCL_NM	            , /* 	담당자 직책	 */
+            RSPR_CNPL_TPN	            , /* 	담당자 연락처	 */
+            RSPR_EAD	                , /* 	담당자 이메일	 */
+            ENTRPRS_CMPTPW	            , /* 	기업 경쟁력 또는성장가능성	 */
+            FLLWINVT_POSBLTY_EXPECT_ERA	, /* 	후속투자 가능성 및예상시기	 */
+            INVT_DTLS_INVT_INSTT	    , /* 	투자내역_투자기관	 */
+            INVT_DTLS_INVT_PNTTM	    , /* 	투자내역_투자라운드(직전)	 */
+            INVT_DTLS_INVT_AMOUNT	    , /* 	투자내역_투자금액(원)	 */
+            INVT_DTLS_INVT_DE	        , /* 	투자내역_투자일자(직전)	 */
+            INVT_DTLS_STKPC	            , /* 	투자내역_주당가격(원)	 */
+            INVT_DTLS_ETVL_AMT	        , /* 	투자내역_기업가치(원)	 */
+            INVT_DTLS_INVT_KND	        , /* 	투자내역_투자종류	 */
+            INVT_DTLS_RM	            , /* 	투자내역_비고	 */
+            CHRG_AUDOFIR_RSPR_NM	    , /* 	담당심사역_담당자이름	 */
+            CHRG_AUDOFIR_RSPR_JBCL_NM	, /* 	담당심사역_담당자직책	 */
+            CHRG_AUDOFIR_RSPR_CNPL_TPN	, /* 	담당심사역_담당자연락처 	 */
+            CHRG_AUDOFIR_RSPR_EAD	    , /* 	담당심사역_담당자이메일 	 */
+            CONTACT_AUDOFIR_RSPR_NM	    , /* 	연락담당자_담당자이름	 */
+            CONTACT_AUDOFIR_RSPR_JBCL_NM	, /* 	연락담당자_담당자직책	 */
+            CONTACT_AUDOFIR_RSPR_CNPL_TPN	, /* 	연락담당자_담당자연락처 	 */
+            CONTACT_AUDOFIR_RSPR_EAD	    , /* 	연락담당자_담당자이메일 	 */
+            <if test="recomendIbkBuzplc != null and !recomendIbkBuzplc.equals('')">
+            RECOMEND_IBK_BUZPLC	        , /* 	추천 기업은행 영업점	 */
+            </if>
+            RECOMEND_STTUS	            , /* 	추천 진행 상태	 */
+             RGSN_TS	                    , /* 	등록일	 */
+            RGSN_USER_ID	            , /* 	동록자 ID	 */
+            AMNN_TS	                    , /* 	수정일	 */
+            AMNN_USER_ID	              /* 	수정자 ID	 */
+        ) VALUES(
+             #{vnentrlonId}
+            ,#{rcmdEnprBzn}
+            ,#{utlinsttId}
+            ,#{etnm}
+            ,#{rprnm}
+            ,#{col}
+            ,#{adr}
+            ,#{btnm}
+            ,#{invtIndutySe}
+            ,#{mainProduct}
+            ,#{rsprNm}
+            ,#{rsprJbclNm}
+            ,#{rsprCnplTpn}
+            ,#{rsprEad}
+            ,#{entrprsCmptpw}
+            ,#{fllwinvtPosbltyExpectEra}
+            ,#{invtDtlsInvtInstt}
+            ,#{invtDtlsInvtPnttm}
+            ,#{invtDtlsInvtAmount}
+            ,#{invtDtlsInvtDe}
+            ,#{invtDtlsStkpc}
+            ,#{invtDtlsEtvlAmt}
+            ,#{invtDtlsInvtKnd}
+            ,#{invtDtlsRm}
+            ,#{chrgAudofirRsprNm}
+            ,#{chrgAudofirRsprJbclNm}
+            ,#{chrgAudofirRsprCnplTpn}
+            ,#{chrgAudofirRsprEad}
+            ,#{contactAudofirRsprNm}
+            ,#{contactAudofirRsprJbclNm}
+            ,#{contactAudofirRsprCnplTpn}
+            ,#{contactAudofirRsprEad}
+            <if test="recomendIbkBuzplc != null and !recomendIbkBuzplc.equals('')">
+            ,#{recomendIbkBuzplc}
+            </if>
+            ,#{recomendSttus}
+            ,SYSDATE
+            ,#{utlinsttId}
+            ,SYSDATE
+            ,#{utlinsttId}
+        )
+    </insert>
+    
+    <insert id="insertVncmLoanAplc" parameterType="VncmLoanAplcVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_VNENT_RLON_APLC_RGSN_M(
+            VNENTRLON_ID,	            /*벤처대출 ID 	 */
+            UTLINSTT_ID,	            /*이용기관(회사) ID 	 */
+            ETNM,	            /*기업명 	 */
+            RPRNM,	            /*대표자명 	 */
+            BZN,	            /*사업자번호 	 */
+            COL,	            /*설립년월일 	 */
+            ADR,	            /*본사 주소 	 */
+            RSPR_NM,	            /*기업 담당자명 	 */
+            RSPR_JBCL_NM,	            /*담당자 직책 	 */
+            RSPR_CNPL_TPN,	            /*담당자 연락처 	 */
+            RSPR_EAD,	            /*담당자 이메일 	 */
+            RECOMEND_STTUS_CM,	            /*진행상태코드	 */
+            RGSN_TS,	            /*등록일 	 */
+            RGSN_USER_ID,	            /*동록자 ID 	 */
+            AMNN_TS,	            /*수정일 	 */
+            AMNN_USER_ID	            /*수정자 ID 	 */
+        ) VALUES(
+             #{vnentrlonId}
+            ,#{utlinsttId}
+            ,#{etnm}
+            ,#{rprnm}
+            ,#{bzn}
+            ,#{col}
+            ,#{adr}
+            ,#{rsprNm}
+            ,#{rsprJbclNm}
+            ,#{rsprCnplTpn}
+            ,#{rsprEad}
+            ,#{recomendSttusCm}
+            ,SYSDATE
+            ,#{utlinsttId}
+            ,SYSDATE
+            ,#{utlinsttId}
+        )
+    </insert>
+    
+    <update id="updateVncmLoanAplc">
+        UPDATE <include refid="INVEST"/>TB_BOX_IVT_VNENT_RLON_APLC_RGSN_M
+        SET
+            VNENTRLON_ID = #{vnentrlonId}
+            , UTLINSTT_ID = #{utlinsttId}
+            , BIZRNO = #{bizrno}
+            , VAT_STDTAX_PROOF = #{vatStdtaxProof}
+            , CPR_RGIST_MATTER_ALL_CRTF = #{cprRgistMatterAllCrtf}
+            , STCH_INFO_MNGM_NO = #{stchInfoMngmNo}
+            , CMPNY_INTRCN = #{cmpnyIntrcn}
+            , ETNM = #{etnm}
+            , RPRNM = #{rprnm}
+            , BZN = #{bzn}
+            , COL = #{col}
+            , ADR = #{adr}
+            , RSPR_NM = #{rsprNm}
+            , RSPR_JBCL_NM = #{rsprJbclNm}
+            , RSPR_CNPL_TPN = #{rsprCnplTpn}
+            , RSPR_EAD = #{rsprEad}
+            , INNF_INQ_COSN = #{innfInqCosn}
+            , INNF_CLUS_COSN = #{innfClusCosn}
+            , ATCSC_ATCHMNFL = #{atcscAtchmnfl}
+            , GMTSCK_ANACT = #{gmtsckAnact}
+            , INVT_CNFRMN = #{invtCnfrmn}
+            , CPTAL_USGPLN = #{cptalUsgpln}
+            , SPRN_APFR = #{sprnApfr}
+            , RECOMEND_STTUS_CM = #{recomendSttusCm}
+            , AMNN_TS = CURRENT_TIMESTAMP
+            , AMNN_USER_ID = #{utlinsttId}
+        WHERE 1=1
+        AND VNENTRLON_ID = #{vnentrlonId}
+    </update>
+    
+    <update id="updateVncmLoanAplcSts">
+        UPDATE <include refid="INVEST"/>TB_BOX_IVT_VNENT_RLON_APLC_RGSN_M
+        SET
+            RECOMEND_STTUS_CM      = 'RST02006'
+            , AMNN_USER_ID  = #{utlinsttId}
+            , AMNN_TS       = CURRENT_TIMESTAMP
+        WHERE 1=1
+        AND VNENTRLON_ID = #{vnentrlonId}
+    </update>
+    
+    <!-- infotech 간편서류 저장 파일 조회-->
+    <select id="searchVncmLoanFileMapping" parameterType="String" resultType="BoxIvtFileVO">
+        SELECT
+            INVT_ID
+	        , ATCH_DSNC
+	        , FILE_ID
+	        , BSDS_CD
+	        , RGSN_USER_ID
+	        , RGSN_TS
+	        , AMNN_USER_ID
+	        , AMNN_TS
+        FROM
+        	<include refid="INVEST"/>TB_BOX_IVT_IDIV_ATCH_R
+        WHERE
+        	UPPER(INVT_ID) LIKE '%' || UPPER(#{invtId}) || '%'
+    </select>
+    
+   <insert id="insertVncmLoanFileMapping">
+    INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_IDIV_ATCH_R
+    (
+        INVT_ID
+        , ATCH_DSNC
+        , FILE_ID
+        , BSDS_CD
+        , RGSN_USER_ID
+        , RGSN_TS
+        , AMNN_USER_ID
+        , AMNN_TS
+         
+    )
+    VALUES
+    (
+        #{invtId}
+        , #{atchDsnc}
+        , #{fileId}
+        , #{bsdsCd}
+        , #{rgsnUserId}
+        , CURRENT_TIMESTAMP
+        , #{rgsnUserId}
+        , CURRENT_TIMESTAMP
+    )
+    </insert>
+
+    <delete id="deleteVncmLoanFileMapping">
+    DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_IDIV_ATCH_R
+    WHERE INVT_ID = #{invtId}
+    </delete>
+    
+        <!--    벤처대출추천 내역 첨부파일 리스트 조회-->
+    <select id="selectVncmLoanFileList" parameterType="String" resultType="NoticeFileVO">
+        SELECT
+            S1.INVT_ID
+            , S1.ATCH_DSNC
+            , S1.BSDS_CD
+            , S2.FILE_ID
+            , S2.FILE_NM
+            , S1.RGSN_USER_ID
+            , S1.RGSN_TS
+        FROM
+        <include refid="INVEST"/>TB_BOX_IVT_IDIV_ATCH_R S1
+        LEFT JOIN
+        <include refid="INVEST"/>TB_BOX_IVT_FILE_ATCH_M S2 ON S1.FILE_ID = S2.FILE_ID
+        WHERE
+        S1.INVT_ID = #{invtId}
+        AND S1.ATCH_DSNC = #{atchDsnc}
+        AND S1.BSDS_CD = #{bsdsCd}
+        AND S2.DEL_YN = 'N'
+    </select>
+    <select id="searchVncmLoanDetail" parameterType="String" resultType="VncmLoanVO">
+        SELECT
+            VNENTRLON_ID	            , /* 	식별번호	 */
+            RCMD_ENPR_BZN	            , /* 	제안 기업 사업자번호	 */
+            UTLINSTT_ID	                , /* 	이용기관(회사) ID	 */
+            ETNM	                    , /* 	기업명	 */
+            RPRNM	                    , /* 	대표자명	 */
+            COL	                        , /* 	설립년월일	 */
+            ADR	                        , /* 	본사 주소	 */
+            BTNM	                    , /* 	업종명(표준산업분류)	 */
+            INVT_INDUTY_SE	            , /* 	투자업종 구분	 */
+            MAIN_PRODUCT	            , /* 	주요제품	 */
+            RSPR_NM	                    , /* 	기업 담당자명	 */
+            RSPR_JBCL_NM	            , /* 	담당자 직책	 */
+            RSPR_CNPL_TPN	            , /* 	담당자 연락처	 */
+            RSPR_EAD	                , /* 	담당자 이메일	 */
+            ENTRPRS_CMPTPW	            , /* 	기업 경쟁력 또는성장가능성	 */
+            FLLWINVT_POSBLTY_EXPECT_ERA	, /* 	후속투자 가능성 및예상시기	 */
+            INVT_DTLS_INVT_INSTT	    , /* 	투자내역_투자기관	 */
+            INVT_DTLS_INVT_PNTTM	    , /* 	투자내역_투자라운드(직전)	 */
+            INVT_DTLS_INVT_AMOUNT	    , /* 	투자내역_투자금액(원)	 */
+            INVT_DTLS_INVT_DE	        , /* 	투자내역_투자일자(직전)	 */
+            INVT_DTLS_STKPC	            , /* 	투자내역_주당가격(원)	 */
+            INVT_DTLS_ETVL_AMT	        , /* 	투자내역_기업가치(원)	 */
+            INVT_DTLS_INVT_KND	        , /* 	투자내역_투자종류	 */
+            INVT_DTLS_RM	            , /* 	투자내역_비고	 */
+            CHRG_AUDOFIR_RSPR_NM	    , /* 	담당심사역_담당자이름	 */
+            CHRG_AUDOFIR_RSPR_JBCL_NM	, /* 	담당심사역_담당자직책	 */
+            CHRG_AUDOFIR_RSPR_CNPL_TPN	, /* 	담당심사역_담당자연락처 	 */
+            CHRG_AUDOFIR_RSPR_EAD	    , /* 	담당심사역_담당자이메일 	 */
+            CONTACT_AUDOFIR_RSPR_NM	    , /* 	연락담당자_담당자이름	 */
+            CONTACT_AUDOFIR_RSPR_JBCL_NM	, /* 	연락담당자_담당자직책	 */
+            CONTACT_AUDOFIR_RSPR_CNPL_TPN	, /* 	연락담당자_담당자연락처 	 */
+            CONTACT_AUDOFIR_RSPR_EAD	, /* 	연락담당자_담당자이메일 	 */
+            RECOMEND_IBK_BUZPLC	        , /* 	추천 기업은행 영업점	 */
+            RECOMEND_STTUS	            , /* 	추천 진행 상태	 */
+            BPR_IDX_NO					,
+            INVT_FACT_PRUF_PAPERS_ATCH	, /* 	투자사실 증빙 서류 첨부	 */
+            INVT_ANALS_REPRT_ATCH	    , /* 	투자분석 보고서(투자심사자료) 첨부	 */
+            ETC_FILE_ATCH	            , /* 	기타 파일 첨부	 */
+            RGSN_TS	                    , /* 	등록일	 */
+            RGSN_USER_ID	            , /* 	동록자 ID	 */
+            AMNN_TS	                    , /* 	수정일	 */
+            AMNN_USER_ID	              /* 	수정자 ID	 */
+        FROM IVBADM.TB_BOX_IVT_VNENTRLON_REQST_BASS_M
+        WHERE RECOMEND_STTUS = 'RST01002'
+        AND VNENTRLON_ID = #{vnentrlonId}
+    </select>
+	
+	<!--    벤처대출 추천 내역 조회-->
+	<select id="searchVncmLoanInvestList" parameterType="RequestVncmLoanVO" resultType="VncmLoanVO">
+        <include refid="pagingHeader"/>
+            SELECT 
+				UTLINSTT_ID,
+				INVT_DTLS_INVT_DE,
+				INVT_DTLS_INVT_INSTT,
+				INVT_DTLS_INVT_KND,
+				INVT_DTLS_INVT_AMOUNT,
+				INVT_DTLS_RM
+			FROM 
+				<include refid="INVEST"/>TB_BOX_IVT_VNENTRLON_REQST_BASS_M
+			WHERE 
+				UTLINSTT_ID = #{searchUtlinsttId}
+			AND TO_DATE(INVT_DTLS_INVT_DE, 'YYYYMMDD') BETWEEN TO_DATE(#{startDate}, 'YYYYMMDD') AND TO_DATE(#{endDate}, 'YYYYMMDD')
+			ORDER BY INVT_DTLS_INVT_DE DESC
+        <include refid="pagingFooter"/>
+    </select>
+    
+</mapper>

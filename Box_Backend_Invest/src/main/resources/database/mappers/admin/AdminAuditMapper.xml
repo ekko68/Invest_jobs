@@ -1,0 +1,681 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ibk.sb.restapi.biz.service.admin.repo.AdminAuditRepo">
+    <!--    SchemaMapper ID-->
+    <sql id="INVEST"><include refid="com.ibk.sb.restapi.biz.service.common.repo.SchemaRepo.INVEST"/></sql>
+
+    <!--    PagingMapper ID-->
+    <sql id="pagingHeader"><include refid="com.ibk.sb.restapi.biz.service.common.repo.PageRepo.pageHeader"/></sql>
+    <sql id="pagingFooter"><include refid="com.ibk.sb.restapi.biz.service.common.repo.PageRepo.pageFooter"/></sql>
+
+    <!-- 운영자 포탈 투자희망심사현황 리스트 조회 -->
+    <select id="adminSelectAuditList" parameterType="AdminInvestAuditPageVO" resultType="AdminInvestAuditSummaryVO">
+        <include refid="pagingHeader"/>
+        SELECT
+        tbiar.INVM_EXNT_RQST_ID
+        , tbiar.INVM_CMP_ID
+        , tbiar.RQST_ENPR_ID
+        , eim_vc.ETNM AS INVM_CMP_BPLC_NM
+        , eim_com.ETNM AS RQST_BPLC_NM
+        , eim_com.BZN AS BZN
+        , tbiar.RGSN_TS AS INVM_STTG_DT
+        , tbiar.BRCD
+        , tbiar.EMN
+        , tbiar.EMM
+        , tbiar.EXNT_RSLT_CD
+        , tbiar.INVM_PRFR_SCDL_AMT
+        , tbiar. EXNT_MSG_CON
+        , tbiar.EXNT_RSLT_RMRK
+
+        , rqsts.EXNT_RSLT_CD
+        , rqsts.EXNT_RSLT_CD_NM
+
+        , tbiar.PRPL_MSG_CON
+        , tbiar.RQST_MSG_CON
+
+        , tbias_end.INVM_EXNT_PGSG_CD
+        , tbias_end.INVM_EXNT_PGSG_NM
+
+        , tbias_start.INVM_EXNT_PGSG_CD AS START_INVM_EXNT_PGSG_CD
+
+        , vcl_vc.INVM_CMP_PTRN_CD
+        , ccd_vc.COM_CD_NM AS INVM_CMP_PTRN_NM
+        , eid_com.ENPR_DSNC_CLSF_CD
+        , ccd_com.COM_CD_NM AS ENPR_DSNC_CLSF_NM
+
+        , hope.INVM_HOPE_STG_NM
+        , hope.INVM_HOPE_AMT_NM
+
+        , tbiar.AMNN_TS
+        FROM
+        <include refid="INVEST"/>TB_BOX_IVT_EXNT_RQST_M tbiar
+        LEFT JOIN
+        <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_D eid_com ON eid_com.UTLINSTT_ID = tbiar.RQST_ENPR_ID
+        LEFT JOIN
+        <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd_com ON eid_com.ENPR_DSNC_CLSF_CD = ccd_com.COM_CD_ID
+        LEFT JOIN
+        (
+        SELECT
+        A.INVM_EXNT_RQST_ID
+        , A.INVM_EXNT_PGSG_CD
+        , A.RGSN_TS
+        , C.COM_CD_NM AS INVM_EXNT_PGSG_NM
+        FROM
+        <include refid="INVEST"/>TB_BOX_IVT_EXNT_PGSG_R A
+        INNER JOIN
+        (
+        SELECT
+        INVM_EXNT_RQST_ID
+        , MAX(RGSN_TS) AS END_TS
+        FROM
+        <include refid="INVEST"/>TB_BOX_IVT_EXNT_PGSG_R
+        GROUP BY
+        INVM_EXNT_RQST_ID
+        ) B ON A.INVM_EXNT_RQST_ID = B.INVM_EXNT_RQST_ID AND A.RGSN_TS = B.END_TS
+        LEFT JOIN
+        <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D C ON A.INVM_EXNT_PGSG_CD = C.COM_CD_ID
+        ) tbias_end ON tbias_end.INVM_EXNT_RQST_ID = tbiar.INVM_EXNT_RQST_ID
+
+        LEFT JOIN
+        (
+        SELECT
+        A.INVM_EXNT_RQST_ID
+        , A.INVM_EXNT_PGSG_CD
+        , A.RGSN_TS
+        FROM
+        <include refid="INVEST"/>TB_BOX_IVT_EXNT_PGSG_R A
+        INNER JOIN
+        (
+        SELECT
+        INVM_EXNT_RQST_ID
+        , MIN(RGSN_TS) AS START_TS
+        FROM
+        <include refid="INVEST"/>TB_BOX_IVT_EXNT_PGSG_R
+        GROUP BY
+        INVM_EXNT_RQST_ID
+        ) B ON A.INVM_EXNT_RQST_ID = B.INVM_EXNT_RQST_ID AND A.RGSN_TS = B.START_TS
+
+        ) tbias_start ON tbias_start.INVM_EXNT_RQST_ID = tbiar.INVM_EXNT_RQST_ID
+
+        LEFT JOIN
+        <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_M eim_vc ON eim_vc.UTLINSTT_ID = tbiar.INVM_CMP_ID
+        LEFT JOIN
+        <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_M eim_com ON eim_com.UTLINSTT_ID = tbiar.RQST_ENPR_ID
+
+        LEFT JOIN
+        <include refid="INVEST"/>TB_BOX_IVT_VNCM_CPTL_L vcl_vc ON tbiar.INVM_CMP_ID = vcl_vc.UTLINSTT_ID
+        LEFT JOIN
+        <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd_vc ON vcl_vc.INVM_CMP_PTRN_CD = ccd_vc.COM_CD_ID
+        LEFT JOIN
+        (
+        SELECT
+        hoped.UTLINSTT_ID
+        , hoped.INVM_STG_CD
+        , hoped.RGSN_TS
+        , C.COM_CD_NM AS INVM_HOPE_STG_NM
+        , CC.COM_CD_NM AS INVM_HOPE_AMT_NM
+        FROM
+        <include refid="INVEST"/>TB_BOX_IVT_INVM_HOPE_D hoped
+        INNER JOIN
+        (
+        SELECT
+        UTLINSTT_ID
+        , MAX(RGSN_TS) AS END_TS
+        FROM
+        <include refid="INVEST"/>TB_BOX_IVT_INVM_HOPE_D
+        GROUP BY
+        UTLINSTT_ID
+        ) B ON hoped.UTLINSTT_ID = B.UTLINSTT_ID AND hoped.RGSN_TS = B.END_TS
+        LEFT JOIN
+        <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D C ON hoped.INVM_STG_CD = C.COM_CD_ID
+        LEFT JOIN
+        <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D CC ON hoped.INVM_AMT_CD = CC.COM_CD_ID
+        ) hope ON hope.UTLINSTT_ID = tbiar.RQST_ENPR_ID
+        LEFT JOIN
+        (
+        SELECT
+        rqst.INVM_EXNT_RQST_ID
+        , rqst.RQST_ENPR_ID
+        , rqst.EXNT_RSLT_CD
+        , rqst.RGSN_TS
+        , C.COM_CD_NM AS EXNT_RSLT_CD_NM
+        FROM
+        <include refid="INVEST"/>TB_BOX_IVT_EXNT_RQST_M rqst
+        INNER JOIN
+        (
+        SELECT
+        INVM_EXNT_RQST_ID
+        , MAX(RGSN_TS) AS END_TS
+        FROM
+        <include refid="INVEST"/>TB_BOX_IVT_EXNT_RQST_M
+        GROUP BY
+        INVM_EXNT_RQST_ID
+        ) B ON rqst.INVM_EXNT_RQST_ID = B.INVM_EXNT_RQST_ID AND rqst.RGSN_TS = B.END_TS
+        LEFT JOIN
+        <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D C ON rqst.EXNT_RSLT_CD = C.COM_CD_ID
+        ) rqsts ON rqsts.INVM_EXNT_RQST_ID = tbiar.INVM_EXNT_RQST_ID
+        WHERE 1=1
+        AND tbias_end.INVM_EXNT_PGSG_CD IN('EXN00000', 'EXN00001' , 'EXN00002' , 'EXN00003', 'EXN01000', 'EXN01001', 'EXN01002')
+        <if test="listStartType != null and !listStartType.equals('')">
+            AND tbias_start.INVM_EXNT_PGSG_CD = #{listStartType}
+        </if>
+
+        <if test="searchResStatus != null and !searchResStatus.equals('all')">
+            AND tbiar.EXNT_RSLT_CD = #{searchResStatus}
+        </if>
+
+        <if test="searchStatus != null and !searchStatus.equals('all')">
+            AND tbias_end.INVM_EXNT_PGSG_CD = #{searchStatus}
+        </if>
+
+        <if test="searchComNm != null and !searchComNm.equals('')">
+            AND UPPER(eim_com.ETNM) LIKE '%' || UPPER(#{searchComNm}) || '%'
+        </if>
+        <if test="searchBzn != null and !searchBzn.equals('')">
+            AND UPPER(eim_com.BZN) LIKE '%' || UPPER(#{searchBzn}) || '%'
+        </if>
+        <if test="(searchFromDate != null and !searchFromDate.equals('')) and (searchToDate != null and !searchToDate.equals(''))">
+            AND TO_DATE(TO_CHAR(tbiar.RGSN_TS, 'YYYYMMDD'), 'YYYYMMDD') BETWEEN TO_DATE(#{searchFromDate}, 'YYYYMMDD') AND TO_DATE(#{searchToDate}, 'YYYYMMDD')
+        </if>
+        ORDER BY
+        <if test="searchType != null and !searchType.equals('')">
+            <choose>
+                <when test="searchType.equals('date')">
+                    tbiar.RGSN_TS DESC
+                </when>
+                <when test="searchType.equals('company')">
+                    eim_com.ETNM ASC
+                </when>
+                <when test="searchType.equals('bzn')">
+                    eim_com.BZN ASC
+                </when>
+                <when test="searchType.equals('state')">
+                    tbiar.EXNT_RSLT_CD ASC
+                </when>
+            </choose>
+        </if>
+        <include refid="pagingFooter"/>
+    </select>
+
+
+    <!-- 투자희망 신청현황 리스트 엑셀 다운로드 -->
+    <select id="adminExcelAuditList" parameterType="AdminInvestAuditSummaryVO" resultType="AdminInvestAuditExcelVO">
+        SELECT
+        tbiar.INVM_EXNT_RQST_ID
+        , tbiar.INVM_CMP_ID
+        , tbiar.RQST_ENPR_ID
+        , eim_vc.ETNM AS INVM_CMP_BPLC_NM
+        , eim_com.ETNM AS RQST_BPLC_NM
+        , eim_com.BZN AS BZN
+        , tbiar.RGSN_TS AS INVM_STTG_DT
+        , tbiar.BRCD
+        , tbiar.EMN
+        , tbiar.EMM
+        , tbiar.EXNT_RSLT_CD
+
+        , tbiar.PRPL_MSG_CON
+        , tbiar.RQST_MSG_CON
+
+        , tbias_end.INVM_EXNT_PGSG_CD
+        , tbias_end.INVM_EXNT_PGSG_NM
+
+        , tbias_start.INVM_EXNT_PGSG_CD AS START_INVM_EXNT_PGSG_CD
+
+        , vcl_vc.INVM_CMP_PTRN_CD
+        , ccd_vc.COM_CD_NM AS INVM_CMP_PTRN_NM
+        , eid_com.ENPR_DSNC_CLSF_CD
+        , ccd_com.COM_CD_NM AS ENPR_DSNC_CLSF_NM
+
+        , hope.INVM_HOPE_STG_NM
+        , hope.INVM_HOPE_AMT_NM
+        FROM
+        <include refid="INVEST"/>TB_BOX_IVT_EXNT_RQST_M tbiar
+        LEFT JOIN
+        <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_D eid_com ON eid_com.UTLINSTT_ID = tbiar.RQST_ENPR_ID
+        LEFT JOIN
+        <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd_com ON eid_com.ENPR_DSNC_CLSF_CD = ccd_com.COM_CD_ID
+        LEFT JOIN
+        (
+        SELECT
+        A.INVM_EXNT_RQST_ID
+        , A.INVM_EXNT_PGSG_CD
+        , A.RGSN_TS
+        , C.COM_CD_NM AS INVM_EXNT_PGSG_NM
+        FROM
+        <include refid="INVEST"/>TB_BOX_IVT_EXNT_PGSG_R A
+        INNER JOIN
+        (
+        SELECT
+        INVM_EXNT_RQST_ID
+        , MAX(RGSN_TS) AS END_TS
+        FROM
+        <include refid="INVEST"/>TB_BOX_IVT_EXNT_PGSG_R
+        GROUP BY
+        INVM_EXNT_RQST_ID
+        ) B ON A.INVM_EXNT_RQST_ID = B.INVM_EXNT_RQST_ID AND A.RGSN_TS = B.END_TS
+        LEFT JOIN
+        <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D C ON A.INVM_EXNT_PGSG_CD = C.COM_CD_ID
+        ) tbias_end ON tbias_end.INVM_EXNT_RQST_ID = tbiar.INVM_EXNT_RQST_ID
+
+        LEFT JOIN
+        (
+        SELECT
+        A.INVM_EXNT_RQST_ID
+        , A.INVM_EXNT_PGSG_CD
+        , A.RGSN_TS
+        FROM
+        <include refid="INVEST"/>TB_BOX_IVT_EXNT_PGSG_R A
+        INNER JOIN
+        (
+        SELECT
+        INVM_EXNT_RQST_ID
+        , MIN(RGSN_TS) AS START_TS
+        FROM
+        <include refid="INVEST"/>TB_BOX_IVT_EXNT_PGSG_R
+        GROUP BY
+        INVM_EXNT_RQST_ID
+        ) B ON A.INVM_EXNT_RQST_ID = B.INVM_EXNT_RQST_ID AND A.RGSN_TS = B.START_TS
+
+        ) tbias_start ON tbias_start.INVM_EXNT_RQST_ID = tbiar.INVM_EXNT_RQST_ID
+
+        LEFT JOIN
+        <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_M eim_vc ON eim_vc.UTLINSTT_ID = tbiar.INVM_CMP_ID
+        LEFT JOIN
+        <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_M eim_com ON eim_com.UTLINSTT_ID = tbiar.RQST_ENPR_ID
+
+        LEFT JOIN
+        <include refid="INVEST"/>TB_BOX_IVT_VNCM_CPTL_L vcl_vc ON tbiar.INVM_CMP_ID = vcl_vc.UTLINSTT_ID
+        LEFT JOIN
+        <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd_vc ON vcl_vc.INVM_CMP_PTRN_CD = ccd_vc.COM_CD_ID
+        LEFT JOIN
+        (
+        SELECT
+        hoped.UTLINSTT_ID
+        , hoped.INVM_STG_CD
+        , hoped.RGSN_TS
+        , C.COM_CD_NM AS INVM_HOPE_STG_NM
+        , CC.COM_CD_NM AS INVM_HOPE_AMT_NM
+        FROM
+        <include refid="INVEST"/>TB_BOX_IVT_INVM_HOPE_D hoped
+        INNER JOIN
+        (
+        SELECT
+        UTLINSTT_ID
+        , MAX(RGSN_TS) AS END_TS
+        FROM
+        <include refid="INVEST"/>TB_BOX_IVT_INVM_HOPE_D
+        GROUP BY
+        UTLINSTT_ID
+        ) B ON hoped.UTLINSTT_ID = B.UTLINSTT_ID AND hoped.RGSN_TS = B.END_TS
+        LEFT JOIN
+        <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D C ON hoped.INVM_STG_CD = C.COM_CD_ID
+        LEFT JOIN
+        <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D CC ON hoped.INVM_AMT_CD = CC.COM_CD_ID
+        ) hope ON hope.UTLINSTT_ID = tbiar.RQST_ENPR_ID
+        WHERE 1=1
+        AND tbias_end.INVM_EXNT_PGSG_CD IN('EXN00000', 'EXN00001' , 'EXN00002' , 'EXN00003', 'EXN01000', 'EXN01001', 'EXN01002')
+        <if test="listStartType != null and !listStartType.equals('')">
+            AND tbias_start.INVM_EXNT_PGSG_CD = #{listStartType}
+        </if>
+
+        <if test="searchResStatus != null and !searchResStatus.equals('all')">
+            AND tbiar.EXNT_RSLT_CD = #{searchResStatus}
+        </if>
+
+        <if test="searchStatus != null and !searchStatus.equals('all')">
+            AND tbias_end.INVM_EXNT_PGSG_CD = #{searchStatus}
+        </if>
+
+        <if test="searchComNm != null and !searchComNm.equals('')">
+            AND UPPER(eim_com.ETNM) LIKE '%' || UPPER(#{searchComNm}) || '%'
+        </if>
+        <if test="searchBzn != null and !searchBzn.equals('')">
+            AND UPPER(eim_com.BZN) LIKE '%' || UPPER(#{searchBzn}) || '%'
+        </if>
+        <if test="(searchFromDate != null and !searchFromDate.equals('')) and (searchToDate != null and !searchToDate.equals(''))">
+            AND TO_DATE(TO_CHAR(tbiar.RGSN_TS, 'YYYYMMDD'), 'YYYYMMDD') BETWEEN TO_DATE(#{searchFromDate}, 'YYYYMMDD') AND TO_DATE(#{searchToDate}, 'YYYYMMDD')
+        </if>
+        ORDER BY
+        <if test="searchType != null and !searchType.equals('')">
+            <choose>
+                <when test="searchType.equals('date')">
+                    tbiar.RGSN_TS DESC
+                </when>
+                <when test="searchType.equals('company')">
+                    eim_com.ETNM ASC
+                </when>
+                <when test="searchType.equals('bzn')">
+                    eim_com.BZN ASC
+                </when>
+                <when test="searchType.equals('state')">
+                    tbias_end.INVM_EXNT_PGSG_CD DESC
+                </when>
+            </choose>
+        </if>
+    </select>
+
+    <!-- 엑셀 투자심사 | 요청,제안 세부내용 조회 -->
+    <select id="adminExcelAuditDetail" parameterType="AdminInvestAuditSummaryVO" resultType="AdminInvestAuditExcelDetailVO">
+        SELECT
+        tbiar.INVM_EXNT_RQST_ID
+        , tbiar.INVM_CMP_ID
+        , tbiar.RQST_ENPR_ID
+        , eim_vc.ETNM AS INVM_CMP_BPLC_NM
+        , eim_com.ETNM AS RQST_BPLC_NM
+        , eim_com.BZN AS BZN
+        , tbiar.RGSN_TS AS INVM_STTG_DT
+        , tbiar.BRCD
+        , tbiar.EMN
+        , tbiar.EMM
+
+        , tbiar.PRPL_MSG_CON
+        , tbiar.RQST_MSG_CON
+
+        , tbias_end.INVM_EXNT_PGSG_CD
+        , tbias_end.INVM_EXNT_PGSG_NM
+
+        , tbias_start.INVM_EXNT_PGSG_CD AS START_INVM_EXNT_PGSG_CD
+
+        , vcl_vc.INVM_CMP_PTRN_CD
+        , ccd_vc.COM_CD_NM AS INVM_CMP_PTRN_NM
+        , eid_com.ENPR_DSNC_CLSF_CD
+        , ccd_com.COM_CD_NM AS ENPR_DSNC_CLSF_NM
+
+        , bsin.ADR
+        , bsin.HMPG_URL_ADR
+        , bsin.TTIS_STCNT
+        , bsin.EMP_CNT
+        , bsin.COL
+        , bsin.RPRNM
+        , bsin.ZPCD
+        , bsin.CPFN_AMT
+        , bsin.PVPR_AMT
+        , bsin.ETVL_AMT
+
+        , hope.INVM_HOPE_STG_NM
+        , hope.INVM_HOPE_AMT_NM
+        FROM
+        <include refid="INVEST"/>TB_BOX_IVT_EXNT_RQST_M tbiar
+        LEFT JOIN
+        <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_D eid_com ON eid_com.UTLINSTT_ID = tbiar.RQST_ENPR_ID
+        LEFT JOIN
+        <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd_com ON eid_com.ENPR_DSNC_CLSF_CD = ccd_com.COM_CD_ID
+        LEFT JOIN
+        (
+        SELECT
+        A.INVM_EXNT_RQST_ID
+        , A.INVM_EXNT_PGSG_CD
+        , A.RGSN_TS
+        , C.COM_CD_NM AS INVM_EXNT_PGSG_NM
+        FROM
+        <include refid="INVEST"/>TB_BOX_IVT_EXNT_PGSG_R A
+        INNER JOIN
+        (
+        SELECT
+        INVM_EXNT_RQST_ID
+        , MAX(RGSN_TS) AS END_TS
+        FROM
+        <include refid="INVEST"/>TB_BOX_IVT_EXNT_PGSG_R
+        GROUP BY
+        INVM_EXNT_RQST_ID
+        ) B ON A.INVM_EXNT_RQST_ID = B.INVM_EXNT_RQST_ID AND A.RGSN_TS = B.END_TS
+        LEFT JOIN
+        <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D C ON A.INVM_EXNT_PGSG_CD = C.COM_CD_ID
+        ) tbias_end ON tbias_end.INVM_EXNT_RQST_ID = tbiar.INVM_EXNT_RQST_ID
+
+        LEFT JOIN
+        (
+        SELECT
+        A.INVM_EXNT_RQST_ID
+        , A.INVM_EXNT_PGSG_CD
+        , A.RGSN_TS
+        FROM
+        <include refid="INVEST"/>TB_BOX_IVT_EXNT_PGSG_R A
+        INNER JOIN
+        (
+        SELECT
+        INVM_EXNT_RQST_ID
+        , MIN(RGSN_TS) AS START_TS
+        FROM
+        <include refid="INVEST"/>TB_BOX_IVT_EXNT_PGSG_R
+        GROUP BY
+        INVM_EXNT_RQST_ID
+        ) B ON A.INVM_EXNT_RQST_ID = B.INVM_EXNT_RQST_ID AND A.RGSN_TS = B.START_TS
+
+        ) tbias_start ON tbias_start.INVM_EXNT_RQST_ID = tbiar.INVM_EXNT_RQST_ID
+
+        LEFT JOIN
+        <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_M eim_vc ON eim_vc.UTLINSTT_ID = tbiar.INVM_CMP_ID
+        LEFT JOIN
+        <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_M eim_com ON eim_com.UTLINSTT_ID = tbiar.RQST_ENPR_ID
+
+        LEFT JOIN
+        <include refid="INVEST"/>TB_BOX_IVT_VNCM_CPTL_L vcl_vc ON tbiar.INVM_CMP_ID = vcl_vc.UTLINSTT_ID
+        LEFT JOIN
+        <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd_vc ON vcl_vc.INVM_CMP_PTRN_CD = ccd_vc.COM_CD_ID
+        LEFT JOIN
+        <include refid="INVEST"/>TB_BOX_IVT_IR_B_BSIN_M bsin ON tbiar.RQST_ENPR_ID = bsin.UTLINSTT_ID
+        LEFT JOIN
+        (
+        SELECT
+        hoped.UTLINSTT_ID
+        , hoped.INVM_STG_CD
+        , hoped.RGSN_TS
+        , C.COM_CD_NM AS INVM_HOPE_STG_NM
+        , CC.COM_CD_NM AS INVM_HOPE_AMT_NM
+        FROM
+        <include refid="INVEST"/>TB_BOX_IVT_INVM_HOPE_D hoped
+        INNER JOIN
+        (
+        SELECT
+        UTLINSTT_ID
+        , MAX(RGSN_TS) AS END_TS
+        FROM
+        <include refid="INVEST"/>TB_BOX_IVT_INVM_HOPE_D
+        GROUP BY
+        UTLINSTT_ID
+        ) B ON hoped.UTLINSTT_ID = B.UTLINSTT_ID AND hoped.RGSN_TS = B.END_TS
+        LEFT JOIN
+        <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D C ON hoped.INVM_STG_CD = C.COM_CD_ID
+        LEFT JOIN
+        <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D CC ON hoped.INVM_AMT_CD = CC.COM_CD_ID
+        ) hope ON hope.UTLINSTT_ID = tbiar.RQST_ENPR_ID
+        WHERE 1=1
+        AND tbias_end.INVM_EXNT_PGSG_CD IN('EXN00000', 'EXN00001' , 'EXN00002' , 'EXN00003', 'EXN01000', 'EXN01001', 'EXN01002')
+        <if test="listStartType != null and !listStartType.equals('')">
+            AND tbias_start.INVM_EXNT_PGSG_CD = #{listStartType}
+        </if>
+
+        <if test="comType != null and !comType.equals('')">
+            <choose>
+                <when test="comType.equals('COM')">
+                    AND tbiar.RQST_ENPR_ID = #{utlinsttId}
+                </when>
+                <when test="comType.equals('VC')">
+                    AND tbiar.INVM_CMP_ID = #{utlinsttId}
+                </when>
+            </choose>
+        </if>
+        <if test="invmExntPgsgCd != null and !invmExntPgsgCd.equals('')">
+            AND tbias_end.INVM_EXNT_PGSG_CD = #{invmExntPgsgCd}
+        </if>
+
+        <if test="checkLimit">
+            AND tbias_end.INVM_EXNT_PGSG_CD != #{AUDIT_COMPLETE_CODE}
+            AND tbias_end.INVM_EXNT_PGSG_CD != #{AUDIT_EXPIRED_CODE}
+            AND tbias_end.INVM_EXNT_PGSG_CD != #{AUDIT_CANCEL_CODE}
+        </if>
+        <if test="searchComNm != null and !searchComNm.equals('')">
+            AND UPPER(eim_com.ETNM) LIKE '%' || UPPER(#{searchComNm}) || '%'
+        </if>
+        <if test="searchBzn != null and !searchBzn.equals('')">
+            AND UPPER(eim_com.BZN) LIKE '%' || UPPER(#{searchBzn}) || '%'
+        </if>
+        <if test="(searchFromDate != null and !searchFromDate.equals('')) and (searchToDate != null and !searchToDate.equals(''))">
+            AND TO_DATE(TO_CHAR(tbiar.RGSN_TS, 'YYYYMMDD'), 'YYYYMMDD') BETWEEN TO_DATE(#{searchFromDate}, 'YYYYMMDD') AND TO_DATE(#{searchToDate}, 'YYYYMMDD')
+        </if>
+        ORDER BY
+        tbiar.RGSN_TS DESC
+    </select>
+
+    <!-- 운영자포탈 투자희망신청현황 상세조회  -->
+    <select id="searchAdminAuditDetail" parameterType="String" resultType="AdminInvestAuditDetailVO">
+        SELECT
+        irbsin.UTLINSTT_ID
+        , irbsin.BNNM
+        , irbsin.RGSN_TS
+        , irbsin.RGSN_USER_ID
+        , irbsin.ADR
+        , irbsin.BZN
+        , irbsin.HMPG_URL_ADR
+        , irbsin.EMP_CNT
+        , irbsin.TTIS_STCNT
+        , irbsin.CPFN_AMT
+        , irbsin.CNPL
+        , enprInfo.ENPR_INRD_CON
+        , hope.INVM_HOPE_STG_NM
+        , hope.INVM_HOPE_AMT_NM
+        , rqst.BRCD
+        , rqst.EMN
+        , rqst.EMM
+        , rqst.INVM_EXNT_RQST_ID
+        , rqst.EXNT_RSLT_CD
+        , rqst.AMNN_TS
+        , rqst.ADDT_DOC_FILE_ID
+        , rqst.ANNC_DAT_FILE_ID
+        , rqst.EXNT_MSG_CON
+        , rqst.EXNT_RSLT_RMRK
+        , rqst.INVM_PRFR_SCDL_AMT
+        , tbias_end.INVM_EXNT_PGSG_CD
+        , tbias_end.INVM_EXNT_PGSG_NM
+        FROM <include refid="INVEST"/>TB_BOX_IVT_IR_B_BSIN_M irbsin
+        LEFT JOIN <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_D enprInfo ON irbsin.UTLINSTT_ID = enprInfo.UTLINSTT_ID
+        LEFT JOIN <include refid="INVEST"/>TB_BOX_IVT_EXNT_RQST_M rqst ON irbsin.UTLINSTT_ID = rqst.RQST_ENPR_ID
+        LEFT JOIN
+        (
+        SELECT
+        A.INVM_EXNT_RQST_ID
+        , A.INVM_EXNT_PGSG_CD
+        , A.RGSN_TS
+        , C.COM_CD_NM AS INVM_EXNT_PGSG_NM
+        FROM
+        <include refid="INVEST"/>TB_BOX_IVT_EXNT_PGSG_R A
+        INNER JOIN
+        (
+        SELECT
+        INVM_EXNT_RQST_ID
+        , MAX(RGSN_TS) AS END_TS
+        FROM
+        <include refid="INVEST"/>TB_BOX_IVT_EXNT_PGSG_R
+        GROUP BY
+        INVM_EXNT_RQST_ID
+        ) B ON A.INVM_EXNT_RQST_ID = B.INVM_EXNT_RQST_ID AND A.RGSN_TS = B.END_TS
+        LEFT JOIN
+        <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D C ON A.INVM_EXNT_PGSG_CD = C.COM_CD_ID
+        ) tbias_end ON tbias_end.INVM_EXNT_RQST_ID = rqst.INVM_EXNT_RQST_ID
+        AND tbias_end.INVM_EXNT_PGSG_CD IN ('EXN00000', 'EXN00001' , 'EXN00002' , 'EXN00003')
+        LEFT JOIN
+        (
+        SELECT
+        hoped.UTLINSTT_ID
+        , hoped.INVM_STG_CD
+        , hoped.RGSN_TS
+        , C.COM_CD_NM AS INVM_HOPE_STG_NM
+        , CC.COM_CD_NM AS INVM_HOPE_AMT_NM
+        FROM
+        <include refid="INVEST"/>TB_BOX_IVT_INVM_HOPE_D hoped
+        INNER JOIN
+        (
+        SELECT
+        UTLINSTT_ID
+        , MAX(RGSN_TS) AS END_TS
+        FROM
+        <include refid="INVEST"/>TB_BOX_IVT_INVM_HOPE_D
+        GROUP BY
+        UTLINSTT_ID
+        ) B ON hoped.UTLINSTT_ID = B.UTLINSTT_ID AND hoped.RGSN_TS = B.END_TS
+        LEFT JOIN
+        <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D C ON hoped.INVM_STG_CD = C.COM_CD_ID
+        LEFT JOIN
+        <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D CC ON hoped.INVM_AMT_CD = CC.COM_CD_ID
+        ) hope ON hope.UTLINSTT_ID = irbsin.UTLINSTT_ID
+        WHERE 1=1
+        AND rqst.INVM_EXNT_RQST_ID = #{invmExntRqstId}
+    </select>
+
+    <!--    투자 심사(심사 총평 업데이트)-->
+    <update id="adminProgressUpdateAudit" parameterType="AdminInvestAuditDetailVO">
+        UPDATE
+        <include refid="INVEST"/>TB_BOX_IVT_EXNT_RQST_M
+        SET
+        EXNT_MSG_CON         = #{exntMsgCon}
+        , EXNT_RSLT_CD       = #{exntRsltCd}
+        , EXNT_RSPR_ID       = #{exntRsprId}
+        , INVM_PRFR_SCDL_AMT = #{invmPrfrScdlAmt}
+        , EXNT_RSLT_RMRK     = #{exntRsltRmrk}
+        , AMNN_USER_ID         = #{amnnUserId}
+        , AMNN_TS              = CURRENT_TIMESTAMP
+        WHERE
+        INVM_EXNT_RQST_ID = #{invmExntRqstId}
+    </update>
+
+    <!--    투자심사 진행 이력 등록-->
+    <insert id="adminInsertInvestAuditStage" parameterType="InvestAuditStageVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_EXNT_PGSG_R
+        (
+        INVM_EXNT_RQST_ID
+        , INVM_EXNT_PGSG_CD
+        , RGSN_USER_ID
+        , RGSN_TS
+        )
+        VALUES
+        (
+        #{invmExntRqstId}
+        , #{invmExntPgsgCd}
+        , #{rgsnUserId}
+        , CURRENT_TIMESTAMP
+        )
+    </insert>
+
+
+    <!-- 투자유치 현황 조회 -->
+    <select id="searchAdminVncmLoanInvestList" parameterType="String" resultType="VncmLoanVO">
+        SELECT
+        bass.UTLINSTT_ID,
+        bass.INVT_DTLS_INVT_DE,
+        bass.INVT_DTLS_INVT_INSTT,
+        bass.INVT_DTLS_INVT_KND,
+        bass.INVT_DTLS_ETVL_AMT,
+        bass.INVT_DTLS_INVT_AMOUNT,
+        rqst.INVT_DTLS_INVT_PNTTM_NM as INVT_DTLS_INVT_PNTTM
+        FROM
+        <include refid="INVEST"/>TB_BOX_IVT_VNENTRLON_REQST_BASS_M bass
+        LEFT JOIN
+        (
+        SELECT
+        reqst.VNENTRLON_ID
+        , reqst.INVT_DTLS_INVT_PNTTM
+        , reqst.RGSN_TS
+        , C.COM_CD_NM AS INVT_DTLS_INVT_PNTTM_NM
+        FROM
+        <include refid="INVEST"/>TB_BOX_IVT_VNENTRLON_REQST_BASS_M reqst
+        INNER JOIN
+        (
+        SELECT
+        VNENTRLON_ID
+        , MAX(RGSN_TS) AS END_TS
+        FROM
+        <include refid="INVEST"/>TB_BOX_IVT_VNENTRLON_REQST_BASS_M
+        GROUP BY
+        VNENTRLON_ID
+        ) B ON reqst.VNENTRLON_ID = B.VNENTRLON_ID AND reqst.RGSN_TS = B.END_TS
+        LEFT JOIN
+        <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D C ON reqst.INVT_DTLS_INVT_PNTTM = C.COM_CD_ID
+        ) rqst ON rqst.VNENTRLON_ID = bass.VNENTRLON_ID
+        WHERE
+        UTLINSTT_ID = #{utlinsttId}
+        ORDER BY INVT_DTLS_INVT_DE DESC
+    </select>
+
+
+</mapper>

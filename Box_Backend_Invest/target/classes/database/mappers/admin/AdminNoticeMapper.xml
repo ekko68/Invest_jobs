@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ibk.sb.restapi.biz.service.admin.repo.AdminNoticeRepo">
+    <!--    SchemaMapper ID-->
+    <sql id="INVEST"><include refid="com.ibk.sb.restapi.biz.service.common.repo.SchemaRepo.INVEST"/></sql>
+
+    <!--    PagingMapper ID-->
+    <sql id="pagingHeader"><include refid="com.ibk.sb.restapi.biz.service.common.repo.PageRepo.pageHeader"/></sql>
+    <sql id="pagingFooter"><include refid="com.ibk.sb.restapi.biz.service.common.repo.PageRepo.pageFooter"/></sql>
+
+    <!--    공지사항 리스트 조회-->
+    <select id="selectNoticeList" parameterType="RequestSearchVO" resultType="NoticeVO">
+        <include refid="pagingHeader"/>
+            SELECT
+                pim.PBNS_ID
+                , pim.PBNS_TTL
+                , pim.PBNS_CON
+                , pim.DEL_YN
+                , pim.RGSN_USER_ID
+                , pim.RGSN_TS
+                , pim.AMNN_USER_ID
+                , pim.AMNN_TS
+
+                , CASE WHEN file_cnt.FILE_COUNT != 0 THEN 'Y' ELSE 'N' END AS FILE_YN
+            FROM
+                <include refid="INVEST"/>TB_BOX_IVT_PBNS_INFO_M pim
+            LEFT JOIN (
+                SELECT PBNS_ID, NVL(COUNT(0), 0) AS FILE_COUNT
+                FROM <include refid="INVEST"/>TB_BOX_IVT_PBNS_ATCH_R
+                GROUP BY PBNS_ID
+            ) file_cnt ON pim.PBNS_ID = file_cnt.PBNS_ID
+            WHERE 1=1
+                AND pim.DEL_YN = 'N'
+                <if test="searchContent != null and !searchContent.equals('')">
+                AND (
+                    UPPER(pim.PBNS_TTL) LIKE '%' || UPPER(#{searchContent}) || '%'
+                    OR UPPER(pim.PBNS_CON) LIKE '%' || UPPER(#{searchContent}) || '%'
+                )
+                </if>
+                <if test="searchUser != null and !searchUser.equals('')">
+                AND UPPER(pim.RGSN_USER_ID) LIKE '%' || UPPER(#{searchUser}) || '%'
+                </if>
+            ORDER BY
+                pim.RGSN_TS DESC
+        <include refid="pagingFooter"/>
+    </select>
+
+    <!--    공지사항 개별 조회-->
+    <select id="selectNotice" parameterType="String" resultType="NoticeVO">
+        SELECT
+        PBNS_ID
+        , PBNS_TTL
+        , PBNS_CON
+        , DEL_YN
+        , RGSN_USER_ID
+        , RGSN_TS
+        , AMNN_USER_ID
+        , AMNN_TS
+        FROM
+        <include refid="INVEST"/>TB_BOX_IVT_PBNS_INFO_M
+        WHERE
+        DEL_YN = 'N' AND PBNS_ID = #{pbnsId}
+    </select>
+
+    <!--    공지사항 첨부파일 리스트 조회-->
+    <select id="selectNoticeFileList" parameterType="String" resultType="NoticeFileVO">
+        SELECT
+        par.PBNS_ID
+        , par.ATCH_ID
+        , tbivf.FILE_ID
+        , tbivf.FILE_NM
+        , par.RGSN_USER_ID
+        , par.RGSN_TS
+        FROM
+        <include refid="INVEST"/>TB_BOX_IVT_PBNS_ATCH_R par
+        LEFT JOIN
+        <include refid="INVEST"/>TB_BOX_IVT_FILE_ATCH_M tbivf ON par.ATCH_ID = tbivf.FILE_ID
+        WHERE
+        par.PBNS_ID = #{pbnsId}
+    </select>
+
+    <insert id="insertNoticeInfo">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_PBNS_INFO_M
+        (
+            PBNS_ID
+            , PBNS_TTL
+            , PBNS_CON
+            , DEL_YN
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        )
+        values
+        (
+            #{params.pbnsId}
+            , #{params.pbnsTtl}
+            , #{params.pbnsCon}
+            , 'N'
+            , #{params.rgsnUserId}
+            , CURRENT_TIMESTAMP
+            , #{params.amnnUserId}
+            , CURRENT_TIMESTAMP
+        )
+    </insert>
+
+    <update id="updateNoticeInfo">
+        UPDATE <include refid="INVEST"/>TB_BOX_IVT_PBNS_INFO_M
+        SET
+            PBNS_TTL        = #{params.pbnsTtl}
+            , PBNS_CON      = #{params.pbnsCon}
+            , AMNN_USER_ID  = #{params.amnnUserId}
+            , AMNN_TS       = CURRENT_TIMESTAMP
+        WHERE 1=1
+        AND PBNS_ID = #{params.pbnsId}
+    </update>
+
+    <update id="deleteNoticeInfo">
+        UPDATE <include refid="INVEST"/>TB_BOX_IVT_PBNS_INFO_M
+        SET
+            DEL_YN        = 'Y'
+            , AMNN_USER_ID  = #{params.amnnUserId}
+            , AMNN_TS       = CURRENT_TIMESTAMP
+        WHERE 1=1
+        AND PBNS_ID = #{params.pbnsId}
+    </update>
+
+    <insert id="insertNoticeAttachFileMapping">
+    INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_PBNS_ATCH_R
+    (
+        PBNS_ID
+        , ATCH_ID
+        , RGSN_USER_ID
+        , RGSN_TS
+    )
+    VALUES
+    (
+        #{params.pbnsId}
+        , #{params.fileId}
+        , #{params.rgsnUserId}
+        , CURRENT_TIMESTAMP
+    )
+    </insert>
+
+    <delete id="deleteNoticeAttachFileMapping">
+    DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_PBNS_ATCH_R
+    WHERE PBNS_ID = #{pbnsId}
+    </delete>
+
+</mapper>

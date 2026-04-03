@@ -1,0 +1,2020 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ibk.sb.restapi.biz.service.batch.repo.DataTransferRepo">
+
+    <!--    SchemaMapper ID-->
+    <sql id="INVEST"><include refid="com.ibk.sb.restapi.biz.service.common.repo.SchemaRepo.INVEST"/></sql>
+
+    <!--===============================================================================================-->
+
+    <!--    1-1 의 resultMap-->
+    <resultMap id="BeforeIvt101MAll" type="BeforeIvt101MVO">
+        <id column="INVM_APLC_MNGM_NO" property="invmAplcMngmNo"/>
+        <id column="USIS_ID" property="usisId"/>
+
+        <result column="INVM_RQST_BZN" property="invmRqstBzn"/>
+        <result column="USER_ID" property="userId"/>
+        <result column="INVM_RQST_ENPR_NM" property="invmRqstEnprNm"/>
+        <result column="ENIN_INRD_CON" property="eninInrdCon"/>
+        <result column="BIZ_FILD_CON" property="bizFildCon"/>
+        <result column="UTLZ_TCHN_CON" property="utlzTchnCon"/>
+        <result column="HMPG_ADR" property="hmpgAdr"/>
+        <result column="ALL_HOLD_STCK_CNT" property="allHoldStckCnt"/>
+        <result column="ALL_STCK_ISS_AMT" property="allStckIssAmt"/>
+<!--        <result column="" property="stchInfoMngmNo"/>-->
+        <result column="EMP_CNT" property="empCnt"/>
+<!--        <result column="" property="rsprNm"/>-->
+<!--        <result column="" property="rsprJbclNm"/>-->
+<!--        <result column="" property="rsprDvm"/>-->
+<!--        <result column="" property="rsprCnplTpn"/>-->
+        <result column="MNFR_BSNS_NM" property="mnfrBsnsNm"/>
+        <result column="MNFR_BSNS_INRD_CON" property="mnfrBsnsInrdCon"/>
+        <result column="IMG_NO" property="imgNo"/>
+<!--        <result column="" property="hopeInitCon"/>-->
+        <result column="HOPE_INVM_STG_ID" property="hopeInvmStgId"/>
+        <result column="HOPE_INVM_ENMT_AMT" property="hopeInvmEnmtAmt"/>
+<!--        <result column="" property="hopeLoanEnmtAmt"/>-->
+<!--        <result column="" property="exstInvmEnmtMngmNo"/>-->
+        <result column="IRRS_DAT_MNGM_NO" property="irrsDatMngmNo"/>
+        <result column="ETC_DAT_MNGM_NO" property="etcDatMngmNo"/>
+        <result column="PGRS_STTS_DCD" property="pgrsSttsDcd"/>
+<!--        <result column="" property="smsRcvYn"/>-->
+<!--        <result column="" property="mailRcvYn"/>-->
+<!--        <result column="" property="pushRcvYn"/>-->
+<!--        <result column="" property="exmnCd"/>-->
+        <result column="EXNT_RSLT_CD" property="exntRsltCd"/>
+        <result column="EXNT_OPNN_CON" property="exntOpnnCon"/>
+        <result column="EXNT_TS" property="exntTs"/>
+        <result column="EXNT_RJCN_STTS_CD" property="exntRjcnSttsCd"/>
+        <result column="EXNT_RJCN_CON" property="exntRjcnCon"/>
+        <result column="BRCD" property="brcd"/>
+<!--        <result column="" property="corpRrbMngmNo"/>-->
+
+        <!--Join Data : nice scrap key : X-->
+<!--        <result column="SCPG_RQST_NO" property="scpgRqstNo"/>-->
+
+        <!--Join Data : usis logo image id-->
+        <result column="USIS_LOGO_FILE_ID" property="usisLogoFileId"/>
+
+        <!--add properties : ivt box additional request        -->
+        <result column="EMN" property="emn"/>
+        <result column="EMM" property="emm"/>
+        <result column="TCB_TCHN_GRD" property="tcbTchnGrd"/>
+        <result column="INCF_CD1" property="incfCd1"/>
+        <result column="INCF_CD2" property="incfCd2"/>
+        <result column="INCF_CD3" property="incfCd3"/>
+
+        <!--Base Data-->
+        <result column="RGSR_ID" property="rgsrId"/>
+        <result column="RGSN_TS" property="rgsnTs"/>
+        <result column="SYS_LSMD_ID" property="sysLsmdId"/>
+        <result column="SYS_LSMD_TS" property="sysLsmdTs"/>
+
+        <!--Cast Data-->
+        <result column="CAST_RGSN_TS" property="castRgsnTs"/>
+        <result column="CAST_SYS_LSMD_TS" property="castSysLsmdTs"/>
+
+        <!--Join List-->
+        <collection property="history" ofType="BeforeIvt401HVO" columnPrefix="H401_">
+            <id column="INVM_APLC_PSST_SRN" property="invmAplcPsstSrn"/>
+            <id column="USIS_ID" property="usisId"/>
+
+            <result column="INVM_APLC_MNGM_NO" property="invmAplcMngmNo"/>
+            <result column="PGRS_CON" property="pgrsCon"/>
+            <result column="PGRS_STTS_CD" property="pgrsSttsCd"/>
+
+            <!--Base Data-->
+            <result column="RGSR_ID" property="rgsrId"/>
+            <result column="RGSN_TS" property="rgsnTs"/>
+            <result column="SYS_LSMD_ID" property="sysLsmdId"/>
+            <result column="SYS_LSMD_TS" property="sysLsmdTs"/>
+
+            <!--Cast Data-->
+            <result column="CAST_RGSN_TS" property="castRgsnTs"/>
+            <result column="CAST_SYS_LSMD_TS" property="castSysLsmdTs"/>
+        </collection>
+    </resultMap>
+
+    <!--    0-1. 기등록 이관건 확인-->
+    <select id="selectTransferMappingData" parameterType="String" resultType="TransferMappingVO">
+        SELECT
+            mapp.TOBE_INVM_EXNT_RQST_ID
+            , mapp.ASI_UTLINSTT_ID
+            , mapp.ASI_INVMAPLC_MNNO
+            , mapp.ENPR_INFO_TRCT_BASE_YN
+            , mapp.RGSN_USER_ID
+            , mapp.RGSN_TS
+            , mapp.AMNN_USER_ID
+            , mapp.AMNN_TS
+            , pgsg.INVM_EXNT_PGSG_CD
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_EXNT_TRCT_R mapp
+        LEFT JOIN (
+            SELECT *
+            FROM (
+                SELECT
+                    INVM_EXNT_RQST_ID
+                    , INVM_EXNT_PGSG_CD
+                    , ROW_NUMBER() OVER(PARTITION BY INVM_EXNT_RQST_ID ORDER BY RGSN_TS DESC) AS RNK
+                    , RGSN_TS
+                FROM <include refid="INVEST"/>TB_BOX_IVT_EXNT_PGSG_R
+            )
+            WHERE RNK = 1
+        ) pgsg ON mapp.TOBE_INVM_EXNT_RQST_ID = pgsg.INVM_EXNT_RQST_ID
+        WHERE
+            mapp.ASI_UTLINSTT_ID = #{asiUtlinsttId} AND mapp.ASI_INVMAPLC_MNNO = #{asiInvmaplcMnno}
+    </select>
+
+    <update id="updateInvmExntFileDelYnById" parameterType="String">
+        UPDATE
+            <include refid="INVEST"/>TB_BOX_IVT_FILE_ATCH_M
+        SET
+            DEL_YN = 'Y'
+            , AMNN_TS = CURRENT_TIMESTAMP
+        WHERE 1=1
+        AND FILE_ID IN (
+            SELECT ANNC_DAT_FILE_ID AS FILE_ID
+            FROM <include refid="INVEST"/>TB_BOX_IVT_EXNT_RQST_M
+            WHERE INVM_EXNT_RQST_ID = #{invmExntRqstId}
+            UNION ALL
+            SELECT ADDT_DOC_FILE_ID AS FILE_ID
+            FROM <include refid="INVEST"/>TB_BOX_IVT_EXNT_RQST_M
+            WHERE INVM_EXNT_RQST_ID = #{invmExntRqstId}
+        )
+    </update>
+
+    <delete id="deleteInvmExntDataById" parameterType="String">
+        DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_EXNT_RQST_M
+        WHERE INVM_EXNT_RQST_ID = #{invmExntRqstId}
+    </delete>
+
+    <delete id="deleteInvmExntPsgsById" parameterType="String">
+        DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_EXNT_PGSG_R
+        WHERE INVM_EXNT_RQST_ID = #{invmExntRqstId}
+    </delete>
+
+    <insert id="mergeTransferMapping" parameterType="TransferMappingVO">
+        MERGE INTO <include refid="INVEST"/>TB_BOX_IVT_EXNT_TRCT_R tbientr
+        USING DUAL ON (ASI_UTLINSTT_ID = #{asiUtlinsttId} AND ASI_INVMAPLC_MNNO = #{asiInvmaplcMnno})
+        WHEN MATCHED THEN
+            UPDATE SET
+                TOBE_INVM_EXNT_RQST_ID   = #{tobeInvmExntRqstId}
+                , ENPR_INFO_TRCT_BASE_YN = #{enprInfoTrctBaseYn}
+                , AMNN_USER_ID           = #{amnnUserId}
+                , AMNN_TS                = CURRENT_TIMESTAMP
+        WHEN NOT MATCHED THEN
+            INSERT
+            (
+                ASI_INVMAPLC_MNNO
+                , ASI_UTLINSTT_ID
+
+                , TOBE_INVM_EXNT_RQST_ID
+                , ENPR_INFO_TRCT_BASE_YN
+
+                , RGSN_USER_ID
+                , RGSN_TS
+                , AMNN_USER_ID
+                , AMNN_TS
+            )
+            VALUES
+            (
+                #{asiInvmaplcMnno}
+                , #{asiUtlinsttId}
+
+                , #{tobeInvmExntRqstId}
+                , #{enprInfoTrctBaseYn}
+
+                , #{rgsnUserId}
+                , CURRENT_TIMESTAMP
+                , #{amnnUserId}
+                , CURRENT_TIMESTAMP
+            )
+    </insert>
+
+    <!--    1-1. 기존 투자심사신청 리스트 조회 : 이력 정보 함께 조회-->
+    <select id="selectBeforeExntRqstAllList" parameterType="Integer" resultMap="BeforeIvt101MAll">
+        SELECT
+        <!--101M-->
+        m101.INVM_APLC_MNGM_NO
+        , m101.USIS_ID
+
+        , m101.INVM_RQST_BZN
+        , m101.USER_ID
+        , m101.INVM_RQST_ENPR_NM
+        , m101.ENIN_INRD_CON
+        , m101.BIZ_FILD_CON
+        , m101.UTLZ_TCHN_CON
+        , m101.HMPG_ADR
+        , m101.ALL_HOLD_STCK_CNT
+        , m101.ALL_STCK_ISS_AMT
+        , m101.EMP_CNT
+        , m101.MNFR_BSNS_NM
+        , m101.MNFR_BSNS_INRD_CON
+        , m101.IMG_NO
+        , m101.HOPE_INVM_STG_ID
+        , m101.HOPE_INVM_ENMT_AMT
+        , m101.IRRS_DAT_MNGM_NO
+        , m101.ETC_DAT_MNGM_NO
+        , m101.PGRS_STTS_DCD
+        , m101.EXNT_RSLT_CD
+        , m101.EXNT_OPNN_CON
+        , m101.EXNT_TS
+        , m101.EXNT_RJCN_STTS_CD
+        , m101.EXNT_RJCN_CON
+
+        , m101.RGSR_ID
+        , m101.RGSN_TS
+        , m101.SYS_LSMD_ID
+        , m101.SYS_LSMD_TS
+
+        , CAST(m101.RGSN_TS AS TIMESTAMP) AS CAST_RGSN_TS
+        , CAST(m101.SYS_LSMD_TS AS TIMESTAMP) AS CAST_SYS_LSMD_TS
+
+        , m101.BRCD
+        , m101.EMN
+        , m101.EMM
+        , m101.TCB_TCHN_GRD
+        , m101.INCF_CD1
+        , m101.INCF_CD2
+        , m101.INCF_CD3
+
+        <!-- USIS LOGO -->
+        , CASE WHEN TRIM(eim.CMPNY_LOGO_IMAGE_FILE) IS NULL
+            THEN eim.CMPNY_LOGO_BASS_IMAGE_FILE
+            ELSE eim.CMPNY_LOGO_IMAGE_FILE END AS USIS_LOGO_FILE_ID
+
+        <!--401H-->
+        , h401.INVM_APLC_PSST_SRN AS H401_INVM_APLC_PSST_SRN
+        , h401.USIS_ID            AS H401_USIS_ID
+        , h401.INVM_APLC_MNGM_NO  AS H401_INVM_APLC_MNGM_NO
+
+        , h401.PGRS_CON           AS H401_PGRS_CON
+        , h401.PGRS_STTS_CD       AS H401_PGRS_STTS_CD
+
+        , h401.RGSR_ID            AS H401_RGSR_ID
+        , h401.RGSN_TS            AS H401_RGSN_TS
+        , h401.SYS_LSMD_ID        AS H401_SYS_LSMD_ID
+        , h401.SYS_LSMD_TS        AS H401_SYS_LSMD_TS
+
+        , CAST(h401.RGSN_TS AS TIMESTAMP) AS H401_CAST_RGSN_TS
+        , CAST(h401.SYS_LSMD_TS AS TIMESTAMP) AS H401_CAST_SYS_LSMD_TS
+
+        FROM (
+            SELECT *
+            FROM (
+                SELECT ROW_NUMBER() OVER(ORDER BY RGSN_TS ASC) AS rnum, m101.*
+                FROM <include refid="INVEST"/>TB_BOX_IVT101M m101
+                ORDER BY m101.RGSN_TS
+            )
+            WHERE 1=1
+            <if test="startRange != null and endRange != null">
+                <![CDATA[ AND (#{startRange} <= rnum AND rnum <= #{endRange}) ]]>
+            </if>
+        ) m101
+        <!--<include refid="INVEST"/>TB_BOX_IVT101M m101-->
+        LEFT JOIN
+        <include refid="INVEST"/>TB_BOX_IVT401H h401
+        ON (h401.INVM_APLC_MNGM_NO = m101.INVM_APLC_MNGM_NO AND h401.USIS_ID = m101.USIS_ID)
+        LEFT JOIN
+        <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_M eim
+        ON m101.USIS_ID = eim.UTLINSTT_ID
+
+        ORDER BY
+        <!--  이력정보의 등록일시 timestamp 전환 값의 정렬이 일련번호 정렬과 맞지 않은 부분이 있어 일련번호 기준으로 재정의-->
+        <!--CAST_RGSN_TS ASC, H401_CAST_RGSN_TS ASC-->
+        CAST_RGSN_TS ASC, h401.INVM_APLC_PSST_SRN ASC
+    </select>
+
+    <select id="selectBeforeExntRsltData" parameterType="String" resultType="BeforeIvt301MVO">
+        SELECT *
+        FROM (
+            SELECT
+                EXNT_INFO_SRN
+                , INVM_APLC_MNGM_NO
+                , USIS_ID
+                , INVM_USIS_ID
+                , APLC_AMT
+                , APLC_TS
+                , PGRS_STTS_CD
+                , EXNT_FNSG_TS
+                , RGSR_ID
+                , RGSN_TS
+                , SYS_LSMD_ID
+                , SYS_LSMD_TS
+            FROM
+                <include refid="INVEST"/>TB_BOX_IVT301M
+            WHERE
+                INVM_APLC_MNGM_NO = #{invmAplcMngmNo} AND USIS_ID = {usisId}
+            <!--    관련 로직이 없어 정렬기준에 대한 정확한 특정이 힘드므로 우선 등록일 기준으로 잡음 -->
+            ORDER BY
+                RGSN_TS DESC
+        )
+        WHERE ROWNUM = 1
+    </select>
+
+    <!--    1-2. 투자심사신청 정보 등록-->
+    <insert id="insertTransferExntData" parameterType="InvestAuditVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_EXNT_RQST_M
+        (
+            INVM_EXNT_RQST_ID
+            , INVM_CMP_ID
+            , RQST_ENPR_ID
+            , ANNC_DAT_FILE_ID
+            , ADDT_DOC_FILE_ID
+            , RQST_MSG_CON
+            , EXNT_MSG_CON
+            , INQ_ABL_NDD
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+
+            , BRCD
+            , EMN
+            , EMM
+            , TCB_TCHN_GRD
+            , INCF_CD1
+            , INCF_CD2
+            , INCF_CD3
+
+            , EXNT_RSLT_CD
+            , EXNT_RSPR_ID
+            , INVM_PRFR_SCDL_AMT
+            , EXNT_RSLT_RMRK
+            , INVMCROF_REPNM
+        )
+        VALUES
+        (
+            #{invmExntRqstId}
+            , #{invmCmpId}
+            , #{rqstEnprId}
+            , #{anncDatFileId}
+            , #{addtDocFileId}
+            , #{rqstMsgCon}
+            , #{exntMsgCon}
+            , #{inqAblNdd}
+            , #{rgsnUserId}
+            , #{rgsnTs}
+            , #{amnnUserId}
+            , #{amnnTs}
+
+            , #{brcd}
+            , #{emn}
+            , #{emm}
+            , #{tcbTchnGrd}
+            , #{incfCd1}
+            , #{incfCd2}
+            , #{incfCd3}
+
+            , #{exntRsltCd}
+            , #{exntRsprId}
+            , #{invmPrfrScdlAmt}
+            , #{exntRsltRmrk}
+            , #{invmcrofRepnm}
+        )
+    </insert>
+
+    <!--    1-3. 투자심사신청 진행 이력 등록-->
+    <!--    기존 코드가 0001~0004 까지는 요청에 편입되기 때문에 해당 레코드의 경우 update처리-->
+    <insert id="mergeTransferExntHistoryData" parameterType="InvestAuditStageVO">
+        MERGE INTO <include refid="INVEST"/>TB_BOX_IVT_EXNT_PGSG_R tbiepr
+        USING DUAL ON (tbiepr.INVM_EXNT_RQST_ID = #{invmExntRqstId} AND tbiepr.INVM_EXNT_PGSG_CD = #{invmExntPgsgCd})
+        WHEN MATCHED THEN
+            UPDATE SET
+                RGSN_USER_ID = #{rgsnUserId}
+                , RGSN_TS = #{rgsnTs}
+        WHEN NOT MATCHED THEN
+            INSERT
+            (
+                INVM_EXNT_RQST_ID
+                , INVM_EXNT_PGSG_CD
+                , RGSN_USER_ID
+                , RGSN_TS
+            )
+            VALUES
+            (
+                #{invmExntRqstId}
+                , #{invmExntPgsgCd}
+                , #{rgsnUserId}
+                , #{rgsnTs}
+            )
+    </insert>
+
+    <!--    1-4. 투자심사신청 정보 심사결과 정보 갱신-->
+    <!--    1-3에서 0006건이 나오는 경우, 혹은 기존 IVT301M 테이블의 심사결과가 존재하는 경우-->
+    <update id="updateTransferExntRsltData" parameterType="InvestAuditVO">
+        UPDATE
+            <include refid="INVEST"/>TB_BOX_IVT_EXNT_RQST_M
+        SET
+            EXNT_RSLT_CD       = #{exntRsltCd}
+            , EXNT_RSPR_ID       = #{exntRsprId}
+            , INVM_PRFR_SCDL_AMT = #{invmPrfrScdlAmt}
+            , EXNT_RSLT_RMRK     = #{exntRsltRmrk}
+            , INVMCROF_REPNM     = #{invmcrofRepnm}
+            , EXNT_MSG_CON       = #{exntMsgCon}
+
+            , AMNN_USER_ID       = #{amnnUserId}
+            , AMNN_TS            = #{amnnTs}
+        WHERE INVM_EXNT_RQST_ID  = #{invmExntRqstId}
+    </update>
+
+    <insert id="insertTransferVcPortfolio" parameterType="VcPortfolioVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_VC_PRTF_L
+        (
+            UTLINSTT_ID
+            , PRTF_ID
+            , INVM_FILD_CD
+            , UTLZ_TCHN_CD
+            , INVM_ENPR_NM
+            , INVM_ENPR_LGTY_IMG_ID
+            , INVM_STG_CD
+            , INVM_PRFR_DT
+            , OPPB_YN
+            , DEL_YN
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{prtfId}
+            , #{invmFildCd}
+            , #{utlzTchnCd}
+            , #{invmEnprNm}
+            , #{invmEnprLgtyImgId}
+            , #{invmStgCd}
+            , #{invmPrfrDt}
+            , 'N'
+            , 'N'
+            , #{rgsnUserId}
+            , #{rgsnTs}
+            , #{amnnUserId}
+            , #{amnnTs}
+        )
+    </insert>
+
+    <select id="selectTransferExntPgsgStatsticList" parameterType="java.util.ArrayList" resultType="TransferExntStatusVO">
+        SELECT
+            main.STATUS_CD
+            , ccd.COM_CD_NM AS STATUS_NM
+            , main.REGISTER_CNT
+        FROM (
+            SELECT
+                INVM_EXNT_PGSG_CD AS STATUS_CD
+                , COUNT(0) AS REGISTER_CNT
+            FROM (
+                SELECT
+                    INVM_EXNT_RQST_ID
+                    , INVM_EXNT_PGSG_CD
+                    , ROW_NUMBER() OVER(PARTITION BY INVM_EXNT_RQST_ID ORDER BY RGSN_TS DESC) AS RNK
+                    , RGSN_TS
+                FROM <include refid="INVEST"/>TB_BOX_IVT_EXNT_PGSG_R
+                WHERE INVM_EXNT_RQST_ID IN (
+                    <foreach collection="invmExntRqstIdList" item="transferId" index="index" separator=",">
+                        #{transferId}
+                    </foreach>
+                )
+            )
+            WHERE RNK = 1
+            GROUP BY INVM_EXNT_PGSG_CD
+        ) main
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd ON main.STATUS_CD = ccd.COM_CD_ID
+        ORDER BY
+            main.STATUS_CD ASC
+    </select>
+
+    <select id="selectTransferExntRsltStatsticList" parameterType="java.util.ArrayList" resultType="TransferExntStatusVO">
+        SELECT
+            main.STATUS_CD
+             , ccd.COM_CD_NM AS STATUS_NM
+             , main.REGISTER_CNT
+        FROM (
+            SELECT
+                EXNT_RSLT_CD AS STATUS_CD
+                , COUNT(0) AS REGISTER_CNT
+            FROM <include refid="INVEST"/>TB_BOX_IVT_EXNT_RQST_M
+            WHERE 1=1
+                AND EXNT_RSLT_CD IS NOT NULL
+                AND INVM_EXNT_RQST_ID IN (
+                    <foreach collection="invmExntRqstIdList" item="transferId" index="index" separator=",">
+                        #{transferId}
+                    </foreach>
+                )
+            GROUP BY EXNT_RSLT_CD
+        ) main
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd ON main.STATUS_CD = ccd.COM_CD_ID
+        ORDER BY
+            main.STATUS_CD ASC
+    </select>
+
+    <!--===============================================================================================-->
+
+    <!--    2-1-1. 기업별 최신 투자심사신청 리스트 조회 : 각 일련번호가 앞인 주 사업장 정보까지 함께 조회-->
+    <select id="selectBeforeUsisRcntExntList" parameterType="Integer" resultType="BeforeIvt101MVO">
+        SELECT
+            m101.*
+            , CAST(m101.RGSN_TS AS TIMESTAMP) AS CAST_RGSN_TS
+            , CAST(m101.SYS_LSMD_TS AS TIMESTAMP) AS CAST_SYS_LSMD_TS
+
+            , m107.BSUN_NM
+            , m107.BSUN_ZPCD
+            , m107.BSUN_ADR
+            , m107.BSUN_DTL_ADR
+
+        FROM (
+            SELECT *
+            FROM (
+                SELECT m101_info.*, ROWNUM AS rnum
+                FROM <include refid="INVEST"/>TB_BOX_IVT101M m101_info
+
+                INNER JOIN (
+                    SELECT MAX(RGSN_TS) AS RGSN_TS, INVM_APLC_MNGM_NO, USIS_ID
+                    FROM <include refid="INVEST"/>TB_BOX_IVT101M
+                    GROUP BY INVM_APLC_MNGM_NO, USIS_ID
+                ) m101_usis_rcnt
+                ON (
+                    m101_info.INVM_APLC_MNGM_NO = m101_usis_rcnt.INVM_APLC_MNGM_NO
+                    AND m101_info.USIS_ID = m101_usis_rcnt.USIS_ID
+                    AND m101_info.RGSN_TS = m101_usis_rcnt.RGSN_TS
+                )
+            )
+            WHERE 1=1
+            <if test="startRange != null and endRange != null">
+                <![CDATA[ AND (#{startRange} <= rnum AND rnum <= #{endRange}) ]]>
+            </if>
+        ) m101
+
+        LEFT JOIN (
+            SELECT m107_info.*
+            FROM <include refid="INVEST"/>TB_BOX_IVT107M m107_info
+
+            INNER JOIN (
+                SELECT MIN(BSUN_ADR_SRN) AS BSUN_ADR_SRN, INVM_APLC_MNGM_NO, USIS_ID
+                FROM <include refid="INVEST"/>TB_BOX_IVT107M
+                WHERE PRCP_BSUN_YN = 'Y'
+                GROUP BY INVM_APLC_MNGM_NO, USIS_ID
+            ) m107_main
+            ON (
+                m107_info.INVM_APLC_MNGM_NO = m107_main.INVM_APLC_MNGM_NO
+                AND m107_info.USIS_ID = m107_main.USIS_ID
+                AND m107_info.BSUN_ADR_SRN = m107_main.BSUN_ADR_SRN
+            )
+        ) m107 ON (m101.INVM_APLC_MNGM_NO = m107.INVM_APLC_MNGM_NO AND m101.USIS_ID = m107.USIS_ID)
+    </select>
+
+    <!--===============================================================================================-->
+
+    <!--    2-2-1. 신규 투자박스 현재 상세정보 테이블 조회-->
+    <select id="selectExistCompDetailData" parameterType="String" resultType="CompanyBasicVO">
+        SELECT * FROM <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_D
+        WHERE UTLINSTT_ID = #{utlinsttId}
+    </select>
+
+    <!--    2-2-2. 신규 투자박스 현재 분야, 기술 정보 테이블 조회-->
+    <select id="selectExistCompIvtFieldList" parameterType="String" resultType="CompanyInvestFieldVO">
+        SELECT * FROM <include refid="INVEST"/>TB_BOX_IVT_ENPR_IVFL_R
+        WHERE UTLINSTT_ID = #{utlinsttId}
+    </select>
+
+    <select id="selectExistCompTechList" parameterType="String" resultType="CompanyUtilTechVO">
+        SELECT * FROM <include refid="INVEST"/>TB_BOX_IVT_ENPR_TCHN_R
+        WHERE UTLINSTT_ID = #{utlinsttId}
+    </select>
+
+    <!--    2-2-3. 비즈니스 (투자) 분야, 활용기술 코드 검색 By 분야명-->
+    <select id="selectInvestFieldCdListByFieldNm" parameterType="java.util.ArrayList" resultType="String">
+        SELECT * FROM <include refid="INVEST"/>TB_BOX_IVT_INVM_FILD_C
+        WHERE INVM_FILD_CDNM IN (
+            <foreach collection="fieldNmList" item="fieldNm" index="index" separator=",">
+                #{fieldNm}
+            </foreach>
+        )
+    </select>
+
+    <select id="selectUtilTechCdListByTechNm" parameterType="java.util.ArrayList" resultType="String">
+        SELECT * FROM <include refid="INVEST"/>TB_BOX_IVT_UTLZ_TCHN_C
+        WHERE UTLZ_TCHN_CDNM IN (
+            <foreach collection="techNmList" item="techNm" index="index" separator=",">
+                #{techNm}
+            </foreach>
+        )
+    </select>
+
+    <!--    2-2-4. IR 마지막 업데이트 날짜 확인 (IR 관련 전체 테이블 기준)-->
+    <select id="selectUsisIrLastUpdateProgress" parameterType="String" resultType="IrProgressVO">
+        SELECT
+            NVL(BSIN_PGRS_RT, 0)
+            + NVL(PRMR_ORDV_PGRS_RT, 0)
+            + NVL(PRMR_HMRS_PGRS_RT, 0)
+            + NVL(STCH_PSST_PGRS_RT, 0)
+            + NVL(FNAM_PGRS_RT, 0)
+            + NVL(PRDT_TCHN_INFO_PGRS_RT, 0)
+            + NVL(OTCM_PLAN_INFO_PGRS_RT, 0) AS PROGRESS
+            , AMNN_TS AS LAST_MODIFIED_DATE
+            , AMNN_TS AS LAST_MODIFIED_TIMESTAMP
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_IR_PGRS_RT_D
+        WHERE
+            UTLINSTT_ID = #{utlinsttId}
+    </select>
+
+    <!--    2-2-5. 신규 투자박스 현재 투자희망정보 테이블 조회-->
+    <select id="selectExistCompIvtHopeData" parameterType="String" resultType="CompanyInvestHopeVO">
+        SELECT * FROM <include refid="INVEST"/>TB_BOX_IVT_INVM_HOPE_D
+        WHERE UTLINSTT_ID = #{utlinsttId}
+    </select>
+
+    <!--    2-2-6. 신규 투자박스 현재 IR 제품정보 테이블 조회-->
+    <select id="selectExistCompIrProdData" parameterType="String" resultType="IrProductVO">
+        SELECT * FROM <include refid="INVEST"/>TB_BOX_IVT_IR_P_PRDT_D
+        WHERE UTLINSTT_ID = #{utlinsttId}
+    </select>
+
+    <!--    2-2-7. 신규 투자박스 현재 IR 기본정보 테이블 조회-->
+    <select id="selectExistCompIrBasicData" parameterType="String" resultType="InvestRelationVO">
+        SELECT * FROM <include refid="INVEST"/>TB_BOX_IVT_IR_B_BSIN_M
+        WHERE UTLINSTT_ID = #{utlinsttId}
+    </select>
+
+    <!--    2-2-8. 신규 투자박스 현재 IR 주주정보 리스트 조회-->
+    <select id="selectExistCompIrStckList" parameterType="String" resultType="IrStockHolderVO">
+        SELECT * FROM <include refid="INVEST"/>TB_BOX_IVT_IR_S_STCH_L
+        WHERE UTLINSTT_ID = #{utlinsttId}
+    </select>
+
+    <!--    2-2-9. 신규 투자박스 현재 IR 기존투자유치 리스트 조회-->
+    <select id="selectExistCompIrIvtList" parameterType="String" resultType="IrInvestVO">
+        SELECT * FROM <include refid="INVEST"/> TB_BOX_IVT_IR_B_INVM_D
+        WHERE UTLINSTT_ID = #{utlinsttId}
+    </select>
+
+    <!--===============================================================================================-->
+
+    <!--    2-3-1. 기존 투자박스 기업별 최신 투자심사 주주 정보 조회-->
+    <select id="selectBeforeUsisRcntStkHldrList" parameterType="String" resultType="BeforeIvt102MVO">
+        SELECT
+        RGSN_SRN
+        , INVM_APLC_MNGM_NO
+        , USIS_ID
+        , STCH_NM
+        , STCH_BIRT_YMD
+        , HLST_CNT
+        , RGSR_ID
+        , RGSN_TS
+        , SYS_LSMD_ID
+        , SYS_LSMD_TS
+        , CAST(RGSN_TS AS TIMESTAMP) AS CAST_RGSN_TS
+        , CAST(SYS_LSMD_TS AS TIMESTAMP) AS CAST_SYS_LSMD_TS
+        FROM <include refid="INVEST"/>TB_BOX_IVT102M
+        WHERE INVM_APLC_MNGM_NO = #{invmAplcMngmNo} AND USIS_ID = #{usisId}
+    </select>
+
+    <!--    2-3-2. 기존 투자박스 기업별 최신 투자심사 기존 투자 유치 정보 조회-->
+    <select id="selectBeforeUsisRcntIvtSetList" parameterType="String" resultType="BeforeIvt103MVO">
+        SELECT
+        RGSN_SRN
+        , USIS_ID
+        , INVM_APLC_MNGM_NO
+        , INVM_YMD
+        , INVM_INTT_NM
+        , INVM_AMT
+        , ETVL_AMT
+        , INVM_STG_ID
+        , RGSR_ID
+        , RGSN_TS
+        , SYS_LSMD_ID
+        , SYS_LSMD_TS
+        , CAST(RGSN_TS AS TIMESTAMP) AS CAST_RGSN_TS
+        , CAST(SYS_LSMD_TS AS TIMESTAMP) AS CAST_SYS_LSMD_TS
+        FROM <include refid="INVEST"/>TB_BOX_IVT103M
+        WHERE INVM_APLC_MNGM_NO = #{invmAplcMngmNo} AND USIS_ID = #{usisId}
+    </select>
+
+    <!--===============================================================================================-->
+
+    <!--    기존 TOBE 정보 삭제-->
+
+    <!--    기업 비즈니스(투자)분야 삭제-->
+    <delete id="deleteTransferUsisBizFieldByUsisId" parameterType="String">
+        DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_ENPR_IVFL_R
+        WHERE UTLINSTT_ID=#{utlinsttId}
+    </delete>
+
+    <!--    기업 IR 활용기술 정보-->
+    <delete id="deleteTransferUsisTechByUsisId" parameterType="String">
+        DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_ENPR_TCHN_R
+        WHERE UTLINSTT_ID=#{utlinsttId}
+    </delete>
+
+    <!--    기업 IR 제품 정보-->
+    <delete id="deleteTransferUsisIrProdDataByUsisId" parameterType="String">
+        DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_IR_P_PRDT_D
+        WHERE UTLINSTT_ID=#{utlinsttId}
+    </delete>
+
+    <!--    기업 IR 주주 정보-->
+    <delete id="deleteTransferUsisIrStkHldrData" parameterType="String">
+        DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_IR_S_STCH_L
+        WHERE UTLINSTT_ID=#{utlinsttId}
+    </delete>
+
+    <!--    기업 IR 투자유치정보-->
+    <delete id="deleteTransferUsisIrIvtSetData" parameterType="String">
+        DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_IR_B_INVM_D
+        WHERE UTLINSTT_ID=#{utlinsttId}
+    </delete>
+
+    <!--===============================================================================================-->
+
+    <!--    2-4-1. 기업 상세정보 병합-->
+    <insert id="mergeTransferUsisData" parameterType="CompanyBasicVO">
+        MERGE INTO <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_D tbieid
+        USING DUAL ON (tbieid.UTLINSTT_ID = #{utlinsttId})
+        WHEN MATCHED THEN
+            UPDATE SET
+                EMP_CNT = #{empCnt}
+                , LSTN_YN = #{lstnYn}
+                , ENPR_INRD_CON = #{enprInrdCon}
+            <!--신규 투자박스에 이미 존재하는 정보를 수정할 경우 수정자와, 수정일을 어떻게 할지-->
+                <!--, AMNN_USER_ID = #{amnnUserId} -->
+                <!--, AMNN_TS = #{amnnTs} -->
+        WHEN NOT MATCHED THEN
+            INSERT
+            (
+                UTLINSTT_ID
+                , EMP_CNT
+                , LSTN_YN
+                , ENPR_INRD_CON
+                , RGSN_USER_ID
+                , RGSN_TS
+                , AMNN_USER_ID
+                , AMNN_TS
+            )
+            VALUES
+            (
+                #{utlinsttId}
+                , #{empCnt}
+                , #{lstnYn}
+                , #{enprInrdCon}
+                , #{rgsnUserId}
+                , #{rgsnTs}
+                , #{amnnUserId}
+                , #{amnnTs}
+            )
+    </insert>
+
+    <!--    2-4-2. 비즈니스 (투자) 분야, 활용기술 코드 등록-->
+    <insert id="insertTransferUsisBizField" parameterType="CompanyInvestFieldVO">
+        <selectKey resultType="CompanyInvestFieldVO" keyProperty="ivflSqn" order="BEFORE">
+            SELECT NVL(MAX(IVFL_SQN), 0) + 1 AS ivflSqn
+            FROM <include refid="INVEST"/>TB_BOX_IVT_ENPR_IVFL_R
+            WHERE UTLINSTT_ID= #{utlinsttId}
+        </selectKey>
+
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_ENPR_IVFL_R
+        (
+            UTLINSTT_ID
+            , IVFL_SQN
+            , INVM_FILD_CD
+            , RGSN_USER_ID
+            , RGSN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{ivflSqn}
+            , #{invmFildCd}
+            , #{rgsnUserId}
+            , #{rgsnTs}
+        )
+    </insert>
+
+    <insert id="insertTransferUsisTech" parameterType="CompanyUtilTechVO">
+        <selectKey resultType="CompanyUtilTechVO" keyProperty="utlzTchnSqn" order="BEFORE">
+            SELECT NVL(MAX(UTLZ_TCHN_SQN), 0) + 1 AS utlzTchnSqn
+            FROM <include refid="INVEST"/>TB_BOX_IVT_ENPR_TCHN_R
+            WHERE UTLINSTT_ID= #{utlinsttId}
+        </selectKey>
+
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_ENPR_TCHN_R
+        (
+            UTLINSTT_ID
+            , UTLZ_TCHN_SQN
+            , UTLZ_TCHN_CD
+            , RGSN_USER_ID
+            , RGSN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{utlzTchnSqn}
+            , #{utlzTchnCd}
+            , #{rgsnUserId}
+            , #{rgsnTs}
+        )
+    </insert>
+
+    <!--    2-4-3. 기업 투자희망정보 병합-->
+    <insert id="mergeTransferUsisIvtHopeData" parameterType="CompanyInvestHopeVO">
+        MERGE INTO <include refid="INVEST"/>TB_BOX_IVT_INVM_HOPE_D tbiihd
+        USING DUAL ON (tbiihd.UTLINSTT_ID = #{utlinsttId})
+        WHEN MATCHED THEN
+            UPDATE SET
+                INVM_STG_CD = #{invmStgCd}
+                , INVM_AMT_CD = #{invmAmtCd}
+                , INVM_AMT = #{invmAmt}
+
+        <!--신규 투자박스에 이미 존재하는 정보를 수정할 경우 수정자와, 수정일을 어떻게 할지-->
+        <!--, AMNN_USER_ID = #{amnnUserId} -->
+        <!--, AMNN_TS = #{amnnTs} -->
+        WHEN NOT MATCHED THEN
+            INSERT
+            (
+                UTLINSTT_ID
+                , INVM_STG_CD
+                , INVM_AMT_CD
+                , INVM_AMT
+                , OPPB_YN
+                , OSIV_HOPEYN
+                , RGSN_USER_ID
+                , RGSN_TS
+                , AMNN_USER_ID
+                , AMNN_TS
+            )
+            VALUES
+            (
+                #{utlinsttId}
+                , #{invmStgCd}
+                , #{invmAmtCd}
+                , #{invmAmt}
+                , 'N'
+                , 'N'
+                , #{rgsnUserId}
+                , #{rgsnTs}
+                , #{amnnUserId}
+                , #{amnnTs}
+            )
+    </insert>
+
+    <!--    2-4-4. 기업 제품 정보 등록-->
+    <insert id="insertTransferUsisProdData" parameterType="CompanyProductVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_ENPR_PRDT_L
+        (
+            UTLINSTT_ID
+            , PRDT_ID
+            , PRDT_NM
+            , PRDT_PTRN
+            , PRDT_IMG_FILE_ID
+            , PRDT_DESC
+            , PRDT_CHRC
+            , DEL_YN
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{prdtId}
+            , #{prdtNm}
+            , #{prdtPtrn}
+            , #{prdtImgFileId}
+            , #{prdtDesc}
+            , #{prdtChrc}
+            , 'N'
+            , #{rgsnUserId}
+            , #{rgsnTs}
+            , #{amnnUserId}
+            , #{amnnTs}
+        )
+    </insert>
+    
+    <!--    2-4-5. IR 제품정보 등록-->
+    <insert id="insertTransferUsisIrProdData" parameterType="IrProductVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_IR_P_PRDT_D
+        (
+            UTLINSTT_ID
+            , PRDT_DESC
+            , PRDT_CHRC
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{prdtDesc}
+            , #{prdtChrc}
+            , #{rgsnUserId}
+            , #{rgsnTs}
+            , #{amnnUserId}
+            , #{amnnTs}
+        )
+    </insert>
+
+    <!--    2-4-6. IR 기본정보 병합-->
+    <insert id="mergeTransferUsisIrBasicData" parameterType="InvestRelationVO">
+        MERGE INTO <include refid="INVEST"/>TB_BOX_IVT_IR_B_BSIN_M tbiibbm
+        USING DUAL ON (tbiibbm.UTLINSTT_ID = #{utlinsttId})
+        WHEN MATCHED THEN
+            UPDATE SET
+                BNNM = #{bnnm}
+                , BZN = #{bzn}
+                , EMP_CNT = #{empCnt}
+                , HMPG_URL_ADR = #{hmpgUrlAdr}
+                , ADR = #{adr}
+                , ZPCD = #{zpcd}
+                , PVPR_AMT = #{pvprAmt}
+                , TTIS_STCNT = #{ttisStcnt}
+            <!--신규 투자박스에 이미 존재하는 정보를 수정할 경우 수정자와, 수정일을 어떻게 할지-->
+            <!--, AMNN_USER_ID = #{amnnUserId} -->
+            <!--, AMNN_TS = #{amnnTs} -->
+        WHEN NOT MATCHED THEN
+            INSERT
+            (
+                UTLINSTT_ID
+                , BNNM
+                , BZN
+                , EMP_CNT
+                , HMPG_URL_ADR
+                , ADR
+                , ZPCD
+                , PVPR_AMT
+                , TTIS_STCNT
+                , RGSN_USER_ID
+                , RGSN_TS
+                , AMNN_USER_ID
+                , AMNN_TS
+            )
+            VALUES
+            (
+                #{utlinsttId}
+                , #{bnnm}
+                , #{bzn}
+                , #{empCnt}
+                , #{hmpgUrlAdr}
+                , #{adr}
+                , #{zpcd}
+                , #{pvprAmt}
+                , #{ttisStcnt}
+                , #{rgsnUserId}
+                , #{rgsnTs}
+                , #{amnnUserId}
+                , #{amnnTs}
+            )
+    </insert>
+
+    <!--    2-4-7. IR 주주정보 등록-->
+    <insert id="insertTransferUsisIrStkHldrData" parameterType="IrStockHolderVO">
+        <selectKey resultType="IrStockHolderVO" keyProperty="stchSqn" order="BEFORE">
+            SELECT NVL(MAX(STCH_SQN), 0) + 1 AS stchSqn
+            FROM <include refid="INVEST"/>TB_BOX_IVT_IR_S_STCH_L
+            WHERE UTLINSTT_ID= #{utlinsttId}
+        </selectKey>
+
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_IR_S_STCH_L
+        (
+            UTLINSTT_ID
+            , STCH_SQN
+            , STCH_NM
+            , PFST_HOLD_CNT
+            , PFST_PVPR
+            , PFST_AMT
+            , CMSC_HOLD_CNT
+            , CMSC_PVPR
+            , CMSC_AMT
+            , PRRA
+            , RMRK
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{stchSqn}
+            , #{stchNm}
+            , #{pfstHoldCnt}
+            , #{pfstPvpr}
+            , #{pfstAmt}
+            , #{cmscHoldCnt}
+            , #{cmscPvpr}
+            , #{cmscAmt}
+            , #{prra}
+            , #{rmrk}
+            , #{rgsnUserId}
+            , #{rgsnTs}
+            , #{amnnUserId}
+            , #{amnnTs}
+        )
+    </insert>
+
+    <!--    2-4-8. IR 투자유치정보 등록-->
+    <insert id="insertTransferUsisIrIvtSetData" parameterType="IrInvestVO">
+        <selectKey resultType="IrInvestVO" keyProperty="invmEnmtSqn" order="BEFORE">
+            SELECT NVL(MAX(INVM_ENMT_SQN), 0) + 1 AS invmEnmtSqn
+            FROM <include refid="INVEST"/>TB_BOX_IVT_IR_B_INVM_D
+            WHERE UTLINSTT_ID= #{utlinsttId}
+        </selectKey>
+
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_IR_B_INVM_D
+        (
+            UTLINSTT_ID
+            , INVM_ENMT_SQN
+            , INVM_ENMT_YM
+            , INVM_ENMT_ETNM
+            , INVM_ENMT_AMT
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{invmEnmtSqn}
+            , #{invmEnmtYm}
+            , #{invmEnmtEtnm}
+            , #{invmEnmtAmt}
+            , #{rgsnUserId}
+            , #{rgsnTs}
+            , #{amnnUserId}
+            , #{amnnTs}
+        )
+    </insert>
+
+    <!--    2-4-9. IR 진행도 병합
+            현재 기준 이관시 진행률이 업데이트 되는 탭 : 주주, 기술정보 (주주 유무 5%, 제품 5%, 제품설명 5%)
+            IR 진행도는 새로 생긴 시스템이므로 우선 현재시간 기준으로 업데이트 처리
+
+            해당 진행도 업데이트는 기존에 해당요소가 없는 경우에만 적용된다.
+            stkHldrTabRt, prdtTabRt 모두 null일 경우 service에서 실행시키지 않음
+            -->
+    <insert id="mergeTransferIrProgressData" parameterType="TransferIrProgressVO">
+        MERGE INTO <include refid="INVEST"/>TB_BOX_IVT_IR_PGRS_RT_D tbiiprd
+        USING DUAL ON (tbiiprd.UTLINSTT_ID = #{utlinsttId})
+        WHEN MATCHED THEN
+            UPDATE SET
+                AMNN_USER_ID = #{userId}
+                , AMNN_TS = CURRENT_TIMESTAMP
+                <if test="stkHldrTabRt != null">
+                    , STCH_PSST_PGRS_RT = #{stkHldrTabRt}
+                </if>
+                <if test="prdtTabRt != null">
+                    , PRDT_TCHN_INFO_PGRS_RT = PRDT_TCHN_INFO_PGRS_RT + #{prdtTabRt}
+                </if>
+        WHEN NOT MATCHED THEN
+            INSERT
+            (
+                UTLINSTT_ID
+                , RGSN_USER_ID
+                , RGSN_TS
+                , AMNN_USER_ID
+                , AMNN_TS
+                <if test="stkHldrTabRt != null">
+                    , STCH_PSST_PGRS_RT
+                </if>
+                <if test="prdtTabRt != null">
+                    , PRDT_TCHN_INFO_PGRS_RT
+                </if>
+            )
+            VALUES
+            (
+                #{utlinsttId}
+                , #{userId}
+                , CURRENT_TIMESTAMP
+                , #{userId}
+                , CURRENT_TIMESTAMP
+                <if test="stkHldrTabRt != null">
+                    , #{stkHldrTabRt}
+                </if>
+                <if test="prdtTabRt != null">
+                    , #{prdtTabRt}
+                </if>
+            )
+    </insert>
+
+    <!--    2-4-10. 간편서류 이력 정보 등록
+            등록된 키 이력은 각 시스템이 다르기 때문에 병합이 아니라 insert로 처리
+            TOBE 테이블과 대조하여 없는 키 값들만 입력처리함-->
+    <insert id="insertTransferNiceDocKeyData">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_SIMP_DOC_L
+        (
+            UTLINSTT_ID
+            , SIMP_DOC_RGSN_ID
+            , DEL_YN
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        )
+        SELECT
+            m201.USIS_ID
+            , m201.SCPG_RQST_NO
+            , 'N'
+            , m201.RGSR_ID
+            , CAST(m201.RGSN_TS AS TIMESTAMP)
+            , m201.SYS_LSMD_ID
+            , CAST(m201.SYS_LSMD_TS AS TIMESTAMP)
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT201M m201
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_SIMP_DOC_L tbisdl
+            ON (m201.USIS_ID = tbisdl.UTLINSTT_ID AND m201.SCPG_RQST_NO = tbisdl.SIMP_DOC_RGSN_ID)
+        WHERE tbisdl.SIMP_DOC_RGSN_ID IS NULL
+    </insert>
+
+
+    <!--============================== Backup Data Transfer Overwrite ==============================-->
+
+    <!--신규 투자박스 : 투자심사요청, 투자심사진행단계, 간편서류이력
+                     기업상세, 기업제품, 기업투자희망, 기업 비즈니스분야, 기업 활용기술
+                     기업 IR (기본, 투자유치, 주주, 제품, 진행도)-->
+    <!--    투자심사 파일 아이디 (발표자료, 추가자료) 조회-->
+    <select id="selectExntRqstAtchFileList" resultType="String">
+        SELECT ANNC_DAT_FILE_ID AS FILE_ID FROM <include refid="INVEST"/>TB_BOX_IVT_EXNT_RQST_M
+        WHERE ANNC_DAT_FILE_ID IS NOT NULL
+        UNION ALL
+        SELECT ADDT_DOC_FILE_ID AS FILE_ID FROM <include refid="INVEST"/>TB_BOX_IVT_EXNT_RQST_M
+        WHERE ADDT_DOC_FILE_ID IS NOT NULL
+    </select>
+
+    <!--    기업 제품정보 파일 아이디 조회-->
+    <select id="selectEnprPrdtAtchFileList" resultType="String">
+        SELECT PRDT_IMG_FILE_ID FROM <include refid="INVEST"/>TB_BOX_IVT_ENPR_PRDT_L
+        WHERE PRDT_IMG_FILE_ID IS NOT NULL
+    </select>
+
+    <!--    투자사 포트폴리오 파일 아이디 조회-->
+    <select id="selectVcPrtfAtchFileList" resultType="String">
+        SELECT INVM_ENPR_LGTY_IMG_ID FROM <include refid="INVEST"/>TB_BOX_IVT_VC_PRTF_L
+        WHERE INVM_ENPR_LGTY_IMG_ID IS NOT NULL
+    </select>
+
+    <!--    투자심사-->
+    <delete id="deleteExntRqstMAll"> DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_EXNT_RQST_M </delete>
+
+    <insert id="insertExntRqstMBackup" parameterType="ExntRqstM">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_EXNT_RQST_M
+        (
+            INVM_EXNT_RQST_ID
+            , INVM_CMP_ID
+            , RQST_ENPR_ID
+            , ANNC_DAT_FILE_ID
+            , ADDT_DOC_FILE_ID
+            , PBRL_PICT_URL
+            , RQST_MSG_CON
+            , PRPL_MSG_CON
+            , EXNT_MSG_CON
+            , INQ_ABL_NDD
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+
+            , BRCD
+            , EMN
+            , EMM
+            , TCB_TCHN_GRD
+            , INCF_CD1
+            , INCF_CD2
+            , INCF_CD3
+
+            , EXNT_RSLT_CD
+            , EXNT_RSPR_ID
+            , INVM_PRFR_SCDL_AMT
+            , EXNT_RSLT_RMRK
+            , INVMCROF_REPNM
+        )
+        VALUES
+        (
+            #{invmExntRqstId}
+            , #{invmCmpId}
+            , #{rqstEnprId}
+            , #{anncDatFileId}
+            , #{addtDocFileId}
+            , #{pbrlPictUrl}
+            , #{rqstMsgCon}
+            , #{prplMsgCon}
+            , #{exntMsgCon}
+            , #{inqAblNdd}
+            , #{rgsnUserId}
+            , #{rgsnTs}
+            , #{amnnUserId}
+            , #{amnnTs}
+
+            , #{brcd}
+            , #{emn}
+            , #{emm}
+            , #{tcbTchnGrd}
+            , #{incfCd1}
+            , #{incfCd2}
+            , #{incfCd3}
+
+            , #{exntRsltCd}
+            , #{exntRsprId}
+            , #{invmPrfrScdlAmt}
+            , #{exntRsltRmrk}
+            , #{invmcrofRepnm}
+        )
+    </insert>
+
+    <!--    이관된 투자심사 매핑 정보-->
+    <delete id="deleteExntTransferMapping">
+        DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_EXNT_TRCT_R
+        WHERE TOBE_INVM_EXNT_RQST_ID NOT IN (
+            SELECT INVM_EXNT_RQST_ID
+            FROM <include refid="INVEST"/>TB_BOX_IVT_EXNT_RQST_M
+        )
+    </delete>
+
+    <delete id="deleteExntTransferUnMapping">
+        DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_EXNT_TRCT_R
+        WHERE TOBE_INVM_EXNT_RQST_ID IS NULL
+    </delete>
+
+    <!--    투자심사 진행도-->
+    <delete id="deleteExntPgsgRAll"> DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_EXNT_PGSG_R </delete>
+
+    <insert id="insertExntPgsgRBackup" parameterType="ExntPgsgR">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_EXNT_PGSG_R
+        (
+            INVM_EXNT_RQST_ID
+            , INVM_EXNT_PGSG_CD
+            , RGSN_USER_ID
+            , RGSN_TS
+        )
+        VALUES
+        (
+            #{invmExntRqstId}
+            , #{invmExntPgsgCd}
+            , #{rgsnUserId}
+            , #{rgsnTs}
+        )
+    </insert>
+
+    <!--    간편서류-->
+    <delete id="deleteSimpDocLAll"> DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_SIMP_DOC_L </delete>
+
+    <insert id="insertSimpDocLBackup" parameterType="SimpDocL">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_SIMP_DOC_L
+        (
+            UTLINSTT_ID
+            , SIMP_DOC_RGSN_ID
+            , DEL_YN
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{simpDocRgsnId}
+            , #{delYn}
+            , #{rgsnUserId}
+            , #{rgsnTs}
+            , #{amnnUserId}
+            , #{amnnTs}
+        )
+    </insert>
+
+    <!--    기업 상세정보-->
+    <delete id="deleteEnprInfoDAll"> DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_D </delete>
+
+    <insert id="insertEnprInfoDBackup" parameterType="EnprInfoD">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_D
+        (
+            UTLINSTT_ID
+            , ENFM_CLSF_CD
+            , ENPR_DSNC_CLSF_CD
+            , BSUN_DWAR_CD
+            , EMP_CNT
+            , BTNM
+            , BZST_NM
+            , MSRN_AMSL_YEAR
+            , MSRN_AMSL_AMT
+            , LSTN_YN
+            , ENPR_INRD_CON
+            , CREW_RTRV
+            , ATRW_STPL_COSN_YN
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+            , RCMD_ENPR_STUP_YN
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{enfmClsfCd}
+            , #{enprDsncClsfCd}
+            , #{bsunDwarCd}
+            , #{empCnt}
+            , #{btnm}
+            , #{bzstNm}
+            , #{msrnAmslYear}
+            , #{msrnAmslAmt}
+            , #{lstnYn}
+            , #{enprInrdCon}
+            , #{crewRtrv}
+            , #{atrwStplCosnYn}
+            , #{rgsnUserId}
+            , #{rgsnTs}
+            , #{amnnUserId}
+            , #{amnnTs}
+            , #{rcmdEnprStupYn}
+        )
+    </insert>
+
+    <!--    기업 제품정보-->
+    <delete id="deleteEnprPrdtLAll"> DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_ENPR_PRDT_L </delete>
+
+    <insert id="insertEnprPrdtLBackup" parameterType="EnprPrdtL">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_ENPR_PRDT_L
+        (
+            UTLINSTT_ID
+            , PRDT_ID
+            , PRDT_NM
+            , PRDT_PTRN
+            , PRDT_IMG_FILE_ID
+            , PRDT_DESC
+            , PRDT_CHRC
+            , DEL_YN
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{prdtId}
+            , #{prdtNm}
+            , #{prdtPtrn}
+            , #{prdtImgFileId}
+            , #{prdtDesc}
+            , #{prdtChrc}
+            , #{delYn}
+            , #{rgsnUserId}
+            , #{rgsnTs}
+            , #{amnnUserId}
+            , #{amnnTs}
+        )
+    </insert>
+
+    <!--    기업 비즈니스(투자) 분야-->
+    <delete id="deleteEnprIvflRAll"> DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_ENPR_IVFL_R </delete>
+
+    <insert id="insertEnprIvflRBackup" parameterType="EnprIvflR">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_ENPR_IVFL_R
+        (
+            UTLINSTT_ID
+            , IVFL_SQN
+            , INVM_FILD_CD
+            , RGSN_USER_ID
+            , RGSN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{ivflSqn}
+            , #{invmFildCd}
+            , #{rgsnUserId}
+            , #{rgsnTs}
+        )
+    </insert>
+
+    <!--    기업 활용기술-->
+    <delete id="deleteEnprTchnRAll"> DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_ENPR_TCHN_R </delete>
+
+    <insert id="insertEnprTchnRBackup" parameterType="EnprTchnR">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_ENPR_TCHN_R
+        (
+            UTLINSTT_ID
+            , UTLZ_TCHN_SQN
+            , UTLZ_TCHN_CD
+            , RGSN_USER_ID
+            , RGSN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{utlzTchnSqn}
+            , #{utlzTchnCd}
+            , #{rgsnUserId}
+            , #{rgsnTs}
+        )
+    </insert>
+
+    <!--    기업 투자희망-->
+    <delete id="deleteInvmHopeDAll"> DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_INVM_HOPE_D </delete>
+
+    <insert id="insertInvmHopeDBackup" parameterType="InvmHopeD">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_INVM_HOPE_D
+        (
+            UTLINSTT_ID
+            , INVM_STG_CD
+            , INVM_AMT_CD
+            , OPPB_YN
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+            , INVM_AMT
+
+            , OSIV_HOPEYN
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{invmStgCd}
+            , #{invmAmtCd}
+            , #{oppbYn}
+            , #{rgsnUserId}
+            , #{rgsnTs}
+            , #{amnnUserId}
+            , #{amnnTs}
+            , #{invmAmt}
+
+            , #{osivHopeyn}
+        )
+    </insert>
+
+    <!--    IR 기본-->
+    <delete id="deleteIrBBsinMAll"> DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_IR_B_BSIN_M </delete>
+
+    <insert id="insertIrBBsinMBackup" parameterType="IrBBsinM">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_IR_B_BSIN_M
+        (
+            UTLINSTT_ID
+            , BNNM
+            , ENPR_DSNC_CD
+            , BZN
+            , COL
+            , RPRNM
+            , EMP_CNT
+            , BTNM
+            , CGN
+            , CNPL
+            , HMPG_URL_ADR
+            , ADR
+            , ZPCD
+            , CPFN_AMT
+            , PVPR_AMT
+            , TTIS_STCNT
+            , ACPR
+            , ETVL_AMT
+            , INVM_MNY_USUS
+            , INVM_RTRV_PLAN_CON
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{bnnm}
+            , #{enprDsncCd}
+            , #{bzn}
+            , #{col}
+            , #{rprnm}
+            , #{empCnt}
+            , #{btnm}
+            , #{cgn}
+            , #{cnpl}
+            , #{hmpgUrlAdr}
+            , #{adr}
+            , #{zpcd}
+            , #{cpfnAmt}
+            , #{pvprAmt}
+            , #{ttisStcnt}
+            , #{acpr}
+            , #{etvlAmt}
+            , #{invmMnyUsus}
+            , #{invmRtrvPlanCon}
+            , #{rgsnUserId}
+            , #{rgsnTs}
+            , #{amnnUserId}
+            , #{amnnTs}
+        )
+    </insert>
+
+    <!--    IR 투자유치-->
+    <delete id="deleteIrBInvmDAll"> DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_IR_B_INVM_D </delete>
+
+    <insert id="insertIrBInvmDBackup" parameterType="IrBInvmD">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_IR_B_INVM_D
+        (
+            UTLINSTT_ID
+            , INVM_ENMT_SQN
+            , INVM_ENMT_YM
+            , INVM_ENMT_ETNM
+            , INVM_ENMT_AMT
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{invmEnmtSqn}
+            , #{invmEnmtYm}
+            , #{invmEnmtEtnm}
+            , #{invmEnmtAmt}
+            , #{rgsnUserId}
+            , #{rgsnTs}
+            , #{amnnUserId}
+            , #{amnnTs}
+        )
+    </insert>
+
+    <!--    IR 제품-->
+    <delete id="deleteIrPPrdtDAll"> DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_IR_P_PRDT_D </delete>
+
+    <insert id="insertIrPPrdtDBackup" parameterType="IrPPrdtD">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_IR_P_PRDT_D
+        (
+            UTLINSTT_ID
+            , PRDT_DESC
+            , PRDT_CHRC
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{prdtDesc}
+            , #{prdtChrc}
+            , #{rgsnUserId}
+            , #{rgsnTs}
+            , #{amnnUserId}
+            , #{amnnTs}
+        )
+    </insert>
+
+    <!--    IR 주주-->
+    <delete id="deleteIrSStchLAll"> DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_IR_S_STCH_L </delete>
+
+    <insert id="insertIrSStchLBackup" parameterType="IrSStchL">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_IR_S_STCH_L
+        (
+            UTLINSTT_ID
+            , STCH_SQN
+            , STCH_NM
+            , PFST_HOLD_CNT
+            , PFST_PVPR
+            , PFST_AMT
+            , CMSC_HOLD_CNT
+            , CMSC_PVPR
+            , CMSC_AMT
+            , PRRA
+            , RMRK
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{stchSqn}
+            , #{stchNm}
+            , #{pfstHoldCnt}
+            , #{pfstPvpr}
+            , #{pfstAmt}
+            , #{cmscHoldCnt}
+            , #{cmscPvpr}
+            , #{cmscAmt}
+            , #{prra}
+            , #{rmrk}
+            , #{rgsnUserId}
+            , #{rgsnTs}
+            , #{amnnUserId}
+            , #{amnnTs}
+        )
+    </insert>
+
+    <!--    IR 진행도-->
+    <delete id="deleteIrPgrsRtDAll"> DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_IR_PGRS_RT_D </delete>
+
+    <insert id="insertIrPgrsRtDBackup" parameterType="IrPgrsRtD">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_IR_PGRS_RT_D
+        (
+            UTLINSTT_ID
+            , BSIN_PGRS_RT
+            , PRMR_ORDV_PGRS_RT
+            , PRMR_HMRS_PGRS_RT
+            , STCH_PSST_PGRS_RT
+            , FNAM_PGRS_RT
+            , PRDT_TCHN_INFO_PGRS_RT
+            , OTCM_PLAN_INFO_PGRS_RT
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{bsinPgrsRt}
+            , #{prmrOrdvPgrsRt}
+            , #{prmrHmrsPgrsRt}
+            , #{stchPsstPgrsRt}
+            , #{fnamPgrsRt}
+            , #{prdtTchnInfoPgrsRt}
+            , #{otcmPlanInfoPgrsRt}
+            , #{rgsnUserId}
+            , #{rgsnTs}
+            , #{amnnUserId}
+            , #{amnnTs}
+        )
+    </insert>
+
+    <!--    포트폴리오 정보-->
+    <delete id="deleteVcPrtfLAll"> DELETE FROM <include refid="INVEST"/>TB_BOX_IVT_VC_PRTF_L </delete>
+
+    <insert id="insertVcPrtfLBackup" parameterType="VcPrtfL">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_VC_PRTF_L
+        (
+            UTLINSTT_ID
+            , PRTF_ID
+            , INVM_FILD_CD
+            , UTLZ_TCHN_CD
+            , INVM_ENPR_NM
+            , INVM_ENPR_LGTY_IMG_ID
+            , INVM_STG_CD
+            , INVM_AMT
+            , INVM_PRFR_DT
+            , OPPB_YN
+            , DEL_YN
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+        )
+        VALUES
+        (
+            #{utlinsttId}
+            , #{prtfId}
+            , #{invmFildCd}
+            , #{utlzTchnCd}
+            , #{invmEnprNm}
+            , #{invmEnprLgtyImgId}
+            , #{invmStgCd}
+            , #{invmAmt}
+            , #{invmPrfrDt}
+            , #{oppbYn}
+            , #{delYn}
+            , #{rgsnUserId}
+            , #{rgsnTs}
+            , #{amnnUserId}
+            , #{amnnTs}
+        )
+    </insert>
+
+    <!--기존 투자박스 : 101M, 102M, 103M, 107M, 201M, 301M, 401H-->
+
+    <!--    101M-->
+    <delete id="deleteIvt101MAll"> DELETE FROM <include refid="INVEST"/>TB_BOX_IVT101M </delete>
+
+    <insert id="insertIvt101MTsData" parameterType="Ivt101M">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT101M
+        (
+            USIS_ID
+            , INVM_APLC_MNGM_NO
+            , INVM_RQST_BZN
+            , USER_ID
+            , INVM_RQST_ENPR_NM
+            , ENIN_INRD_CON
+            , BIZ_FILD_CON
+            , UTLZ_TCHN_CON
+            , HMPG_ADR
+            , ALL_HOLD_STCK_CNT
+            , ALL_STCK_ISS_AMT
+            , STCH_INFO_MNGM_NO
+            , EMP_CNT
+            , RSPR_NM
+            , RSPR_JBCL_NM
+            , RSPR_DVM
+            , RSPR_CNPL_TPN
+            , MNFR_BSNS_NM
+            , MNFR_BSNS_INRD_CON
+            , IMG_NO
+            , HOPE_INIT_CON
+            , HOPE_INVM_STG_ID
+            , HOPE_INVM_ENMT_AMT
+            , HOPE_LOAN_ENMT_AMT
+            , EXST_INVM_ENMT_MNGM_NO
+            , IRRS_DAT_MNGM_NO
+            , ETC_DAT_MNGM_NO
+            , PGRS_STTS_DCD
+            , RGSR_ID
+            , RGSN_TS
+            , SYS_LSMD_ID
+            , SYS_LSMD_TS
+            , SMS_RCV_YN
+            , MAIL_RCV_YN
+            , PUSH_RCV_YN
+            , EXMN_CD
+            , EXNT_RSLT_CD
+            , EXNT_OPNN_CON
+            , EXNT_TS
+            , EXNT_RJCN_STTS_CD
+            , EXNT_RJCN_CON
+            , BRCD
+            , CORP_RRB_MNGM_NO
+
+            , EMN
+            , EMM
+            , TCB_TCHN_GRD
+            , INCF_CD1
+            , INCF_CD2
+            , INCF_CD3
+            , RQST_FNSG_DD
+        )
+        VALUES
+        (
+            #{usisId}
+            , #{invmAplcMngmNo}
+            , #{invmRqstBzn}
+            , #{userId}
+            , #{invmRqstEnprNm}
+            , #{eninInrdCon}
+            , #{bizFildCon}
+            , #{utlzTchnCon}
+            , #{hmpgAdr}
+            , #{allHoldStckCnt}
+            , #{allStckIssAmt}
+            , #{stchInfoMngmNo}
+            , #{empCnt}
+            , #{rsprNm}
+            , #{rsprJbclNm}
+            , #{rsprDvm}
+            , #{rsprCnplTpn}
+            , #{mnfrBsnsNm}
+            , #{mnfrBsnsInrdCon}
+            , #{imgNo}
+            , #{hopeInitCon}
+            , #{hopeInvmStgId}
+            , #{hopeInvmEnmtAmt}
+            , #{hopeLoanEnmtAmt}
+            , #{exstInvmEnmtMngmNo}
+            , #{irrsDatMngmNo}
+            , #{etcDatMngmNo}
+            , #{pgrsSttsDcd}
+            , #{rgsrId}
+            , #{rgsnTs}
+            , #{sysLsmdId}
+            , #{sysLsmdTs}
+            , #{smsRcvYn}
+            , #{mailRcvYn}
+            , #{pushRcvYn}
+            , #{exmnCd}
+            , #{exntRsltCd}
+            , #{exntOpnnCon}
+            , #{exntTs}
+            , #{exntRjcnSttsCd}
+            , #{exntRjcnCon}
+            , #{brcd}
+            , #{corpRrbMngmNo}
+
+            , #{emn}
+            , #{emm}
+            , #{tcbTchnGrd}
+            , #{incfCd1}
+            , #{incfCd2}
+            , #{incfCd3}
+            , #{rqstFnsgDd}
+        )
+    </insert>
+
+    <!--    102M-->
+    <delete id="deleteIvt102MAll"> DELETE FROM <include refid="INVEST"/>TB_BOX_IVT102M </delete>
+
+    <insert id="insertIvt102MTsData" parameterType="Ivt102M">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT102M
+        (
+            RGSN_SRN
+            , INVM_APLC_MNGM_NO
+            , USIS_ID
+            , STCH_NM
+            , STCH_BIRT_YMD
+            , HLST_CNT
+            , RGSR_ID
+            , RGSN_TS
+            , SYS_LSMD_ID
+            , SYS_LSMD_TS
+        )
+        VALUES
+        (
+            #{rgsnSrn}
+            , #{invmAplcMngmNo}
+            , #{usisId}
+            , #{stchNm}
+            , #{stchBirtYmd}
+            , #{hlstCnt}
+            , #{rgsrId}
+            , #{rgsnTs}
+            , #{sysLsmdId}
+            , #{sysLsmdTs}
+        )
+    </insert>
+
+    <!--    103M-->
+    <delete id="deleteIvt103MAll"> DELETE FROM <include refid="INVEST"/>TB_BOX_IVT103M </delete>
+
+    <insert id="insertIvt103MTsData" parameterType="Ivt103M">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT103M
+        (
+            RGSN_SRN
+            , USIS_ID
+            , INVM_APLC_MNGM_NO
+            , INVM_YMD
+            , INVM_INTT_NM
+            , INVM_AMT
+            , ETVL_AMT
+            , INVM_STG_ID
+            , RGSR_ID
+            , RGSN_TS
+            , SYS_LSMD_ID
+            , SYS_LSMD_TS
+        )
+        VALUES
+        (
+            #{rgsnSrn}
+            , #{usisId}
+            , #{invmAplcMngmNo}
+            , #{invmYmd}
+            , #{invmInttNm}
+            , #{invmAmt}
+            , #{etvlAmt}
+            , #{invmStgId}
+            , #{rgsrId}
+            , #{rgsnTs}
+            , #{sysLsmdId}
+            , #{sysLsmdTs}
+        )
+    </insert>
+
+    <!--    107M-->
+    <delete id="deleteIvt107MAll"> DELETE FROM <include refid="INVEST"/>TB_BOX_IVT107M </delete>
+
+    <insert id="insertIvt107MTsData" parameterType="Ivt107M">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT107M
+        (
+            INVM_APLC_MNGM_NO
+            , BSUN_ADR_SRN
+            , USIS_ID
+            , PRCP_BSUN_YN
+            , BSUN_NM
+            , BSUN_BZN
+            , BSUN_ZPCD
+            , BSUN_ADR
+            , BSUN_DTL_ADR
+            , RGSR_ID
+            , RGSN_TS
+            , SYS_LSMD_ID
+            , SYS_LSMD_TS
+        )
+        VALUES
+        (
+            #{invmAplcMngmNo}
+            , #{bsunAdrSrn}
+            , #{usisId}
+            , #{prcpBsunYn}
+            , #{bsunNm}
+            , #{bsunBzn}
+            , #{bsunZpcd}
+            , #{bsunAdr}
+            , #{bsunDtlAdr}
+            , #{rgsrId}
+            , #{rgsnTs}
+            , #{sysLsmdId}
+            , #{sysLsmdTs}
+        )
+    </insert>
+
+    <!--    201M-->
+    <delete id="deleteIvt201MAll"> DELETE FROM <include refid="INVEST"/>TB_BOX_IVT201M </delete>
+
+    <insert id="insertIvt201MTsData" parameterType="Ivt201M">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT201M
+        (
+            SCPG_RQST_NO
+            , USIS_ID
+            , USER_ID
+            , SCPG_BZN
+            , DOC_SBMS_TS
+            , RGSR_ID
+            , RGSN_TS
+            , SYS_LSMD_ID
+            , SYS_LSMD_TS
+            , INVM_APLC_MNGM_NO
+        )
+        VALUES
+        (
+            #{scpgRqstNo}
+            , #{usisId}
+            , #{userId}
+            , #{scpgBzn}
+            , #{docSbmsTs}
+            , #{rgsrId}
+            , #{rgsnTs}
+            , #{sysLsmdId}
+            , #{sysLsmdTs}
+            , #{invmAplcMngmNo}
+        )
+    </insert>
+
+    <!--    301M-->
+    <delete id="deleteIvt301MAll"> DELETE FROM <include refid="INVEST"/>TB_BOX_IVT301M </delete>
+
+    <insert id="insertIvt301MTsData" parameterType="Ivt301M">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT301M
+        (
+            EXNT_INFO_SRN
+            , INVM_APLC_MNGM_NO
+            , USIS_ID
+            , INVM_USIS_ID
+            , APLC_AMT
+            , APLC_TS
+            , PGRS_STTS_CD
+            , EXNT_FNSG_TS
+            , RGSR_ID
+            , RGSN_TS
+            , SYS_LSMD_ID
+            , SYS_LSMD_TS
+        )
+        VALUES
+        (
+            #{exntInfoSrn}
+            , #{invmAplcMngmNo}
+            , #{usisId}
+            , #{invmUsisId}
+            , #{aplcAmt}
+            , #{aplcTs}
+            , #{pgrsSttsCd}
+            , #{exntFnsgTs}
+            , #{rgsrId}
+            , #{rgsnTs}
+            , #{sysLsmdId}
+            , #{sysLsmdTs}
+        )
+    </insert>
+
+    <!--    401H-->
+    <delete id="deleteIvt401HAll"> DELETE FROM <include refid="INVEST"/>TB_BOX_IVT401H </delete>
+
+    <insert id="insertIvt401HTsData" parameterType="Ivt401H">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT401H
+        (
+            INVM_APLC_PSST_SRN
+            , USIS_ID
+            , INVM_APLC_MNGM_NO
+            , PGRS_CON
+            , PGRS_STTS_CD
+            , RGSR_ID
+            , RGSN_TS
+            , SYS_LSMD_ID
+            , SYS_LSMD_TS
+        )
+        VALUES
+        (
+            #{invmAplcPsstSrn}
+            , #{usisId}
+            , #{invmAplcMngmNo}
+            , #{pgrsCon}
+            , #{pgrsSttsCd}
+            , #{rgsrId}
+            , #{rgsnTs}
+            , #{sysLsmdId}
+            , #{sysLsmdTs}
+        )
+    </insert>
+
+    <!--논리삭제파일 복구-->
+    <update id="recoverFileInfoDelYnInOnlyTable" parameterType="String">
+        UPDATE
+        <include refid="INVEST"/>TB_BOX_IVT_FILE_ATCH_M
+        SET
+            DEL_YN = 'N'
+            , AMNN_USER_ID = #{amnnUserId}
+            , AMNN_TS = CURRENT_TIMESTAMP
+        WHERE
+            FILE_ID = #{fileId}
+    </update>
+
+</mapper>

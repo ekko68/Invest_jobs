@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ibk.sb.restapi.biz.service.consult.repo.ConsultRepo">
+    <!--    SchemaMapper ID-->
+<!--    <sql id="MNBADM"><include refid="com.ibk.sb.restapi.biz.service.common.repo.SchemaRepo.MNBADM"/></sql>-->
+    <sql id="INVEST"><include refid="com.ibk.sb.restapi.biz.service.common.repo.SchemaRepo.INVEST"/></sql>
+
+    <!--    PagingMapper ID-->
+    <sql id="pagingHeader"><include refid="com.ibk.sb.restapi.biz.service.common.repo.PageRepo.pageHeader"/></sql>
+    <sql id="pagingFooter"><include refid="com.ibk.sb.restapi.biz.service.common.repo.PageRepo.pageFooter"/></sql>
+
+    <!--    기업 컨설팅 의뢰 목록 조회-->
+    <select id="selectCompanyConsultingList" parameterType="RequestSearchConsultingVO" resultType="ConsultingSummaryVO">
+        <include refid="pagingHeader"/>
+
+            SELECT
+                crm.CNSG_REQS_ID
+                , crm.REQS_INTT_ID
+                , crm.CNSG_PTRN_CD
+                , ccd_ptrn.COM_CD_NM AS CNSG_PTRN_NM
+                , crm.CNSG_REQS_TTL
+                , crm.CNSG_STTS_CD
+                , ccd_stts.COM_CD_NM AS CNSG_STTS_NM
+
+                , crm.RGSN_USER_ID
+                , crm.RGSN_TS
+                , crm.AMNN_USER_ID
+                , crm.AMNN_TS
+
+                , crm.RGSN_USER_NM
+            FROM
+                <include refid="INVEST"/>TB_BOX_IVT_CNSG_REQS_M crm
+            LEFT JOIN
+                <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd_ptrn ON crm.CNSG_PTRN_CD = ccd_ptrn.COM_CD_ID
+            LEFT JOIN
+                <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd_stts ON crm.CNSG_STTS_CD = ccd_stts.COM_CD_ID
+            WHERE
+                crm.REQS_INTT_ID = #{reqsInttId}
+            ORDER BY
+                crm.RGSN_TS DESC
+
+        <include refid="pagingFooter"/>
+    </select>
+
+    <!--    기업 컨설팅 의뢰 상세 조회-->
+    <select id="selectCompanyConsulting" parameterType="String" resultType="ConsultingVO">
+        SELECT
+            crm.CNSG_REQS_ID
+            , crm.REQS_INTT_ID
+            , crm.CNSG_PTRN_CD
+            , ccd_ptrn.COM_CD_NM AS CNSG_PTRN_NM
+            , crm.CNSG_REQS_TTL
+            , crm.CNSG_REQS_CON
+            , crm.CNSG_RPLY_CON
+            , crm.CNSG_STTS_CD
+            , ccd_stts.COM_CD_NM AS CNSG_STTS_NM
+
+            , crm.RGSN_USER_ID
+            , crm.RGSN_TS
+            , crm.AMNN_USER_ID
+            , crm.AMNN_TS
+
+            , crm.RPLY_MNGR_ID
+            , crm.RPLY_TS
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_CNSG_REQS_M crm
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd_ptrn ON crm.CNSG_PTRN_CD = ccd_ptrn.COM_CD_ID
+        LEFT JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd_stts ON crm.CNSG_STTS_CD = ccd_stts.COM_CD_ID
+        WHERE
+            crm.CNSG_REQS_ID =  #{cnsgReqsId}
+    </select>
+
+    <!--    컨설팅 의뢰 요청-->
+    <insert id="insertConsultingRequest" parameterType="ConsultingVO">
+        INSERT INTO <include refid="INVEST"/>TB_BOX_IVT_CNSG_REQS_M
+        (
+            CNSG_REQS_ID
+            , REQS_INTT_ID
+            , CNSG_PTRN_CD
+            , CNSG_REQS_TTL
+            , CNSG_REQS_CON
+            , CNSG_STTS_CD
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+
+            , RGSN_USER_NM
+        )
+        VALUES
+        (
+            #{cnsgReqsId}
+            , #{reqsInttId}
+            , #{cnsgPtrnCd}
+            , #{cnsgReqsTtl}
+            , #{cnsgReqsCon}
+            , #{cnsgSttsCd}
+            , #{rgsnUserId}
+            , CURRENT_TIMESTAMP
+            , #{amnnUserId}
+            , CURRENT_TIMESTAMP
+
+            , #{rgsnUserNm}
+        )
+    </insert>
+
+    <!--    컨설팅 의뢰 정보 수정-->
+    <update id="updateConsultingRequest" parameterType="ConsultingVO">
+        UPDATE
+            <include refid="INVEST"/>TB_BOX_IVT_CNSG_REQS_M
+        SET
+            CNSG_PTRN_CD  = #{cnsgPtrnCd}
+            , CNSG_REQS_TTL = #{cnsgReqsTtl}
+            , CNSG_REQS_CON = #{cnsgReqsCon}
+            , AMNN_USER_ID  = #{amnnUserId}
+            , AMNN_TS       = CURRENT_TIMESTAMP
+        WHERE
+            CNSG_REQS_ID = #{cnsgReqsId} AND REQS_INTT_ID = #{reqsInttId}
+    </update>
+
+    <!--    컨설팅 의뢰 상태변경-->
+    <update id="updateConsultingStatus" parameterType="String">
+        UPDATE
+            <include refid="INVEST"/>TB_BOX_IVT_CNSG_REQS_M
+        SET
+            CNSG_STTS_CD    = #{cnsgSttsCd}
+            , AMNN_USER_ID  = #{amnnUserId}
+            , AMNN_TS       = CURRENT_TIMESTAMP
+        WHERE
+            CNSG_REQS_ID = #{cnsgReqsId} AND REQS_INTT_ID = #{reqsInttId}
+    </update>
+
+</mapper>

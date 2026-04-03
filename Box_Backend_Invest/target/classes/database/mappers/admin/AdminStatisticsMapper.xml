@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ibk.sb.restapi.biz.service.admin.repo.AdminStatisticsRepo">
+    <!--    SchemaMapper ID-->
+    <sql id="INVEST"><include refid="com.ibk.sb.restapi.biz.service.common.repo.SchemaRepo.INVEST"/></sql>
+
+    <!--    PagingMapper ID-->
+    <sql id="pagingHeader"><include refid="com.ibk.sb.restapi.biz.service.common.repo.PageRepo.pageHeader"/></sql>
+    <sql id="pagingFooter"><include refid="com.ibk.sb.restapi.biz.service.common.repo.PageRepo.pageFooter"/></sql>
+
+    <!-- 통계 - 기간별 방문자 현황 -->
+    <!-- 해당 일자에 레코드가 없는 경우 0으로 표시-->
+    <select id="selectVisitorStatList" parameterType="AdminStatisticsSearchVO" resultType="VisitorCountVO">
+        <include refid="pagingHeader"/>
+            SELECT
+                TO_CHAR(dual_dt.DISPLAY_DATE, 'YYYY. MM. DD') AS CCTN_DT
+                , NVL(tbivcl.VSTO_CNT, 0) AS VSTO_CNT
+            FROM (
+                SELECT
+                    TO_DATE(#{searchFromDate}, 'YYYY. MM. DD') + LEVEL - 1 AS DISPLAY_DATE
+                FROM
+                    DUAL
+                CONNECT BY
+                    <![CDATA[
+                        LEVEL <= TO_DATE(#{searchToDate}, 'YYYY. MM. DD') - TO_DATE(#{searchFromDate}, 'YYYY. MM. DD') + 1
+                    ]]>
+            ) dual_dt
+            LEFT JOIN (
+                SELECT
+                    TO_DATE(CCTN_DT, 'YYYY. MM. DD') AS CCTN_DT
+                    , VSTO_CNT
+                FROM
+                    <include refid="INVEST"/>TB_BOX_IVT_VSTO_CCTN_L
+            ) tbivcl ON dual_dt.DISPLAY_DATE = tbivcl.CCTN_DT
+            ORDER BY
+                dual_dt.DISPLAY_DATE DESC
+        <include refid="pagingFooter"/>
+    </select>
+
+    <!-- 통계 - 기간별 방문자 총계 -->
+    <select id="selectVisitorStatTotal" parameterType="AdminStatisticsSearchVO" resultType="Integer">
+        SELECT
+            NVL(SUM(NVL(VSTO_CNT, 0)), 0) AS COUNT
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_VSTO_CCTN_L
+        WHERE
+        <![CDATA[
+            TO_DATE(#{searchFromDate}, 'YYYY. MM. DD') <= TO_DATE(CCTN_DT, 'YYYY. MM. DD')
+            AND TO_DATE(CCTN_DT, 'YYYY. MM. DD') <= TO_DATE(#{searchToDate}, 'YYYY. MM. DD')
+        ]]>
+    </select>
+
+
+    <!-- 통계 - 투자심사 단계별 통계 조회 -->
+<!--    <select id="selectIvExamStatList" parameterType="AdminStatisticsSearchVO" resultType="com.ibk.sb.restapi.biz.service.admin.vo.AdminStatisticsVO">-->
+<!--        <include refid="pagingHeader"/>-->
+<!--        SELECT DISPLAY_DATE, COUNT(*) AS COUNT-->
+<!--        FROM <include refid="INVEST"/>TB_BOX_IVT_EXNT_RQST_M A-->
+<!--        INNER JOIN (-->
+<!--            SELECT * FROM (-->
+<!--                SELECT-->
+<!--                    INVM_EXNT_RQST_ID,-->
+<!--                    INVM_EXNT_PGSG_CD,-->
+<!--                    ROW_NUMBER() OVER(PARTITION BY INVM_EXNT_RQST_ID ORDER BY RGSN_TS DESC) AS RNK,-->
+<!--                    TO_CHAR(RGSN_TS, 'YYYY. MM. DD') AS DISPLAY_DATE-->
+<!--                FROM <include refid="INVEST"/>TB_BOX_IVT_EXNT_PGSG_R A-->
+<!--            )-->
+<!--            WHERE RNK = 1-->
+<!--        ) B ON (A.INVM_EXNT_RQST_ID = B.INVM_EXNT_RQST_ID)-->
+<!--        INNER JOIN <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D C ON (B.INVM_EXNT_PGSG_CD = C.COM_CD_ID)-->
+<!--        WHERE C.COM_CD_ID = #{invmExntPgsgCd}-->
+<!--        <if test="searchFromDate != null and searchFromDate != '' and searchToDate != null and searchToDate != ''">-->
+<!--        AND TO_DATE(B.DISPLAY_DATE, 'YYYY. MM. DD') BETWEEN TO_DATE(#{searchFromDate}, 'YYYYMMDD') AND TO_DATE(#{searchToDate}, 'YYYYMMDD')-->
+<!--        </if>-->
+<!--        GROUP BY DISPLAY_DATE-->
+<!--        ORDER BY DISPLAY_DATE-->
+<!--        <include refid="pagingFooter"/>-->
+<!--    </select>-->
+
+    <select id="selectIvExamStatList" parameterType="AdminStatisticsSearchVO" resultType="AdminStatisticsVO">
+        <include refid="pagingHeader"/>
+            SELECT
+                eqm.INVM_EXNT_RQST_ID
+                , epr.INVM_EXNT_PGSG_CD
+                , epr.RGSN_TS
+                , epr.DISPLAY_DATE
+
+                , eqm.INVM_CMP_ID
+                , eqm.RQST_ENPR_ID
+                , eim_vc.ETNM AS INVM_CMP_NM
+                , eim_com.ETNM AS RQST_ENPR_NM
+
+                , eqm.EXNT_RSLT_CD
+                , CASE
+                    WHEN eqm.EXNT_RSLT_CD IS NULL THEN '미정'
+                    ELSE ccd_rslt.COM_CD_NM
+                    END AS EXNT_RSLT_NM
+
+                <!--투자예정액은 천원 단위로 잡을 경우-->
+                <!--, FLOOR( (NVL(eqm.INVM_PRFR_SCDL_AMT, 0) / 1000) ) AS INVM_PRFR_SCDL_AMT-->
+                , NVL(eqm.INVM_PRFR_SCDL_AMT, 0) AS INVM_PRFR_SCDL_AMT
+
+                , CASE
+                    WHEN eqm.INVM_PRFR_SCDL_AMT IS NULL THEN '미정'
+                    <!-- ELSE REGEXP_REPLACE(REVERSE(REGEXP_REPLACE( REVERSE(TO_CHAR(  FLOOR(  (NVL(eqm.INVM_PRFR_SCDL_AMT, 0) / 1000)  )  )), '([0-9]{3})','\1,')), '^,','') -->
+                    ELSE REGEXP_REPLACE(REVERSE(REGEXP_REPLACE( REVERSE(TO_CHAR( NVL(eqm.INVM_PRFR_SCDL_AMT, 0)  )  ), '([0-9]{3})','\1,')), '^,','')
+                    END AS INVM_PRFR_SCDL_AMT_STR
+            FROM
+                <include refid="INVEST"/>TB_BOX_IVT_EXNT_RQST_M eqm
+            INNER JOIN (
+                SELECT * FROM (
+                    SELECT
+                        INVM_EXNT_RQST_ID
+                        , INVM_EXNT_PGSG_CD
+                        , ROW_NUMBER() OVER(PARTITION BY INVM_EXNT_RQST_ID ORDER BY RGSN_TS DESC) AS RNK
+                        , RGSN_TS
+                        , TO_CHAR(RGSN_TS, 'YYYY. MM. DD') AS DISPLAY_DATE
+                    FROM <include refid="INVEST"/>TB_BOX_IVT_EXNT_PGSG_R
+                )
+                WHERE RNK = 1
+            ) epr ON (eqm.INVM_EXNT_RQST_ID = epr.INVM_EXNT_RQST_ID)
+            INNER JOIN
+                <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd_epr ON (epr.INVM_EXNT_PGSG_CD = ccd_epr.COM_CD_ID)
+
+            LEFT JOIN
+                <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_M eim_vc ON eim_vc.UTLINSTT_ID = eqm.INVM_CMP_ID
+            LEFT JOIN
+                <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_M eim_com ON eim_com.UTLINSTT_ID = eqm.RQST_ENPR_ID
+            LEFT JOIN
+                <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd_rslt ON ccd_rslt.COM_CD_ID = eqm.EXNT_RSLT_CD
+
+            WHERE 1=1
+                AND ccd_epr.COM_CD_ID = #{invmExntPgsgCd}
+                <if test="searchFromDate != null and !searchFromDate.equals('') and searchToDate != null and !searchToDate.equals('')">
+                    AND TO_DATE(epr.DISPLAY_DATE, 'YYYY. MM. DD') BETWEEN TO_DATE(#{searchFromDate}, 'YYYYMMDD') AND TO_DATE(#{searchToDate}, 'YYYYMMDD')
+                </if>
+            ORDER BY
+                epr.RGSN_TS DESC
+        <include refid="pagingFooter"/>
+    </select>
+
+    <select id="selectIvExamStatTotal" parameterType="AdminStatisticsSearchVO" resultType="int">
+    SELECT COUNT(*) AS COUNT
+    FROM <include refid="INVEST"/>TB_BOX_IVT_EXNT_RQST_M A
+    INNER JOIN (
+        SELECT * FROM (
+            SELECT
+                INVM_EXNT_RQST_ID,
+                INVM_EXNT_PGSG_CD,
+                ROW_NUMBER() OVER(PARTITION BY INVM_EXNT_RQST_ID ORDER BY RGSN_TS DESC) AS RNK,
+                TO_CHAR(RGSN_TS, 'YYYY. MM. DD') AS DISPLAY_DATE
+            FROM <include refid="INVEST"/>TB_BOX_IVT_EXNT_PGSG_R A
+        )
+        WHERE RNK = 1
+    ) B ON (A.INVM_EXNT_RQST_ID = B.INVM_EXNT_RQST_ID)
+    INNER JOIN <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D C ON (B.INVM_EXNT_PGSG_CD = C.COM_CD_ID)
+    WHERE C.COM_CD_ID = #{invmExntPgsgCd}
+    <if test="searchFromDate != null and searchFromDate != '' and searchToDate != null and searchToDate != ''">
+    AND TO_DATE(B.DISPLAY_DATE, 'YYYY. MM. DD') BETWEEN TO_DATE(#{searchFromDate}, 'YYYYMMDD') AND TO_DATE(#{searchToDate}, 'YYYYMMDD')
+    </if>
+    </select>
+
+</mapper>

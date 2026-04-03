@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ibk.sb.restapi.biz.service.admin.repo.AdminFundRepo">
+
+    <!--    SchemaMapper ID-->
+    <sql id="INVEST"><include refid="com.ibk.sb.restapi.biz.service.common.repo.SchemaRepo.INVEST"/></sql>
+    
+    <!--    PagingMapper ID-->
+    <sql id="pagingHeader"><include refid="com.ibk.sb.restapi.biz.service.common.repo.PageRepo.pageHeader"/></sql>
+    <sql id="pagingFooter"><include refid="com.ibk.sb.restapi.biz.service.common.repo.PageRepo.pageFooter"/></sql>
+    
+    
+    <resultMap id="AdminFundResultMap" type="java.util.HashMap">
+    	<id column="PRN_NM" property="prnNm"/>
+    	<id column="BZN" property="bzn"/>
+    	<id column="RPRNM" property="rprNm"/>
+    	<id column="ADRES" property="adres"/>
+    	<id column="INCR_YMD" property="incrYmd"/>
+    	<id column="FUND_OPR_TS" property="fundOprTs"/>
+    	<id column="DSCPL_YN" property="dscplYn"/>
+    	<id column="AST_TTSM_AMT" property="astTtsmAmt"/>
+    	<id column="LBLT_CPST_AMT" property="lbltCpstAmt"/>
+    	<id column="CPTS_TTSM_AMT" property="cptsTtsmAmt"/>
+    	<id column="BSN_ERN" property="bsnErn"/>
+    	<id column="BSN_CT" property="bsnCt"/>
+    	<id column="CTNP_AMT" property="ctnpAmt"/>
+    	<id column="AST_TTSM_AMT_1Y" property="astTtsmAmt1y"/>
+    	<id column="AST_TTSM_AMT_2Y" property="astTtsmAmt2y"/>
+    	<id column="LBLT_CPST_AMT_1Y" property="lbltCpstAmt1y"/>
+    	<id column="LBLT_CPST_AMT_2Y" property="lbltCpstAmt2y"/>
+    	<id column="CPTS_TTSM_AMT_1Y" property="cptsTtsmAmt1y"/>
+    	<id column="CPTS_TTSM_AMT_2Y" property="cptsTtsmAmt2y"/>
+    	<id column="BSN_ERN_1Y" property="bsnErn1y"/>
+    	<id column="BSN_ERN_2Y" property="bsnErn2y"/>
+		<id column="BSN_CT_1Y" property="bsnCt1y" />
+    	<id column="BSN_CT_2Y" property="bsnCt2y"/>
+    	<id column="CTNP_AMT_1Y" property="ctnpAmt1y"/>
+    	<id column="CTNP_AMT_2Y" property="ctnpAmt2y"/>
+    	<id column="OPRATN_SCALE_CO" property="opratnScaleCo"/>
+    	<id column="OPRATN_SCALE_AM" property="opratnScaleAm"/>
+    	<id column="BLIND_CO" property="blindCo"/>
+    	<id column="BLIND_AM" property="blindAm"/>
+    	<id column="PRJCT_CO" property="prjctCo"/>
+    	<id column="PRJCT_AM" property="prjctAm"/>
+    	<id column="LQD_FUND_ERNRT" property="lqdFundErnrt"/>
+    	<id column="FUND_EXHS_RT" property="fundExhsRt"/>
+		<id column="OPRATN_HNF_INFO_TOT_CO" property="opratnHnfInfoTotCo"/>
+		<id column="OPRATN_HNF_INFO_MNGR_NM" property="opratnHnfInfoMngrNm"/>
+		<id column="OPRATN_HNF_INFO_DSCPL_YN" property="opratnHnfInfoDscplYn"/>
+    	<id column="MANAGE_HNF_INFO_HNF" property="manageHnfInfoHnf"/>
+    	<id column="MANAGEDTA_ATCHMNFL" property="managedtaAtchmnfl"/>
+    	<id column="MANAGE_HNF_INFO_TOT_CO" property="manageHnfInfoTotCo"/>
+    	<id column="FUND_ID" property="fundId"/>
+    	<id column="FUND_NM" property="fundNm"/>
+    	<id column="UTLINSTT_ID" property="utlinsttId"/>
+    	<id column="RPLY_CON" property="rplyCon"/>
+    	<id column="AUDIT_STG" property="auditStg"/>
+    	<id column="PROGRS_STG" property="progrsStg"/>
+    </resultMap>
+    
+    <!-- 제안받은 펀드 페이징 리스트 조회-->
+    <select id="searchAdminFundList" parameterType="AdminFundPrdInfoPageVO" resultType="AdminFundPrdtInfoVO">
+    	<include refid="pagingHeader"/>
+	    	SELECT 
+				prdt.UTLINSTT_ID                   
+				,prdt.FUND_ID
+				,prdt.FUND_NM                        
+				,prdt.FUND_PTRN                      
+				,prdt.ORGZ_TRGPFT                                                  
+				,prdt.AUDIT_STG                                                  
+				,TO_TIMESTAMP(prdt.WODY) as wody                         
+				,TO_TIMESTAMP(prdt.RGSN_TS) as rgsnTs                        
+				,prdt.RGSN_USER_ID                   
+				,TO_TIMESTAMP(prdt.AMNN_TS) as amnnTs                     
+				,prdt.AMNN_USER_ID
+				,opertr.PRN_NM
+				,opertr.FUND_ID  
+				,opertr.PROGRS_STG
+			FROM 
+				<include refid="INVEST"/>TB_BOX_IVT_PRDT_FUND_INFO_M prdt
+				JOIN <include refid="INVEST"/>TB_BOX_IVT_OPERTR_INFO_R opertr
+				ON prdt.FUND_ID = opertr.FUND_ID
+				<if test="auditStg != null and !auditStg.equals('')">
+					WHERE prdt.AUDIT_STG = #{auditStg}	
+					<choose>
+						<when test="searchFund != null and !searchFund.equals('')">
+							AND prdt.FUND_NM LIKE '%' || #{searchFund} || '%'	
+						</when>
+						<when test="searchPrn != null and !searchPrn.equals('')">
+							AND opertr.PRN_NM LIKE '%' || #{searchPrn} || '%'	
+						</when>
+					</choose>				
+				</if>
+				<if test="auditStg == null or auditStg.equals('')">
+					<choose>
+						<when test="searchFund != null and !searchFund.equals('')">
+							WHERE prdt.FUND_NM LIKE '%' || #{searchFund} || '%'
+						</when>
+						<when test="searchPrn != null and !searchPrn.equals('')">
+							WHERE opertr.PRN_NM LIKE '%' || #{searchPrn} || '%'
+						</when>
+					</choose>	
+				</if>
+				AND prdt.AUDIT_STG IN('AUD01001','AUD01002','AUD01003','AUD01004','AUD01005','AUD01006')
+				ORDER BY
+                	prdt.RGSN_TS DESC
+		 <include refid="pagingFooter"/>	
+    </select>
+    
+    
+    <!-- 제안받은 펀드 상세 조회 -->
+    <select id="searchAdminFundDetail" parameterType="String" resultMap="AdminFundResultMap">
+    	SELECT 
+    		prdt.FUND_ID
+    		,prdt.FUND_NM
+    		,prdt.UTLINSTT_ID
+    		,prdt.RPLY_CON
+    		,prdt.AUDIT_STG
+    		,opertr.PROGRS_STG
+    		,opertr.BZN
+    		,opertr.PRN_NM
+    		,opertr.RPRNM
+    		,opertr.ADRES
+    		,opertr.INCR_YMD
+    		,opertr.FUND_OPR_TS
+    		,opertr.DSCPL_YN
+    		,opertr.AST_TTSM_AMT
+    		,opertr.LBLT_CPST_AMT
+    		,opertr.CPTS_TTSM_AMT
+    		,opertr.BSN_CT
+    		,opertr.BSN_ERN
+    		,opertr.CTNP_AMT
+    		,opertr.AST_TTSM_AMT_1Y
+    		,opertr.AST_TTSM_AMT_2Y
+    		,opertr.LBLT_CPST_AMT_1Y
+    		,opertr.LBLT_CPST_AMT_2Y
+    		,opertr.CPTS_TTSM_AMT_1Y
+    		,opertr.CPTS_TTSM_AMT_2Y
+    		,opertr.BSN_ERN_1Y
+    		,opertr.BSN_ERN_2Y
+    		,opertr.BSN_CT_1Y
+    		,opertr.BSN_CT_2Y
+    		,opertr.CTNP_AMT_1Y
+    		,opertr.CTNP_AMT_2Y
+    		,opertr.OPRATN_SCALE_CO
+    		,opertr.OPRATN_SCALE_AM
+    		,opertr.BLIND_CO
+    		,opertr.BLIND_AM
+    		,opertr.PRJCT_CO
+    		,opertr.PRJCT_AM
+    		,opertr.LQD_FUND_ERNRT
+    		,opertr.FUND_EXHS_RT
+    		,opertr.OPRATN_HNF_INFO_TOT_CO
+    		,opertr.OPRATN_HNF_INFO_MNGR_NM
+    		,opertr.OPRATN_HNF_INFO_DSCPL_YN
+    		,opertr.MANAGE_HNF_INFO_HNF
+    		,opertr.MANAGEDTA_ATCHMNFL
+    		,opertr.MANAGE_HNF_INFO_TOT_CO
+    	FROM 
+    		<include refid="INVEST"/>TB_BOX_IVT_PRDT_FUND_INFO_M prdt
+    		JOIN <include refid="INVEST"/>TB_BOX_IVT_OPERTR_INFO_R opertr
+			ON prdt.FUND_ID = #{fundId}
+			AND opertr.FUND_ID = #{fundId}
+    </select>
+    
+    <!-- 심사 답변 등록 -->
+    <update id="updateFundReplyCon">
+    	UPDATE 
+	    	<include refid="INVEST"/>TB_BOX_IVT_PRDT_FUND_INFO_M    	
+    	SET
+    		RPLY_CON = #{rplyCon}
+    		,AUDIT_STG = #{auditStg}
+    	WHERE
+			FUND_ID = #{fundId} AND 
+			UTLINSTT_ID = #{utlinsttId}
+    </update>
+    
+    <!-- 진행단계 수정 -->
+    <update id="updateProgrsStg">
+    	UPDATE 
+			<include refid="INVEST"/>TB_BOX_IVT_OPERTR_INFO_R oper
+		SET
+			(oper.PROGRS_STG) 
+			= 
+			(SELECT 
+				prdt.AUDIT_STG 
+			FROM 
+				<include refid="INVEST"/>TB_BOX_IVT_PRDT_FUND_INFO_M prdt 
+			WHERE 
+				prdt.UTLINSTT_ID = #{utlinsttId}
+				AND prdt.FUND_ID = #{fundId})
+		WHERE
+			oper.FUND_ID = #{fundId} AND 
+			oper.UTLINSTT_ID = #{utlinsttId}
+    </update>
+    
+    <!-- 펀드제안 엑셀 다운로드  -->
+    <select id="excelDownloadFund" parameterType="AdminFundPrdInfoPageVO" resultType="AdminFundExcelVO">
+	    	SELECT 
+				prdt.UTLINSTT_ID                   
+				,prdt.FUND_ID
+				,prdt.FUND_NM                        
+				,prdt.FUND_PTRN                      
+				,prdt.ORGZ_TRGPFT                                                  
+				,prdt.AUDIT_STG                                                  
+				,TO_TIMESTAMP(prdt.WODY) as wody                         
+				,TO_TIMESTAMP(prdt.RGSN_TS) as rgsnTs                        
+				,prdt.RGSN_USER_ID                   
+				,TO_TIMESTAMP(prdt.AMNN_TS) as amnnTs                     
+				,prdt.AMNN_USER_ID
+				,opertr.PRN_NM
+				,opertr.FUND_ID  
+				,opertr.PROGRS_STG
+			FROM 
+				<include refid="INVEST"/>TB_BOX_IVT_PRDT_FUND_INFO_M prdt
+				JOIN <include refid="INVEST"/>TB_BOX_IVT_OPERTR_INFO_R opertr
+				ON prdt.FUND_ID = opertr.FUND_ID
+				AND prdt.AUDIT_STG IN('AUD01001','AUD01002','AUD01003','AUD01004','AUD01005','AUD01006')
+				ORDER BY
+                	prdt.RGSN_TS DESC
+    </select>
+    
+</mapper>    

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ibk.sb.restapi.biz.service.common.repo.SchemaRepo">
+    <sql id="MNBADM">MNBADM.</sql>
+    <sql id="COMADM">COMADM.</sql>
+
+    <!--  투자박스 스키마  -->
+<!--    <sql id="INVEST">IBKIVTUSER.</sql>-->
+    <sql id="INVEST">IVBADM.</sql>
+</mapper>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ibk.sb.restapi.biz.service.test.repo.TestRepo">
+
+<!--    Schema ID -->
+    <sql id="INVEST"><include refid="com.ibk.sb.restapi.biz.service.common.repo.SchemaRepo.INVEST"/></sql>
+
+    <select id="testConnectDual" resultType="TestConnectDualVO">
+        SELECT
+            10 AS test_id
+             , 'TestConnectDualSuccess' AS test_content
+        FROM DUAL;
+    </select>
+
+    <select id="testPaging" parameterType="RequestTestPagingVO" resultType="TestDataVO">
+        <include refid="com.ibk.sb.restapi.biz.service.common.repo.PageRepo.pageHeader"></include>
+
+        SELECT
+            UTLINSTT_ID
+        FROM <include refid="INVEST"/>TB_BOX_IVT_ENPR_INFO_M
+
+        <include refid="com.ibk.sb.restapi.biz.service.common.repo.PageRepo.pageFooter"></include>
+    </select>
+</mapper>

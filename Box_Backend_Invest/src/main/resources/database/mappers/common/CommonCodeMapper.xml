@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ibk.sb.restapi.biz.service.common.repo.CommonCodeRepo">
+
+    <!--    SchemaMapper ID-->
+    <sql id="INVEST"><include refid="com.ibk.sb.restapi.biz.service.common.repo.SchemaRepo.INVEST"/></sql>
+
+    <select id="selectInvestFieldList" resultType="InvestFieldVO">
+        SELECT
+            tbiic.INVM_FILD_CD AS INVM_FILD_CD
+            , tbiic.INVM_FILD_CDNM AS INVM_FILD_CDNM
+            , tbiic.USE_YN
+
+            , tbiic.RGSN_USER_ID
+            , tbiic.RGSN_TS
+            , tbiic.AMNN_USER_ID
+            , tbiic.AMNN_TS
+
+            , tbiic.INVM_FILD_CD AS ID
+            , tbiic.INVM_FILD_CDNM AS VALUE
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_INVM_FILD_C tbiic
+        WHERE
+            tbiic.USE_YN = 'Y'
+    </select>
+
+    <!--    분야목록 + 이미지 조회-->
+    <select id="selectInvestFieldWithImageList" resultType="InvestFieldVO">
+        SELECT
+            tbiic.INVM_FILD_CD AS INVM_FILD_CD
+            , tbiic.INVM_FILD_CDNM AS INVM_FILD_CDNM
+            , tbiic.USE_YN
+
+            , tbiic.BNNR_IMG_FILE_ID AS IMG_FILE_ID
+            , tbiic.BNNR_IMG_FILE_ID AS FILE_ID
+
+            , tbiic.RGSN_USER_ID
+            , tbiic.RGSN_TS
+            , tbiic.AMNN_USER_ID
+            , tbiic.AMNN_TS
+
+            , tbiic.INVM_FILD_CD AS ID
+            , tbiic.INVM_FILD_CDNM AS VALUE
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_INVM_FILD_C tbiic
+        WHERE
+            tbiic.USE_YN = 'Y'
+    </select>
+
+    <!--    활용기술 조회-->
+    <select id="selectUtilTechList" resultType="UtilTechVO">
+        SELECT
+            UTLZ_TCHN_CD
+            , UTLZ_TCHN_CDNM
+            , USE_YN
+            , RGSN_USER_ID
+            , RGSN_TS
+            , AMNN_USER_ID
+            , AMNN_TS
+
+            , UTLZ_TCHN_CD AS ID
+            , UTLZ_TCHN_CDNM AS VALUE
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_UTLZ_TCHN_C
+        WHERE
+            USE_YN = 'Y'
+    </select>
+
+    <select id="selectComCode" parameterType="String" resultType="ComCodeVO">
+        SELECT
+            ccd.COM_CD_ID
+            , ccd.GRP_CD_ID
+            , cgm.GRP_CD_NM
+            , ccd.COM_CD_NM
+            , ccd.COM_CD_DESC
+            , ccd.LNP_SQN
+            , ccd.USE_YN
+
+            , ccd.COM_CD_ID AS ID
+            , ccd.COM_CD_NM AS VALUE
+        FROM
+            <include refid="INVEST"/>TB_BOX_IVT_COM_CD_D ccd
+        INNER JOIN
+            <include refid="INVEST"/>TB_BOX_IVT_COM_GRP_M cgm ON ccd.GRP_CD_ID = cgm.GRP_CD_ID
+        WHERE
+            ccd.USE_YN = 'Y' AND ccd.GRP_CD_ID = #{grpCdId}
+        ORDER BY
+            ccd.LNP_SQN
+    </select>
+</mapper>
