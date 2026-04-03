@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%PUBLIC_URL%/ibk_favicon_Lkk_icon.ico" />
+    <base href="/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <meta name="description" content="box-invest-front" />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <!--    <title>혁신기업투자</title>-->
+    <title>%REACT_APP_TITLE%</title>
+
+    <!--    공통 로그인 모듈 Set Start -->
+    <script type="text/javascript" src="%PUBLIC_URL%/common/jquery-1.10.2.min.js"></script>
+    <script type="text/javascript" src="https://www.ibkbox.net/ui/static_m/js/commonBox.js"></script>
+    <link href="%PUBLIC_URL%/common/commonlogin.css" rel="stylesheet" />
+
+    <style type="text/css">
+      body.scrollLock {
+        overflow: hidden;
+      }
+      body.popupScrollLock {
+        overflow: hidden;
+      }
+      body.alertScrollLock {
+        overflow: hidden;
+      }
+    </style>
+
+    <script type="text/javascript">
+      /*공통 로그인 iframe*/
+      function commonLogin() {
+        if (getClientOs() == 'PC') {
+          let element = getLoginIframe('%REACT_APP_BOX_URL%/COM001/login.do?callType=spa', 'login')
+          $('body').prepend(element)
+
+          for(let i=0 ; i<document.querySelectorAll("#pcLoginWrap").length ; i++) {
+            if(document.querySelectorAll("#pcLoginWrap")[i].className !== 'pcLoginWrap on ') {
+              document.querySelectorAll("#pcLoginWrap")[i].remove()
+            }
+          }
+        } else {
+          // todo : 메인박스 수정 배포 완료가 되면 callType=spa로 하여 redirect.html로 전달되도록 처리
+          // location.href = "%REACT_APP_BOX_URL%/COM001/login.do";
+          location.href = '%REACT_APP_BOX_URL%/COM001/login.do?callType=spa'
+        }
+      }
+
+      /*SSO 연동 iframe*/
+      function commonSSOLink() {
+        sessionStorage.setItem('callType', 'spa')
+        // let element = getLoginIframe("%REACT_APP_BOX_URL%/COM001/loginMain.do?boxName=" + getBoxName(), "refresh");
+        let element = getLoginIframe('%REACT_APP_BOX_URL%/COM001/refresh.do?boxName=' + getBoxName(), 'refresh')
+        $('body').prepend(element)
+      }
+
+      /*로그아웃*/
+      function commonLogout() {
+        // 쿠키정리
+        deleteCookie('idSave')
+        deleteCookie('auth')
+        deleteCookie('cookieExpires')
+        sessionStorage.clear()
+
+        let url = '%REACT_APP_BOX_URL%/magicsso/SPLogout.jsp?nextPage=' + '%REACT_APP_URL%'
+
+        location.href = url
+      }
+
+      /*로그인용 iframe 셋팅*/
+      function getLoginIframe(src, type) {
+        const on = type === 'login' ? ' on ' : ''
+        return (
+          `<div class="pcLoginWrap` +
+          on +
+          `" id="pcLoginWrap">
+                          <div class="bg"></div>
+                          <div class="pclayerPopCont">
+                            <iframe src="` +
+          src +
+          `" width="100%" height="100%" scrolling="auto" frameBorder="0" id="ifrmPage">이 브라우저는 iframe을
+                              지원하지 않습니다.
+                            </iframe>
+                          </div>
+                        </div>`
+        )
+      }
+
+      /**
+       * SSO 연동용 EventListener (todo 확인 후 주석 추후 삭제할것)
+       * 1. 메인박스 iframe에서 연동이 완료된 뒤에 sessionStorage clear 이후 SI 값을 넣어줌
+       * 2. 성공했을 경우 위 1번 처리 이후 redirection 처리되어 내부 로직이 거의 적용되기 힘듦 (스토리지 등에 무언가를 저장하는 것 포함)
+       *
+       * -> mnb iframe에서 스토리지 처리를 못해줬을 경우 및
+       * 에러없이 통신은 이뤄졌으나 제대로 된 토큰이 오지 않은 경우 로그아웃 처리를 위함
+       *
+       * -> 정상적으로 처리되는 경우 mnb iframe에서 sessionStorage clear 처리 후 redirection 되므로
+       * 관련 추가 저장 처리가 필요한 경우 다른 곳에서 처리가 필요함
+       */
+      window.addEventListener('message', function (e) {
+        // 크롬 특정 계정 로그인 상태에서 사이트 오리진을 통해 메시지 이벤트가 옴
+        // -> 필터링
+        if (e.origin !== '%REACT_APP_BOX_URL%') return
+
+        // 세션 만료 등으로 SSO 연동용 SI 토큰이 존재하지 않을 경우,
+        if (typeof e.data !== 'object') return
+
+        // SI 토큰이 존재하는 경우
+        if (tokenStringCheck(e.data.tokenInfo)) {
+          // SI 토큰 셋팅
+          sessionStorage.clear() // mnb와 맞춤 -> 이후 CommonContext useEffect와 연계
+          sessionStorage.setItem('SI', e.data.tokenInfo)
+        }
+        // 로컬에서는 해당 방식으로 로그아웃시 magicsso logout jsp의 nextpage post 이동에서 에러 발생
+        // else commonLogout();
+        else {
+          deleteCookie('idSave')
+          deleteCookie('auth')
+          deleteCookie('cookieExpires')
+          sessionStorage.clear()
+          window.location.href = '/'
+        }
+      })
+
+      /*토큰 리프래시를 위한 세션 확인 api*/
+      function sessionRefresh() {
+        if (tokenCheck()) {
+          // 토큰 데이터 확인
+          const sessionData = parseJwt(sessionStorage.getItem('SI'))
+          // 리프래시 토큰 만료기간이 남아있는 경우,
+          if (sessionData.refreshExpire > getCurTimestamp()) {
+            const refreshToken = sessionData.refreshToken
+            let sendData = {
+              appKey: '%REACT_APP_PLATFORM_LOGIN_APPKEY%',
+              refreshToken: refreshToken,
+              grantType: 'refresh_token'
+            }
+
+            $.ajax({
+              type: 'POST',
+              url: '%REACT_APP_PLATFORM_URL%/app/cm/v1/cmm300/tokenRefresh',
+              beforeSend: function (xhr) {
+                xhr.setRequestHeader('Content-Type', 'application/json')
+                xhr.setRequestHeader('appKey', '%REACT_APP_PLATFORM_LOGIN_APPKEY%')
+              },
+              data: JSON.stringify(sendData),
+              async: false, // await를 위해 false 설정 추가
+              success: function (resultData) {
+                // 새 토큰 발급 api
+                updateSession(resultData)
+              },
+              error: function (jqXHR, textStatus, exception, errorThrown) {
+                console.error('세션 확인 에러')
+                // window.commonLogout()
+              }
+            })
+          } else {
+            console.log('토큰시간 만료')
+            window.commonLogout()
+          }
+        } else {
+          console.log('로그인 정보가 존재하지 않습니다')
+          window.commonLogout()
+        }
+      }
+
+      /*새 토큰 발급 api*/
+      function updateSession(data) {
+        $.ajax({
+          type: 'POST',
+          url: '%REACT_APP_BOX_URL%/COM001/getRefreshToken.do',
+          beforeSend: function (xhr) {
+            xhr.setRequestHeader('Content-Type', 'application/json')
+          },
+          data: JSON.stringify(data),
+          async: false, // await를 위해 false 설정 추가
+          success: function (token) {
+            sessionStorage.setItem('SI', token.si)
+          },
+          error: function (jqXHR, textStatus, exception, errorThrown) {
+            console.error('토큰 발급 에러')
+            window.commonLogout()
+          }
+        })
+      }
+    </script>
+
+    <script>
+      /*토큰에 있는 정보 가져오기*/
+      function parseJwt(token) {
+        const base64Url = token.split('.')[1]
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
+        const jsonPayload = decodeURIComponent(
+          atob(base64)
+            .split('')
+            .map(function (c) {
+              return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+            })
+            .join('')
+        )
+        return JSON.parse(jsonPayload)
+      }
+
+      function getCurTimestamp() {
+        return Math.floor(new Date().getTime() / 1000)
+      }
+
+      function setCookie(cookieName, value, exdays) {
+        var exdate = new Date()
+        exdate.setDate(exdate.getDate() + exdays)
+        //	exdate.setMinutes(exdate.getMinutes() + exdays);
+        var cookieValue =
+          escape(value) + (exdays == null ? '' : ';path=/; domain=ibkbox.net; expires=' + exdate.toString()) // exdate.toGMTString()
+        document.cookie = cookieName + '=' + cookieValue
+      }
+
+      function getCookieValue(cookieName) {
+        let cookieValue = null
+        if (document.cookie) {
+          var array = document.cookie.split(escape(cookieName) + '=')
+          if (array.length >= 2) {
+            var arraySub = array[1].split(';')
+            cookieValue = unescape(arraySub[0])
+          }
+        }
+        return cookieValue
+      }
+
+      function deleteCookie(cookieName) {
+        var expireDate = new Date()
+        expireDate.setDate(expireDate.getDate() - 1)
+        document.cookie = cookieName + '= ;path=/; domain=ibkbox.net; expires=' + expireDate.toString() // expireDate.toGMTString()
+      }
+
+      function getBoxName() {
+        const host = location.host
+        let boxName = host.substring(0, host.indexOf('.'))
+        if (boxName.indexOf('local') > -1) {
+          boxName = boxName.replace('local', '')
+        } else if (boxName.indexOf('dev') > -1) {
+          boxName = boxName.replace('dev', '')
+        } else {
+          boxName = ''
+        }
+        return boxName
+      }
+
+      // 토큰 벨리데이션 체크
+      function tokenStringCheck(token) {
+        if (token !== null && token !== undefined && !(token == 'null' || token == 'undefined' || token.trim() == ''))
+          return true
+        else return false
+      }
+
+      // 토큰 존재 체크
+      function tokenCheck() {
+        const auth = getCookieValue('auth')
+        const isAuth = tokenStringCheck(auth)
+
+        const token = sessionStorage.getItem('SI')
+        const isToken = tokenStringCheck(token)
+
+        if (isAuth && isToken) return true
+
+        if (isToken && !isAuth) {
+          // commonLogout();
+          deleteCookie('idSave')
+          deleteCookie('auth')
+          deleteCookie('cookieExpires')
+          sessionStorage.clear()
+
+          return false
+        }
+
+        sessionStorage.removeItem('SI')
+        return false
+      }
+    </script>
+    <!--    공통 로그인 모듈 Set End -->
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>

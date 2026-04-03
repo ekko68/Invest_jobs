@@ -1,0 +1,84 @@
+@charset "utf-8";
+
+/* font */
+@font-face {
+ font-family: 'NanumSquare';
+ font-weight:normal;
+ font-weight:400;
+ src: url('../../fonts/NanumSquareR.eot');
+ src: local(☺),url('../../fonts/NanumSquareR.eot?#iefix') format('embedded-opentype'),
+      url('../../fonts/NanumSquareR.woff') format('woff'),
+      url('../../fonts/NanumSquareR.woff2') format('woff2'),
+      url('../../fonts/NanumSquareR.ttf') format('truetype');
+}
+
+@font-face {
+ font-family: 'NanumSquare';
+ font-weight:200;
+ src: url('../../fonts/NanumSquareL.eot');
+ src: local(☺),url('../../fonts/NanumSquareLight.eot?#iefix') format('embedded-opentype'),
+      url('../../fonts/NanumSquareLight.woff') format('woff'),
+      url('../../fonts/NanumSquareLight.woff2') format('woff2'),
+      url('../../fonts/NanumSquareLight.ttf') format('truetype');
+}
+
+@font-face {
+ font-family: 'NanumSquare';
+ font-weight:bold;
+ font-weight:700;
+ src: url('../../fonts/NanumSquareB.eot');
+ src: local(☺),url('../../fonts/NanumSquareB.eot?#iefix') format('embedded-opentype'),
+      url('../../fonts/NanumSquareB.woff') format('woff'),
+      url('../../fonts/NanumSquareB.woff2') format('woff2'),
+      url('../../fonts/NanumSquareB.ttf') format('truetype');
+}
+
+@font-face {
+ font-family: 'NanumSquare';
+ font-weight:800;
+ src: url('../../fonts/NanumSquareEB.eot');
+ src: local(☺),url('../../fonts/NanumSquareEB.eot?#iefix') format('embedded-opentype'),
+      url('../../fonts/NanumSquareEB.woff') format('woff'),
+      url('../../fonts/NanumSquareEB.woff2') format('woff2'),
+      url('../../fonts/NanumSquareEB.ttf') format('truetype');
+}
+
+@font-face {
+ font-family: 'NotoSans';
+ src: url('../../fonts/NotoSans-DemiLight.eot');
+ src: local(☺),url('../../fonts/NotoSans-DemiLight?#iefix') format('embedded-opentype'),
+      url('../../fonts/NotoSans-DemiLight.woff') format('woff');
+}
+
+@font-face {
+ font-family: 'IBKiDream';
+ font-weight:normal;
+ font-weight:400;
+ src: url('../../fonts/ibk/IBKiDreamL.eot');
+ src: local(☺),url('../../fonts/ibk/IBKiDreamL.eot?#iefix') format('embedded-opentype'),
+      url('../../fonts/ibk/IBKiDreamL.woff') format('woff'),
+      url('../../fonts/ibk/IBKiDreamL.woff2') format('woff2'),
+      url('../../fonts/ibk/IBKiDreamL.ttf') format('truetype');
+}
+
+@font-face {
+ font-family: 'IBKiDream';
+ font-weight:200;
+ src: url('../../fonts/ibk/IBKiDreamL.eot');
+ src: local(☺),url('../../fonts/ibk/IBKiDreamL.eot?#iefix') format('embedded-opentype'),
+      url('../../fonts/ibk/IBKiDreamL.woff') format('woff'),
+      url('../../fonts/ibk/IBKiDreamL.woff2') format('woff2'),
+      url('../../fonts/ibk/IBKiDreamL.ttf') format('truetype');
+}
+
+@font-face {
+ font-family: 'IBKiDream';
+ font-weight:bold;
+ font-weight:700;
+ src: url('../../fonts/ibk/IBKiDreamM.eot');
+ src: local(☺),url('../../fonts/ibk/IBKiDreamM.eot?#iefix') format('embedded-opentype'),
+      url('../../fonts/ibk/IBKiDreamM.woff') format('woff'),
+      url('../../fonts/ibk/IBKiDreamM.woff2') format('woff2'),
+      url('../../fonts/ibk/IBKiDreamM.ttf') format('truetype');
+}
+

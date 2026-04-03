@@ -1,0 +1,359 @@
+/* Google fonts - Open Sans */
+@import url(https://fonts.googleapis.com/css?family=Open+Sans:400,700);
+
+/* colors */
+$blue: rgba(79, 192, 210, 1);
+$green: rgba(82, 210, 154, 1);
+$yellow: rgba(231, 196, 104, 0.7);
+$orange: rgba(235, 118, 85, 1);
+$dark-bg: rgba(0, 0, 0, 0.9);
+$light-bg: rgba(255, 255, 255, 0.1);
+$text: rgba(255, 255, 255, 0.9);
+
+/* body */
+.main-info-wrap {
+  padding: 20px 0;
+  background: $dark-bg;
+  font-family: "Open Sans", sans-serif;
+}
+
+/* links */
+.main-info-wrap .nfl a,
+.main-info-wrap .mlb a,
+.main-info-wrap .nhl a,
+.main-info-wrap .pga a {
+  text-decoration: none;
+  transition: color 0.2s ease-out;
+}
+.main-info-wrap .nfl a {
+  color: $blue;
+}
+.main-info-wrap .nfl a:hover {
+  color: darken($blue, 20%);
+}
+.main-info-wrap .mlb a {
+  color: $green;
+}
+.main-info-wrap .mlb a:hover {
+  color: darken($green, 20%);
+}
+.main-info-wrap .nhl a {
+  color: $yellow;
+}
+.main-info-wrap .nhl a:hover {
+  color: darken($yellow, 20%);
+}
+.main-info-wrap .pga a {
+  color: $orange;
+}
+.main-info-wrap .pga a:hover {
+  color: darken($orange, 20%);
+}
+
+.main-info-wrap .main-info {
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 0;
+  // background: $light-bg;
+  color: $text;
+  overflow: hidden;
+  position: relative;
+}
+
+/* wrapper */
+.main-info-wrap .wrapper {
+  width: 100%;
+  max-width: 1000px;
+  margin: 20px auto 100px auto;
+  padding: 0;
+  background: $light-bg;
+  color: $text;
+  overflow: hidden;
+  position: relative;
+}
+
+/* lists */
+.main-info-wrap .row ul {
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+.main-info-wrap .row ul li {
+  margin: 0;
+  font-size: 16px;
+  font-weight: normal;
+  list-style: none;
+  display: inline-block;
+
+  box-sizing: border-box;
+  @media only screen and (max-width: 767px) and (min-width: 480px) {
+    font-size: 13px;
+  }
+  @media only screen and (max-width: 479px) {
+    font-size: 13px;
+  }
+}
+
+.main-info-wrap .row ul li:nth-child(1) {
+  width: 15%;
+}
+
+.main-info-wrap .row ul li:nth-child(2) {
+  word-break: keep-all;
+  width: 35%;
+}
+
+.main-info-wrap .row ul li:nth-child(3) {
+  width: 10%;
+}
+
+.main-info-wrap .row ul li:nth-child(4) {
+  width: 30%;
+}
+
+.main-info-wrap .row ul li:nth-child(5) {
+  width: 10%;
+}
+
+.main-info-wrap .title ul li {
+  padding: 15px 13px;
+}
+.main-info-wrap .row ul li {
+  padding: 5px 10px;
+}
+
+/*row-link*/
+.main-info-wrap .row-link {
+  text-align: right !important;
+}
+.main-info-wrap .row-link a {
+  margin-right: 10px !important;
+  background: white;
+  color: #3b3b3b;
+  padding: 5px 10px 5px 10px;
+  border-radius: 5px;
+  font-weight: bold;
+}
+
+/* rows */
+.main-info-wrap .row {
+  padding: 10px 0;
+  height: 65px;
+  font-size: 0;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s ease-out;
+  border-top: 1px solid darken($light-bg, 100%);
+  line-height: 1.4;
+}
+.main-info-wrap .row:hover {
+  background-color: lighten($dark-bg, 10%);
+  height: 165px;
+  @media only screen and (max-width: 767px) {
+    height: 85px;
+  }
+  @media only screen and (max-width: 359px) {
+    height: 105px;
+  }
+}
+.main-info-wrap .title {
+  padding: 5px 0 0 0;
+  height: 45px;
+  font-size: 0;
+  background-color: $light-bg;
+  border-left: 3px solid lighten($light-bg, 100%);
+}
+.main-info-wrap .title:hover {
+  height: 45px;
+  background-color: $light-bg;
+  border-left: 3px solid lighten($light-bg, 100%);
+}
+
+.main-info-wrap .title-hide {
+  @media only screen and (max-width: 767px) {
+    display: none;
+  }
+}
+
+.main-info-wrap .nfl {
+  border-left: 3px solid darken($blue, 30%);
+}
+.main-info-wrap .nfl:hover {
+  border-left: 3px solid $blue;
+}
+.main-info-wrap .mlb {
+  border-left: 3px solid darken($green, 30%);
+}
+.main-info-wrap .mlb:hover {
+  border-left: 3px solid $green;
+}
+.main-info-wrap .nhl {
+  border-left: 3px solid darken($yellow, 30%);
+}
+.main-info-wrap .nhl:hover {
+  border-left: 3px solid $yellow;
+}
+.main-info-wrap .pga {
+  border-left: 3px solid darken($orange, 30%);
+}
+.main-info-wrap .pga:hover {
+  border-left: 3px solid $orange;
+}
+
+/* row one - fadeIn */
+.main-info-wrap .row-fadeIn-wrapper {
+  opacity: 0;
+  font-size: 0;
+  height: 0;
+  overflow: hidden;
+  position: relative;
+  transition: all 0.2s ease-out;
+  animation: fadeIn 0.4s ease-out 2s 1 alternate;
+  animation-fill-mode: forwards;
+}
+.main-info-wrap .row-fadeIn-wrapper:hover {
+  height: 35px;
+  @media only screen and (max-width: 767px) {
+    height: 55px;
+  }
+  @media only screen and (max-width: 359px) {
+    height: 75px;
+  }
+}
+
+.main-info-wrap .fadeIn {
+  padding: 20px 0;
+  font-size: 0;
+  position: absolute;
+  transition: all 0.2s ease-out;
+  width: 100%;
+}
+.main-info-wrap .fadeIn:hover {
+  background-color: lighten($dark-bg, 10%);
+}
+
+/* row two - fadeOut */
+.main-info-wrap .row-fadeOut-wrapper {
+  font-size: 0;
+  overflow: hidden;
+  position: relative;
+  transition: all 0.2s ease-out;
+  animation: fadeOut 0.4s ease-out 8s 1 alternate;
+  animation-fill-mode: forwards;
+  opacity: 1;
+  height: 65px;
+}
+.main-info-wrap .row-fadeOut-wrapper:hover {
+  height: 100px;
+}
+
+/* update content */
+.main-info-wrap .update-row {
+  animation: update 0.5s ease-out 12s 1 alternate;
+}
+.main-info-wrap .update1 {
+  position: absolute;
+  top: 25px;
+  display: inline-block;
+  opacity: 1;
+  animation: update1 1s ease-out 12s 1 alternate;
+  animation-fill-mode: forwards;
+}
+.main-info-wrap .update2 {
+  position: absolute;
+  top: 25px;
+  display: inline-block;
+  opacity: 0;
+  animation: update2 4s ease-out 13s 1 alternate;
+  animation-fill-mode: forwards;
+}
+
+/* more content */
+.main-info-wrap ul.more-content li {
+  position: relative;
+  top: 22px;
+  font-size: 13px;
+  margin: 0;
+  padding: 10px 13px;
+  display: block;
+  height: 100px;
+  width: 100%;
+  color: darken($text, 50%);
+  @media only screen and (max-width: 767px) {
+    font-size: 11px;
+  }
+}
+
+/* small content */
+.main-info-wrap .small {
+  color: darken($text, 60%);
+  font-size: 10px;
+  padding: 0 10px;
+  margin: 0;
+  @media only screen and (max-width: 767px) {
+    display: none;
+  }
+}
+
+/* keyframe animations */
+@keyframes fadeIn {
+  from {
+    background: $light-bg;
+    opacity: 0;
+    padding: 0;
+  }
+  to {
+    background: darken($light-bg, 80%);
+    opacity: 1;
+    padding: 0 0 65px 0;
+  }
+}
+@keyframes fadeOut {
+  from {
+    background: darken($light-bg, 80%);
+    opacity: 1;
+    height: 65px;
+  }
+  to {
+    background: $light-bg;
+    opacity: 0;
+    height: 0;
+  }
+}
+@keyframes update {
+  0% {
+    background: darken($light-bg, 80%);
+  }
+  50% {
+    background: $light-bg;
+  }
+  100% {
+    background: darken($light-bg, 80%);
+  }
+}
+@keyframes update1 {
+  0% {
+    opacity: 0;
+  }
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes update2 {
+  0% {
+    opacity: 0;
+    color: $text;
+  }
+  20% {
+    opacity: 1;
+    color: $green;
+  }
+  100% {
+    opacity: 1;
+    color: $text;
+  }
+}

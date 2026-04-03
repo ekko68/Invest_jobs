@@ -1,0 +1,608 @@
+<script type="text/javascript" src="/infotech/jquery-1.10.2.min.js"></script>
+<script type="text/javascript" src="/infotech/ift.com.js"></script>
+<script type="text/javascript" src="/infotech/json2.min.js"></script>
+
+<script type="text/javascript" src="/infotech/rsa/jsbn.js"></script>
+<script type="text/javascript" src="/infotech/rsa/prng4.js"></script>
+<script type="text/javascript" src="/infotech/rsa/rng.js"></script>
+<script type="text/javascript" src="/infotech/rsa/rsa.js"></script>
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0"
+    />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>공인인증서</title>
+    <link rel="stylesheet" href="./pop/reset.css" />
+    <link rel="stylesheet" href="./pop/style.css" />
+
+    <style>
+      body.scrollLock {
+        overflow: hidden;
+      }
+
+      .loading {
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        z-index: 20;
+        background: rgba(0, 0, 0, 0.7);
+        overflow: hidden;
+      }
+      .loading:after {
+        content: '';
+        display: block;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        height: 72px;
+        width: 72px;
+        margin-left: -36px;
+        margin-top: -36px;
+        background: url('./pop/loading_icon.png') no-repeat;
+        background-size: contain;
+        animation: loadingAnimat 0.8s infinite linear;
+      }
+      @keyframes loadingAnimat {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(-360deg);
+        }
+      }
+    </style>
+
+    <script>
+      let profile = ''
+
+      const REACT_APP_API_URL = {
+        DEV: 'https://localhost:7301',
+        PROD: 'https://invest.ibkbox.net',
+        STAGE: 'https://devinvest.ibkbox.net'
+      }
+
+      const API_STATUS = {
+        SUCCESS: 'success',
+        ERROR: 'error'
+      }
+
+      Object.freeze([REACT_APP_API_URL, API_STATUS])
+
+      $(document).ready(function () {
+        let location_data = window.location
+        let get_href = location_data.href
+
+        let get_param = get_href.split('?')
+
+        let data = get_param[1].split('&')
+        for (let i = 0; i < data.length; i++) {
+          let splitData = data[i].split('=')
+          if (splitData[0] == 'profile') profile = splitData[1]
+        }
+
+        callScpgPopup(function (returnValue) {
+          if (returnValue.success) {
+            alert('/loan/LB1102_4M')
+          }
+        })
+      })
+
+      // 인증정보 객체
+      let selectedCert = new Object()
+
+      /**
+       * 인포텍 전자인증 호출 함수
+       */
+      function loadDoc(s_op, s_inJson, port, successCB) {
+        const url = 'https://127.0.0.1:' + port + '/?op=' + s_op
+        console.log('loadDoc')
+        $.ajax({
+          type: 'POST',
+          url: url,
+          data: JSON.stringify(s_inJson) || '{}',
+          crossDomain: true,
+          crossOrigin: true,
+          dataType: 'json',
+          contentType: 'application/json; charset=UTF-8',
+          success: function (data) {
+            // 가이드문서상 setup, certList, execute 명령의 경우 errYn 값이 함께 옴
+            if (data.errYn == 'N') {
+              if (typeof successCB == 'function') {
+                if (s_op == 'setup') successCB()
+                else successCB(data)
+              }
+            }
+
+            // 정상호출이 되었으나 이후 프로세스에서 에러가 발생한 경우
+            else {
+              window.opener.console.log('infotech popup err error : ', data.errMsg)
+              // 설치 확인에서 발생한 경우
+              if (s_op == 'setup') {
+                alert('iftNxService 설치 프로그램을 확인해주세요.')
+                callNicePop()
+                // window.opener.location.href = 'https://www.ibkbox.net/veraport/install20/securityInstallPgmChk.html';
+              } else if (s_op == 'execute') {
+                $('#signAlrtPop').addClass('on')
+                $('#signAlrtPop .inner_popup_content p').html('인증서 서명 오류 :<br/>비밀번호를 확인해주세요.')
+                return
+              } else {
+                window.opener.infotechPopupParentCallback(API_STATUS.ERROR)
+                self.close()
+              }
+            }
+          },
+          error: function (xhr, status, error) {
+            window.opener.console.log('infotech popup ajax err status : ', status)
+            window.opener.console.log('infotech popup ajax err error : ', error)
+            // operation이 setup일 경우 err 발생시 설치 화면으로 이동
+            if (s_op == 'setup') {
+              alert('iftNxService 설치 프로그램을 확인해주세요.')
+              callNicePop()
+              // window.opener.location.href = 'https://www.ibkbox.net/veraport/install20/securityInstallPgmChk.html';
+              // self.close();
+            }
+            // 기타 error 발생
+            else {
+              window.opener.infotechPopupParentCallback(API_STATUS.ERROR)
+              self.close()
+            }
+          }
+        })
+      }
+
+      /**
+       * IBK NICE 프로젝트 iftNxService 프로그램 설치 팝업 오픈
+       */
+      function callNicePop() {
+        const settings = {
+          width: 1200,
+          height: 300,
+          status: 'no',
+          scrollbars: 'yes',
+          toolbar: 'no',
+          menubar: 'no',
+          location: 'no',
+          resizable: 'no',
+          fullscreen: 'no',
+          channelmode: 'no'
+          // top : top,
+          // left : left
+        }
+
+        const left = Math.ceil(window.screen.width / 2) - settings.width / 2
+        const top = Math.ceil(window.screen.height / 2) - settings.height / 2
+
+        const params =
+          'width=' +
+          settings.width +
+          ', height=' +
+          settings.height +
+          ', status=' +
+          settings.status +
+          ', scrollbars=' +
+          settings.scrollbars +
+          ', toolbar=' +
+          settings.toolbar +
+          ', menubar=' +
+          settings.menubar +
+          ', location=' +
+          settings.location +
+          ', resizable=' +
+          settings.resizable +
+          ', fullscreen=yes' +
+          ', channelmode=' +
+          settings.channelmode +
+          ', left=' +
+          left +
+          ', top=' +
+          top
+
+        const url = 'https://ibkbox.one-click.co.kr/sp/SP0100M007GE.nice'
+        const win = window.open('', 'pop', params)
+        const popform = document.popForm
+
+        popform.action = url
+        popform.target = 'pop'
+        popform.submit()
+
+        const timer = setTimeout(() => {
+          if (!win.closed) self.close()
+          clearTimeout(timer)
+        }, 100)
+      }
+
+      /**
+       * 스크래핑 팝업 호출
+       */
+      function callScpgPopup(cb, param) {
+        selectedCert._cb = cb
+        $('#signPop').addClass('on')
+
+        let successCB = function (data) {
+          const tbody = document.getElementById('tbody')
+
+          if (data?.list?.length > 0) {
+            $('#noCertList').hide()
+
+            if (data.list.length > 4) tbody.classList.add('scroll_on')
+            else tbody.classList.remove('scroll_on')
+
+            data.list.forEach(function (item) {
+              let tr = document.createElement('div')
+              tr.setAttribute('onclick', 'selectNode(this)')
+              tr.classList.add('table_list')
+
+              // 구분
+              let td = document.createElement('div')
+              td.classList.add('col')
+              td.classList.add('col01')
+              td.innerText = distingCert(item.oid)
+              tr.appendChild(td)
+
+              // 인증서명
+              td = document.createElement('div')
+              td.classList.add('col')
+              td.classList.add('col02')
+
+              const certNameDiv = document.createElement('div')
+              certNameDiv.classList.add('div_ellipsis')
+              certNameDiv.innerText = item.certName
+              td.appendChild(certNameDiv)
+
+              tr.appendChild(td)
+
+              // 만료일
+              td = document.createElement('div')
+              td.classList.add('col')
+              td.classList.add('col03')
+              td.innerText = item.toDt
+              tr.appendChild(td)
+
+              // Path(숨김)
+              td = document.createElement('div')
+              td.setAttribute('style', 'display:none')
+              td.setAttribute('path', item.path)
+              tr.appendChild(td)
+
+              tbody.appendChild(tr)
+            })
+          } else {
+            tbody.classList.remove('scroll_on')
+            $('#noCertList').show()
+          }
+        }
+
+        // 설치 확인 후 certList 콜백 호출
+        loadDoc('setup', null, 16566, () => loadDoc('certList', { certImageUrl: '', nxKeypad: '' }, 16566, successCB))
+      }
+
+      /**
+       * 인증서 선택 시 발생 이벤트
+       */
+      function selectNode(el) {
+        $('#tbody .table_list').removeClass('on')
+        $(el).addClass('on')
+
+        const path = el.lastChild.getAttribute('path')
+        selectedCert.orgCd = 'common'
+        selectedCert.svcCd = 'getCertInfo'
+        selectedCert.appCd = 'InfotechApiDemo'
+        selectedCert.signCert = path + '\\signCert.der'
+        selectedCert.signPri = path + '\\signPri.key'
+
+        // 만료일 설정을 위한 조회 처리 추가 (메인박스 참조)
+        selectedCert.atshExpyYmd = $(el).find('div').eq(3).html().replaceAll('-', '')
+      }
+
+      /**
+       * 인증서 취소 시 발생 이벤트
+       */
+      function selectedCertReset() {
+        $('#tbody').empty()
+        $('#signPw').val('')
+        $('#signPop').removeClass('on')
+        selectedCert._cb(false)
+        selectedCert = new Object()
+
+        self.close()
+      }
+
+      const StringUtil = {
+        isEmptyValue: function (value) {
+          if (typeof value == 'undefined') {
+            return true
+          }
+          if (
+            value == '' ||
+            value == null ||
+            value == undefined ||
+            (value != null && typeof value == 'object' && !Object.keys(value).length)
+          ) {
+            if (String(value) == String(0)) {
+              return false
+            }
+            return true
+          } else {
+            return false
+          }
+        }
+      }
+
+      /**
+       * 인증서 확인 시 발생 이벤트
+       */
+      function selectedCertExecution() {
+        selectedCert.signPw = $('#signPw').val()
+
+        if (StringUtil.isEmptyValue(selectedCert.signCert)) {
+          $('#signAlrtPop').addClass('on')
+          $('#signAlrtPop .inner_popup_content p').text('인증서를 선택해주세요')
+        } else if (StringUtil.isEmptyValue(selectedCert.signPw)) {
+          $('#signAlrtPop').addClass('on')
+          $('#signAlrtPop .inner_popup_content p').text('인증서 비밀번호를 입력해주세요.')
+        } else {
+          loadDoc('execute', selectedCert, 16566, function (certData) {
+            if (StringUtil.isEmptyValue(certData?.DER2PEM) || StringUtil.isEmptyValue(certData?.KEY2PEM)) {
+              alert('인증서 정보 조회에 실패하였습니다.')
+              return
+            }
+
+            // 서버에서 RSA 공개키 모듈을 호출하여 암호화하는 로직 추가
+            $.ajax({
+              url: REACT_APP_API_URL[profile] + '/api/iv/v1/secure/public/key',
+              type: 'POST',
+              beforeSend: function (xhr) {
+                xhr.setRequestHeader('Content-Type', 'application/json')
+                xhr.setRequestHeader('Authorization', 'Bearer ' + getCookieValue('auth'))
+                /*xhr.setRequestHeader("Authorization", "Bearer " + sessionStorage.getItem("SI"));*/
+              },
+              error: function (jqXHR, textStatus, exception, errorThrown) {
+                ajaxErrorHandler(jqXHR, textStatus, exception, errorThrown)
+              },
+              success: function (rsaData) {
+                if (
+                  StringUtil.isEmptyValue(rsaData?.data?.modules) ||
+                  StringUtil.isEmptyValue(rsaData?.data?.exponent)
+                ) {
+                  alert('암호화 모듈 호출에 실패하였습니다.')
+                  return
+                } else {
+                  // 암호화 모듈은 MNB에서 사용된 RSA 모듈을 가져옴
+                  // public에서 사용하는 부분은 위와같이 처리하면 되지만,
+                  // src에서 사용되어 빌드시 리액트 chunk파일로 처리 되는 부분에 대해서는
+                  // 운영자포탈(adm) front에서 사용되는 modules/rsa 폴더의 라이브러리 리소스를 사용해야함
+                  const rsaUtil = new RSAKey()
+                  rsaUtil.setPublic(rsaData.data.modules, rsaData.data.exponent)
+
+                  const certPem = certData.DER2PEM.replace('-----BEGIN CERTIFICATE-----', '')
+                    .replace('-----END CERTIFICATE-----', '')
+                    .replace(/[\n\r]/g, '')
+                  const priKeyPem = certData.KEY2PEM.replace('-----BEGIN ENCRYPTED PRIVATE KEY-----', '')
+                    .replace('-----END ENCRYPTED PRIVATE KEY-----', '')
+                    .replace(/[\n\r]/g, '')
+
+                  const requestParam = {
+                    // 암호화 키 사이즈를 크게 잡더라도 인증서 정보 사이즈가 크기에 에러가 발생하므로
+                    // string을 분할하여 작업 -> mnb 기준으로는 3분할이지만 테스트 시 마찬가지로 에러가 발생하여 10분할 정도로 처리함
+                    encSignCertStrList: getDivideAndEncryptList(certPem, 10, rsaUtil),
+                    encSignPriStrList: getDivideAndEncryptList(priKeyPem, 10, rsaUtil),
+
+                    encSignPw: rsaUtil.encrypt(selectedCert.signPw),
+                    atshExpyYmd: selectedCert.atshExpyYmd
+                  }
+
+                  // callSetSignInfo(param);
+                  callSetSignInfo(requestParam)
+                }
+
+                return
+              },
+              error: function () {
+                window.opener.infotechPopupParentCallback(API_STATUS.ERROR)
+                selectedCert._cb(false)
+                self.close()
+                return
+              }
+            })
+          })
+        }
+      }
+
+      function getDivideAndEncryptList(strValue = '', divideCnt = 1, publicSetRsaUtil) {
+        const result = []
+
+        if (
+          StringUtil.isEmptyValue(strValue) ||
+          divideCnt < 1 ||
+          publicSetRsaUtil == null ||
+          publicSetRsaUtil == undefined
+        )
+          return result
+
+        const divideLen = Math.floor(strValue.length / divideCnt)
+
+        for (let i = 0; i < divideCnt; i++) {
+          let endIdx = (i + 1) * divideLen
+          if (!(i + 1 < divideCnt)) endIdx = strValue.length
+          result.push(publicSetRsaUtil.encrypt(strValue.substring(i * divideLen, endIdx)))
+        }
+
+        return result
+      }
+
+      function getCookieValue(cookieName) {
+        let cookieValue = null
+        if (document.cookie) {
+          var array = document.cookie.split(escape(cookieName) + '=')
+          if (array.length >= 2) {
+            var arraySub = array[1].split(';')
+            cookieValue = unescape(arraySub[0])
+          }
+        }
+        return cookieValue
+      }
+
+      function callSetSignInfo(param) {
+        $.ajax({
+          url: REACT_APP_API_URL[profile] + '/api/iv/v1/doc/infotech/cert/key/save',
+          data: JSON.stringify(param),
+          type: 'POST',
+          beforeSend: function (xhr) {
+            xhr.setRequestHeader('Content-Type', 'application/json')
+            xhr.setRequestHeader('Authorization', 'Bearer ' + getCookieValue('auth'))
+            /*xhr.setRequestHeader("Authorization", "Bearer " + sessionStorage.getItem("SI"));*/
+          },
+          error: function (jqXHR, textStatus, exception, errorThrown) {
+            ajaxErrorHandler(jqXHR, textStatus, exception, errorThrown)
+          },
+          success: function (data) {
+            // 홈텍스 등록 인증서가 아닌 경우 or 로그인한 기업의 사업자번호와 인증서 정보가 다른 경우
+            if (data?.code == 'BIZ2000' || data?.code == 'BIZ2001') {
+              alert(data?.message)
+              return
+            }
+
+            if (!StringUtil.isEmptyValue(data?.data?.clientCertKey)) {
+              window.opener.infotechPopupParentCallback(API_STATUS.SUCCESS)
+            } else {
+              window.opener.infotechPopupParentCallback(API_STATUS.ERROR)
+            }
+            selectedCertReset()
+            self.close()
+            return
+          },
+          error: function () {
+            window.opener.infotechPopupParentCallback(API_STATUS.ERROR)
+            selectedCert._cb(false)
+            self.close()
+            return
+          }
+        })
+      }
+
+      $(document).ajaxStart(function () {
+        $('.loading').show()
+        window.scrollTo(0, 0)
+        document.body.classList.add('scrollLock')
+      })
+      $(document).ajaxComplete(function () {
+        $('.loading').hide()
+        document.body.classList.remove('scrollLock')
+      })
+      $(document).ajaxError(function () {
+        $('.loading').hide()
+        document.body.classList.remove('scrollLock')
+      })
+
+      function ajaxErrorHandler(jqXHR, textStatus, exception, errorThrown) {
+        let msg = ''
+
+        if (jqXHR.status === 0) {
+          //msg = 'Not connect.\n Verify Network.';
+          msg = '인터넷 연결이 불안정합니다. 네트워크 상태를 확인하시기 바랍니다.'
+        } else if (jqXHR.status == 404) {
+          msg = 'Requested page not found. [404]'
+        } else if (jqXHR.status == 500) {
+          msg = 'Internal Server Error [500].'
+        } else if (exception === 'parsererror') {
+          msg = 'Requested JSON parse failed.'
+        } else if (exception === 'timeout') {
+          msg = 'Time out error.'
+        } else if (exception === 'abort') {
+          msg = 'Ajax request aborted.'
+        } else {
+          msg = 'Uncaught Error.\n' + jqXHR.responseText + '\n' + exception
+        }
+
+        alert(msg)
+        return
+      }
+    </script>
+
+    <script>
+      $(function () {
+        // 패스워드 입력창 enter 이벤트
+        $('#signPw').keydown(function (key) {
+          if (key.keyCode == 13) selectedCertExecution()
+        })
+
+        // 인증서 확인
+        $('#signPopConfirm').click(function () {
+          selectedCertExecution()
+        })
+
+        // 팝업 닫기기
+        $('#signPopCancel').click(function () {
+          selectedCertReset()
+        })
+
+        // alert 닫기
+        $('#signAlrtPopClose').click(function () {
+          $('#signAlrtPop').removeClass('on')
+          $('#signAlrtPop .inner_popup_content p').text('')
+        })
+      })
+    </script>
+  </head>
+  <body>
+    <div class="popup_wrap">
+      <div class="popup_content">
+        <div class="popup_box">
+          <p class="title">사용할 홈텍스 인증서를 선택해 주세요.</p>
+          <div class="table_wrap">
+            <div class="table">
+              <div class="table_header">
+                <div class="col col01">구분</div>
+                <div class="col col02">사용자</div>
+                <div class="col col03">만료일</div>
+              </div>
+              <!-- table_list의 개수가 4개이상일때 table_body + scroll_on 클래스 -->
+              <div id="tbody" class="table_body scroll">
+                <!--인증서 없으면 나옴-->
+                <div class="nodata_wrap" id="noCertList">
+                  <div class="nodata">인증서가 없습니다.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p class="title mt25">인증서 암호를 입력해 주세요.</p>
+          <div class="input_wrap">
+            <input type="password" id="signPw" />
+          </div>
+          <div class="button_wrap">
+            <button class="btn chk" id="signPopConfirm">확인</button>
+            <button class="btn cancel" id="signPopCancel">취소</button>
+          </div>
+        </div>
+
+        <!-- 팝업안에 내부 팝업 -->
+        <div class="inner_popup" id="signAlrtPop">
+          <div class="inner_popup_content">
+            <p></p>
+            <button class="btn chk" id="signAlrtPopClose">확인</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 로딩바 추가 -->
+    <div
+      class="loading"
+      id="loadingBar"
+      style="z-index: 500; display: none; top: 0px; left: 0px; right: 0px; bottom: 0px"
+    />
+
+    <form id="popForm" name="popForm" action="" method="post">
+      <input title="기관코드" type="hidden" id="cporcd" name="cporcd" value="004" />
+      <input title="상품코드" type="hidden" id="pdt_seq" name="pdt_seq" value="0002" />
+      <input title="은행키" type="hidden" id="orgclbyctnidtkey" name="orgclbyctnidtkey" value="" />
+      <input title="토큰" type="hidden" id="token" name="token" value="WC9xRlN0VDBpeWtpTmkzNHJSMnFjUT09" />
+      <input title="사업자번호" type="hidden" id="bizno" name="bizno" value="" />
+    </form>
+  </body>
+</html>

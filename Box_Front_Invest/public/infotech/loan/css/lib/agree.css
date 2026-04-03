@@ -1,0 +1,38 @@
+@charset "utf-8";
+ 
+ * {padding:0; margin:0; font-size:15px; color: #666; font-family: "NanumSquare"; line-height: 1.6; }
+.agreeTit {font-weight: bold; color: #333;}
+.txB {font-weight: bold; }
+.txBB {font-weight: bold; color: blue;}
+.htmlStyle {height : 100%; display: block;}
+.bodyStyle {height : 100%; display: block;}
+.divStyle {height : 100%; overflow:hidden; display: block; /* overflow-y:scroll;-webkit-overflow-scrolling:touch */}
+.divStyle::-webkit-scrollbar {-webkit-appearance : none;}
+.divStyle::-webkit-scrollbar:vertical {width:7px;}
+.divStyle::-webkit-scrollbar:horizontal {height:11px;}
+.agreeTit {font-weight: bold; color: #333;}
+.txB {font-weight: bold; }
+.txBB {font-weight: bold; color: blue;}
+
+/* 정보활용 동의 등급 */
+.agreestep {width: 100%; border: 1px solid #ddd; padding: 10px; box-sizing: border-box; margin-bottom: 20px; display: inline-block;}
+.agreestep .toppoint {background-color: #FF9800;color: #fff; padding: 3px 6px; border-radius: 15px;font-size: 12px; margin-left: 5px;}
+.agreestep .toppoint.s1 {background-color: #03A9F4;}
+.agreestep .toppoint.s2 {background-color: #4CAF50;}
+.agreestep .toppoint.s3 {background-color: #FFC107;}
+.agreestep .toppoint.s4 {background-color: #FF9800;}
+.agreestep .toppoint.s5 {background-color: #F44336;}
+.agreestep .stepbox {width: 100%; display:inline-block; margin-top: 5px;}
+.agreestep .stepbox .step {width: 20%; float:left; border-bottom: 10px solid #03A9F4; text-align: center; padding: 5px 0; color: #666; position: relative;}
+.agreestep .stepbox .step.on {color: #000; font-weight: bold; opacity: 1;}
+.agreestep .stepbox .step.on .point {position: absolute; bottom: -20px; left: 50%; margin-left: -5px; width: 7px; height: 7px; border-radius: 0 10px 10px 10px; transform: rotate(45deg) skew(0deg); background-color: #fff; border: 3px solid #000; box-shadow: 0px 3px 7px rgba(0,0,0,0.5); }
+.agreestep .stepbox .step1 {border-color: #03A9F4;}
+.agreestep .stepbox .step2 {border-color: #4CAF50;}
+.agreestep .stepbox .step3 {border-color: #FFC107;}
+.agreestep .stepbox .step4 {border-color: #FF9800;}
+.agreestep .stepbox .step5 {border-color: #F44336;}
+/* //정보활용 동의 등급 */
+    
+ @media screen and (max-width:640px){
+ * {padding:0; margin:0; font-size:13px; color: #666; font-family: "NanumSquare"; line-height: 1.25; }
+}

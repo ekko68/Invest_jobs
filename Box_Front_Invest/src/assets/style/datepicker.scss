@@ -1,0 +1,34 @@
+.react-datepicker__input-container::before {
+
+}
+
+.datepicker-custom-header {
+
+}
+
+
+.datepicker_custom_header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+}
+
+.datepicker_custom_header .datepicker_y_m {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+.datepicker_custom_header .prev_btn {
+    text-indent: -9999px;
+    background: url("../images/ico_arr_left.png") center center no-repeat;
+    width: 7px;
+    height: 12px;
+}
+.datepicker_custom_header .next_btn {
+    text-indent: -9999px;
+    background: url("../images/ico_arr_right.png") center center no-repeat;
+    width: 7px;
+    height: 12px;
+}

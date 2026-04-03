@@ -1,0 +1,53 @@
+@charset "utf-8";
+@import url("lib/font.css");
+
+/* font-family
+    // 나눔 바른고딕
+    font-family: 'NanumBarunGothic';
+    font-family: 'NanumBareunGothicUltraLight';
+    
+    //나눔 스퀘어
+    font-family: 'NanumSquare';
+    font-family: 'NanumSquare Light';
+    font-family: 'NanumSquareBold';
+    font-family: 'NanumSquare ExtraBold';
+*/
+
+/* HTML Default */
+html, body, div, span, applet, object, iframe, h1, h2, h3, h4, h5, h6, p, blockquote, pre, a, abbr, acronym, address, big, cite, code, del, dfn, em, font, img, ins, kbd, q, s, samp, small, strike, strong, sub, sup, tt, var, b, u, i, center, dl, dt, dd, ol, ul, li, fieldset, form, label, legend, table, caption, article, aside, hgroup, header, footer, figure, figcaption, nav, section { margin:0; padding:0; border:0; font-size:100%; vertical-align:baseline; background:transparent; line-height:1.4em; box-sizing:border-box; font-weight:normal;}
+article, aside, hgroup, header, footer, figure, figcaption, nav, section { display: block; }
+body {padding:0;margin:0;box-sizing:border-box; font: 15px "NanumSquare", sans-serif; color:#575757;}
+h1, h2, h3, h4, h5, h6 { font-weight:600; } 
+ol, ul { list-style:none; }
+blockquote, q { quotes:none; }
+blockquote:before, blockquote:after,q:before, q:after { content:''; }
+table { border-collapse:collapse; border-spacing:0; table-layout:fixed; width:100%;}
+button { margin:0; padding:0; border:0; font:inherit; color:inherit; background:transparent; overflow:visible; cursor:pointer; line-height:1; }
+a:link, a:visited, a:hover, a,active, a:focus { text-decoration:none; cursor:pointer; color:#666;}
+legend, caption { display:none; }
+textarea { resize:vertical; font:inherit; overflow-y:auto; }
+input, select { color:inherit; font:inherit; vertical-align: middle;}
+address, i { font-style:normal; }
+table { border-collapse:collapse; table-layout:fixed; }
+img, select, input, button { vertical-align:middle; }
+em { font-style:normal; }
+input { font-family: 'NanumSquare', sans-serif;}
+input:disabled {background-color: #f2f2f2;}
+
+/* placeholder */
+::-webkit-input-placeholder { /* Chrome/Opera/Safari */
+  color: #989898;
+} 
+::-moz-placeholder { /* Firefox 19+ */
+  color: #989898;
+}
+:-ms-input-placeholder { /* IE 10+ */
+  color: rgba(152,152,152,0.8);
+}
+:-moz-placeholder { /* Firefox 18- */
+  color: #989898;
+}
+
+.sikpNav { position:relative; height:0px; z-index:100;}
+.sikpNav a { display:block; position:absolute; top:-50px; left:0; width:100%; padding:10px 0; text-align:center; color:#fff; background:#31a6dd; transition:all .3s ease;}
+.sikpNav a:focus { top:0;}

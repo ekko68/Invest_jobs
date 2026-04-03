@@ -1,0 +1,161 @@
+.cs_notice .section_header {
+  display: flex;
+  height: 51px;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #d4d6e4;
+  margin: 30px 0;
+}
+.cs_notice .container {
+  padding: 0 15px;
+}
+.cs_notice .info_header {
+  margin-bottom: 15px;
+}
+
+.cs_notice .section_header .title {
+  font-size: 20px;
+  letter-spacing: -0.03em;
+  font-weight: 500;
+}
+
+.cs_notice.list .table .content {
+  max-width: 950px;
+  height: 17px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-block;
+}
+
+.cs_notice .pagination_wrap {
+  text-align: center;
+  margin: 20px 0 50px 0;
+}
+
+/*view*/
+.cs_notice.view .table .title {
+  font-size: 18px;
+  color: #333;
+  font-weight: 600;
+  text-align: left;
+}
+
+.cs_notice.view .attach_wrap .title {
+  padding-bottom: 10px;
+}
+
+.cs_notice.view .table .file_list {
+  padding-left: 10px;
+}
+
+.cs_notice.view .table .view_content {
+  padding: 30px;
+  line-height: 1.4;
+  word-break: keep-all;
+}
+
+.cs_notice.view .attach_wrap .file_item {
+  margin-top: 10px;
+  padding-left: 20px;
+  background: url('../images/ico_attachment.png') 0 center no-repeat;
+  background-size: auto 95%;
+}
+
+.cs_notice.view .btn_group {
+  padding: 30px 0;
+  text-align: center;
+}
+
+.cs_notice.view .btn_group .button {
+  width: 80px;
+  height: 37px;
+}
+
+/*cs_qna*/
+.cs_qna .section_header {
+  display: flex;
+  height: 51px;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #d4d6e4;
+  margin: 30px 0;
+}
+
+.cs_qna .info_header {
+  margin-bottom: 15px;
+}
+
+.cs_qna .section_header .title {
+  font-size: 20px;
+  letter-spacing: -0.03em;
+  font-weight: 500;
+}
+
+.cs_qna.list .table .content {
+  max-width: 580px;
+  height: 17px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-block;
+}
+
+.cs_qna .pagination_wrap {
+  text-align: center;
+  margin: 20px 0 50px 0;
+}
+
+/*view*/
+.cs_qna.view .table .title {
+  font-size: 18px;
+  color: #333;
+  font-weight: 600;
+  text-align: left;
+}
+
+.cs_qna.view .table .view_content {
+  padding: 30px 0;
+  line-height: 1.4;
+  word-break: keep-all;
+}
+
+.cs_qna .btn_group {
+  display: flex;
+  padding: 30px 0;
+  justify-content: center;
+  align-items: center;
+  grid-gap: 10px;
+}
+
+.cs_qna .btn_group .button {
+  width: 80px;
+  height: 37px;
+}
+
+.cs_qna.view .reply_wrap {
+  margin-top: 50px;
+}
+
+/*write*/
+.cs_qna.write .select_type {
+  height: 37px;
+  width: 100%;
+  padding: 0 5px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.cs_qna.write .input,
+.cs_qna.write .textarea {
+  width: 100%;
+  border-radius: 4px;
+  min-height: 37px;
+  padding: 0 5px;
+}
+
+.cs_qna.write .textarea {
+  height: 120px;
+  padding: 8px;
+  line-height: 1.5;
+}

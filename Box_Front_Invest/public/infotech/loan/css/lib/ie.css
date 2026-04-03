@@ -1,0 +1,6 @@
+@charset "utf-8";
+
+select{padding-right:0 !important;background:none !important;}
+.checkbox .lbl:before,.checkbox .lbl:after,
+.radio .lbl:before,.radio .lbl:after{display:none;}
+.checkbox input, .radio input{opacity:1;}
